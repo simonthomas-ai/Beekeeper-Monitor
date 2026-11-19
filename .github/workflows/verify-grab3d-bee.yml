@@ -6,6 +6,7 @@ on:
       - '.github/workflows/verify-grab3d-bee.yml'
       - 'training/inspect_external_glb.py'
       - 'training/test_inspect_external_glb.py'
+      - 'training/render_glb_review.py'
 permissions:
   contents: read
 jobs:
@@ -43,11 +44,18 @@ jobs:
       - name: Inspect GLB and publisher provenance without training approval
         run: |
           python training/inspect_external_glb.py --glb /tmp/vespaguard-bee/bee.glb --license /tmp/vespaguard-bee/LICENSE.txt --manifest /tmp/vespaguard-bee/manifest.json --output training/grab3d-bee-provenance-review.json
-      - name: Upload JSON report only, never model files
+      - name: Render review-only four-angle mesh preview
+        run: |
+          python -m pip install --disable-pip-version-check 'trimesh==4.9.0' 'matplotlib==3.10.7' 'numpy==2.3.4'
+          python training/render_glb_review.py --glb /tmp/vespaguard-bee/bee.glb --output training/grab3d-bee-geometry-preview.png
+      - name: Upload review reports and preview only, never model files
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: grab3d-bee-provenance-review
-          path: training/grab3d-bee-provenance-review.json
+          path: |
+            training/grab3d-bee-provenance-review.json
+            training/grab3d-bee-geometry-preview.png
+            training/grab3d-bee-geometry-preview.json
           if-no-files-found: warn
           retention-days: 14
