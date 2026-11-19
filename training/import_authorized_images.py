@@ -15,7 +15,7 @@ from pathlib import Path
 
 ALLOWED = {"CC0-1.0", "CC-BY-4.0"}
 FIELDS = ["source_id", "source_url", "image_url", "creator", "license", "license_url", "attribution"]
-OUTPUT = FIELDS[:2] + ["image_path"] + FIELDS[3:] + ["sha256"]
+OUTPUT = FIELDS + ["image_path", "sha256"]
 
 def public_https(url):
     parsed = urllib.parse.urlsplit(url)
@@ -74,7 +74,7 @@ def main():
         dest = root / "unreviewed" / (digest + suffix)
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(data)
-        accepted.append({k: row[k] for k in FIELDS if k != "image_url"} | {"image_path": str(dest), "sha256": digest})
+        accepted.append({k: row[k] for k in FIELDS} | {"image_path": str(dest), "sha256": digest})
     with manifest.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=OUTPUT)
         writer.writeheader()
