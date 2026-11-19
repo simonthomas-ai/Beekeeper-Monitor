@@ -1,0 +1,30 @@
+name: Project quality snapshot
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '11 9 * * 1'
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify project source and static integrity
+        run: |
+          python scripts/check_sources.py
+          python scripts/test_static.py
+          node --check app.js
+          node --check sw.js
+      - name: Generate evidence-based report
+        if: always()
+        run: python scripts/quality_report.py
+      - name: Upload quality report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beekeeper-quality-report
+          path: quality-report.md
+          if-no-files-found: warn
