@@ -11,7 +11,7 @@ on:
   schedule:
     - cron: '17 6 * * 1'
 permissions:
-  contents: read
+  contents: write
 jobs:
   candidates:
     runs-on: ubuntu-24.04
@@ -40,6 +40,21 @@ jobs:
           python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/apis-visual-review.html --species 'Apis mellifera'
           python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/bombus-visual-review.html --species 'Bombus terrestris'
           python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/vespula-visual-review.html --species 'Vespula vulgaris'
+      - name: Mobile Bildpruefung auf GitHub Pages bereitstellen
+        if: success()
+        run: |
+          set -euo pipefail
+          mkdir -p review
+          for species in velutina crabro apis bombus vespula; do
+            cp "training/${species}-visual-review.html" "review/${species}.html"
+          done
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add review/velutina.html review/crabro.html review/apis.html review/bombus.html review/vespula.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish unreviewed mobile species galleries [skip ci]"
+            git push origin HEAD:main
+          fi
       - name: Ergebnis
         if: always()
         run: |
