@@ -38,6 +38,7 @@ def gallery(source, output, species="Vespa velutina"):
 const items=__DATA__;
 const key="vespaguard-review-v1-"+__SPECIES_JSON__;
 let saved={};try{saved=JSON.parse(localStorage.getItem(key)||"{}")}catch(e){saved={}}
+const $=id=>document.getElementById(id);
 const unified=__SPECIES_JSON__==="ALL";
 let index=0,start=null;
 let visible=items.map((_,i)=>i);
@@ -69,7 +70,6 @@ function updateProgress(){
   $("progress-bar").max=items.length;$("progress-bar").value=done;
 }
 
-const $=id=>document.getElementById(id);
 function current(){const item=selected();return saved[item.photo_id]||{decision:"PENDING",boxes:[]}}
 function persist(v){saved[selected().photo_id]=v;try{localStorage.setItem(key,JSON.stringify(saved))}catch(e){$("state").textContent="Speichern nicht möglich – bitte JSON exportieren."}}
 function render(){const item=selected(),v=current();$("counter").textContent=(index+1)+"/"+visible.length+" – "+item.species_candidate+" – Foto "+item.photo_id;updateProgress();$("photo").src=item.image_url;$("source").href=item.source_url;$("decision").value=v.decision;$("state").textContent="Status: "+v.decision+" · Markierungen: "+v.boxes.length+" · KEINE Trainingsfreigabe";$("overlay").replaceChildren();for(const b of v.boxes){const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");rect.setAttribute("x",(b.x-b.width/2)*1000);rect.setAttribute("y",(b.y-b.height/2)*1000);rect.setAttribute("width",b.width*1000);rect.setAttribute("height",b.height*1000);$("overlay").append(rect)}}
