@@ -21,6 +21,7 @@ jobs:
       - name: Run Safari-engine WebKit suite
         run: npx playwright test --browser webkit
       - name: Run iPhone WebKit emulation suite
+        if: success() || failure()
         run: npx playwright test --config playwright.iphone.config.cjs
       - name: Summarize WebKit coverage
         if: always()
