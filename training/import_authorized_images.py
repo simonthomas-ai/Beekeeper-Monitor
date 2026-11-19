@@ -13,7 +13,9 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-ALLOWED = {"CC0-1.0", "CC-BY-4.0"}
+LICENSE_URLS = {"CC0-1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
+                "CC-BY-4.0": "https://creativecommons.org/licenses/by/4.0/"}
+ALLOWED = set(LICENSE_URLS)
 FIELDS = ["source_id", "source_url", "image_url", "creator", "license", "license_url", "attribution"]
 OUTPUT = FIELDS + ["image_path", "sha256"]
 
@@ -57,6 +59,8 @@ def main():
     for row in rows[:args.limit]:
         if row["license"] not in ALLOWED or not all(row[k].strip() for k in FIELDS):
             raise SystemExit("Unapproved license or missing attribution")
+        if row["license_url"].rstrip("/") != LICENSE_URLS[row["license"]].rstrip("/"):
+            raise SystemExit("License URL does not match declared license; manual review required")
         for key in ("source_url", "image_url", "license_url"):
             public_https(row[key])
         req = urllib.request.Request(row["image_url"], headers={"User-Agent": "BeekeeperMonitor-AuthorizedResearch/1.0"})
