@@ -18,7 +18,10 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - name: Python-Abhaengigkeiten fuer KI-Pruefung
-        run: python3 -m pip install --break-system-packages PyYAML
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-yaml
+          python3 -c 'import yaml; print("PyYAML ready:", yaml.__version__)'
       - name: PWA, Quellcode und Datenquellen
         id: static
         continue-on-error: true
