@@ -1,27 +1,25 @@
 name: Insect photo source discovery
 on:
   workflow_dispatch:
-    inputs:
-      per_species:
-        description: 'Maximum observations per species (1-50)'
-        required: false
-        default: '20'
-        type: choice
-        options: ['10', '20', '50']
+  push:
+    branches: [main]
+    paths:
+      - 'training/discover_inaturalist_candidates.py'
+      - '.github/workflows/hornet-photo-discovery.yml'
 permissions:
   contents: read
 jobs:
   discover:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Find open-license candidate photo metadata
-        run: python training/discover_inaturalist_candidates.py --per-species "${{ inputs.per_species || '20' }}"
-      - name: Write one review summary
+      - name: Search up to 1000 licensed insect photo candidates
+        run: python training/discover_inaturalist_candidates.py --target 1000 --max-pages 12
+      - name: Summarize actual candidate counts
         if: always()
         shell: bash
         run: |
@@ -31,22 +29,22 @@ jobs:
           from pathlib import Path
           path = Path("training/inaturalist-review-queue.csv")
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as out:
-              out.write("## Insect image candidate discovery\n\n")
+              out.write("## Insect photo source discovery (target: 1000)\n\n")
               if not path.exists():
-                  out.write("**FAILED:** No candidate file produced. Check the job log.\n")
+                  out.write("**FAILED:** No CSV generated; see job logs.\n")
               else:
                   with path.open(newline="", encoding="utf-8") as stream:
                       rows = list(csv.DictReader(stream))
-                  out.write(f"**{len(rows)} UNREVIEWED candidate photos.** No images downloaded or training performed.\n\n")
-                  for name, count in sorted(Counter(r["species_candidate"] for r in rows).items()):
+                  out.write(f"**{len(rows)} / 1000 UNREVIEWED candidates** (one per observation). No images downloaded or trained.\n\n")
+                  for name, count in sorted(Counter(row["species_candidate"] for row in rows).items()):
                       out.write(f"- {name}: {count}\n")
-                  out.write("\nDownload the CSV artifact to review each source and license version.\n")
+                  out.write("\nCC BY versions require verification. The CSV is a review queue, not approved training data.\n")
           PY
-      - name: Upload one review CSV
+      - name: Upload review CSV
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hornet-photo-review-queue
+          name: insect-photo-review-queue
           path: training/inaturalist-review-queue.csv
           if-no-files-found: ignore
           retention-days: 14
