@@ -1,0 +1,70 @@
+name: Ein-Klick-Gesamttest
+run-name: Gesamttest – ${{ github.ref_name }}
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: gesamttest-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  gesamttest:
+    name: Gesamttest und Ergebnisbericht
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    steps:
+      - name: Quellcode laden
+        uses: actions/checkout@v4
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Abhängigkeiten installieren
+        run: npm install --no-audit --no-fund
+      - name: Browser-Integrationstests ausführen
+        id: tests
+        continue-on-error: true
+        run: npm run test:e2e
+      - name: Ergebnisübersicht erstellen
+        if: always()
+        env:
+          TEST_RESULT: ${{ steps.tests.outcome }}
+        shell: bash
+        run: |
+          {
+            echo '# Beekeeper-Monitor – Gesamttest'
+            echo
+            echo "Repository: \`$GITHUB_REPOSITORY\`"
+            echo "Commit: \`$GITHUB_SHA\`"
+            echo "Testlauf: #$GITHUB_RUN_NUMBER"
+            echo
+            if [ "$TEST_RESULT" = success ]; then
+              echo '## Ergebnis: Browser-Integrationstests bestanden'
+            else
+              echo '## Ergebnis: Browser-Integrationstests fehlgeschlagen oder nicht ausgeführt'
+            fi
+            echo
+            echo 'Geprüft: die im Repository vorhandene Playwright-Testsuite.'
+            echo 'Nicht automatisch nachgewiesen: KI-Erkennungsgenauigkeit, echte SMS-Zustellung, produktive Push-Nachrichten und Hardwarefunktionen.'
+            echo
+            echo "Testlauf-Link: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo
+            echo 'Bei Fehlern: Jobprotokoll und hochgeladene Testartefakte prüfen.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Testberichte und Screenshots sichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gesamttest-berichte
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Gesamtergebnis festlegen
+        if: always()
+        env:
+          TEST_RESULT: ${{ steps.tests.outcome }}
+        run: test "$TEST_RESULT" = success
