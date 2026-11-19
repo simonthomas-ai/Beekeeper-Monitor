@@ -17,7 +17,7 @@ def stage(payload):
     if not isinstance(payload, dict) or payload.get("format") != "vespaguard-unverified-mobile-review-v1":
         raise ValueError("Unsupported mobile review format")
     species = payload.get("species")
-    if species not in SPECIES:
+    if species not in SPECIES and species != "ALL":
         raise ValueError("Unknown species")
     records = payload.get("records")
     if not isinstance(records, list) or not records:
@@ -25,7 +25,7 @@ def stage(payload):
     seen = set()
     queue = []
     for i, row in enumerate(records):
-        if not isinstance(row, dict) or row.get("species_candidate") != species:
+        if not isinstance(row, dict) or row.get("species_candidate") not in SPECIES or (species != "ALL" and row.get("species_candidate") != species):
             raise ValueError(f"Record {i}: species mismatch")
         photo_id = str(row.get("photo_id", "")).strip()
         if not photo_id or photo_id in seen:
@@ -53,7 +53,7 @@ def stage(payload):
                 raise ValueError(f"Record {i}: box outside image")
         queue.append({
             "photo_id": photo_id, "observation_id": str(row.get("observation_id", "")),
-            "species_candidate": species, "source_url": row["source_url"],
+            "species_candidate": row["species_candidate"], "source_url": row["source_url"],
             "image_url": row["image_url"], "license_claim": str(row.get("license", "")),
             "creator_claim": str(row.get("creator", "")), "mobile_decision": review["decision"],
             "proposed_boxes": boxes, "training_eligible": False,
