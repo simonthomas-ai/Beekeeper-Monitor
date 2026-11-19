@@ -26,7 +26,20 @@ def render(glb: Path, output: Path):
     faces = meshes.faces
     indices = np.linspace(0, len(faces) - 1, min(12000, len(faces)), dtype=int)
     tris = (meshes.vertices[faces[indices]] - center) / np.max(span)
-    # Project dense triangle centroids and vertices into orthogonal 2D views.\n    # A dark, high-contrast point cloud avoids matplotlib 3D face-order artifacts.\n    points = tris.reshape(-1, 3)\n    views = [("XY projection", (0, 1)), ("XZ projection", (0, 2)),\n             ("YZ projection", (1, 2)), ("XY reverse", (0, 1))]\n    fig, axes = plt.subplots(2, 2, figsize=(12, 12))\n    for ax, (name, (a, b)) in zip(axes.flat, views):\n        projected = points[:, [a, b]]\n        if name == "XY reverse":\n            projected = projected * [-1, 1]\n        ax.scatter(projected[:, 0], projected[:, 1], s=0.45, c="#202020", alpha=0.85, linewidths=0, rasterized=True)\n        ax.set(xlim=(-.55,.55), ylim=(-.55,.55), title=f"{name} (axes, anatomy unverified)")\n        ax.set_aspect("equal", adjustable="box")\n        ax.axis("off")
+    # Project dense triangle centroids and vertices into orthogonal 2D views.
+    # A dark, high-contrast point cloud avoids matplotlib 3D face-order artifacts.
+    points = tris.reshape(-1, 3)
+    views = [("XY projection", (0, 1)), ("XZ projection", (0, 2)),
+             ("YZ projection", (1, 2)), ("XY reverse", (0, 1))]
+    fig, axes = plt.subplots(2, 2, figsize=(12, 12))
+    for ax, (name, (a, b)) in zip(axes.flat, views):
+        projected = points[:, [a, b]]
+        if name == "XY reverse":
+            projected = projected * [-1, 1]
+        ax.scatter(projected[:, 0], projected[:, 1], s=0.45, c="#202020", alpha=0.85, linewidths=0, rasterized=True)
+        ax.set(xlim=(-.55,.55), ylim=(-.55,.55), title=f"{name} (axes, anatomy unverified)")
+        ax.set_aspect("equal", adjustable="box")
+        ax.axis("off")
     fig.suptitle("Grab3D bee — high-contrast geometry preview ONLY; taxonomy / rights NOT approved")
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=120, bbox_inches="tight")
