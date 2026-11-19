@@ -8,6 +8,7 @@ on:
     paths:
       - 'training/discover_inaturalist_candidates.py'
       - '.github/workflows/hornet-photo-discovery.yml'
+      - 'training/audit_inaturalist_candidates.py'
 permissions:
   contents: read
 jobs:
@@ -21,6 +22,8 @@ jobs:
           python-version: '3.12'
       - name: Search up to 1000 licensed insect photo candidates
         run: python training/discover_inaturalist_candidates.py --target 1000 --max-pages 12
+      - name: Audit candidate metadata quality
+        run: python training/audit_inaturalist_candidates.py
       - name: Summarize actual candidate counts
         if: always()
         shell: bash
@@ -47,6 +50,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: insect-photo-review-queue
-          path: training/inaturalist-review-queue.csv
+          path: |
+            training/inaturalist-review-queue.csv
+            training/inaturalist-metadata-audit.json
           if-no-files-found: ignore
           retention-days: 14
