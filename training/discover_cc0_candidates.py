@@ -42,9 +42,10 @@ def discover(per_species, max_pages=10):
         # Scan multiple bounded pages, rather than only the newest observations.
         # Keep one independent observation per photo to limit duplicate leakage.
         count = 0
-        for page in range(1, max_pages + 1):
+        for page in range(1, (max_pages if species != "Vespa velutina" else max(max_pages, 25)) + 1):
             params = urllib.parse.urlencode({
                 "taxon_id": taxon_id, "quality_grade": "research", "photos": "true",
+                "photo_license": "cc0",
                 "per_page": 200, "page": page, "order_by": "observed_on",
                 "order": "desc"})
             data = get_json(API + "?" + params)
