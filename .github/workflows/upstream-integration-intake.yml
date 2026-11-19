@@ -1,0 +1,28 @@
+name: Parallel upstream integration intake
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'training/review_upstream_sources.py'
+      - '.github/workflows/upstream-integration-intake.yml'
+permissions:
+  contents: read
+jobs:
+  source-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Shallow-clone all upstreams in parallel for isolated review
+        run: python training/review_upstream_sources.py training/upstream-source-review.json
+      - name: Upload provenance manifest only (no unreviewed third-party code)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-source-license-review
+          path: training/upstream-source-review.json
+          if-no-files-found: warn
+          retention-days: 14
