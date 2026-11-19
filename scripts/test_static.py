@@ -22,5 +22,12 @@ assert manifest["display"]=="standalone"
 assert manifest["start_url"]=="./"
 assert set(["hornet","varroa","brood","pollen","swarm","queen"]) <= set(sum((s["modules"] for s in catalog["sources"]),[]))
 assert "noch nicht validiert" in html
+assert 'id="import"' in html
+assert "validObservation" in app
+assert "beekeeper-shell-v4" in sw
+assert "SHELL.has(url.href)" in sw
+pages=(root/".github/workflows/pages.yml").read_text()
+assert "path: _site" in pages
+assert "cp index.html style.css app.js sw.js manifest.webmanifest icon.svg _site/" in pages
 assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
 print("Static PWA and research catalog checks passed; real-device and AI tests remain outstanding.")
