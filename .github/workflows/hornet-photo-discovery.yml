@@ -12,6 +12,7 @@ on:
       - 'training/prepare_species_review.py'
       - 'training/prepare_annotation_tasks.py'
       - 'training/verify_inaturalist_photo_metadata.py'
+      - 'training/prepare_hornet_visual_review.py'
 permissions:
   contents: read
 jobs:
@@ -37,6 +38,11 @@ jobs:
             --input training/inaturalist-review-queue.csv \
             --output training/vespa-velutina-cc0-source-audit.csv \
             --species 'Vespa velutina' --license CC0-1.0 --limit 100
+      - name: Prepare larger-image visual review links
+        run: |
+          python training/prepare_hornet_visual_review.py \
+            --input training/vespa-velutina-cc0-source-audit.csv \
+            --output training/vespa-velutina-visual-review.csv
       - name: Summarize actual candidate counts
         if: always()
         shell: bash
@@ -80,5 +86,6 @@ jobs:
             training/inaturalist-annotation-tasks.csv
             training/inaturalist-annotation-tasks.json
             training/vespa-velutina-cc0-source-audit.csv
+            training/vespa-velutina-visual-review.csv
           if-no-files-found: ignore
           retention-days: 14
