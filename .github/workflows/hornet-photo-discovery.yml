@@ -13,6 +13,7 @@ on:
       - 'training/prepare_annotation_tasks.py'
       - 'training/verify_inaturalist_photo_metadata.py'
       - 'training/prepare_hornet_visual_review.py'
+      - 'training/render_hornet_review_gallery.py'
 permissions:
   contents: read
 jobs:
@@ -43,6 +44,11 @@ jobs:
           python training/prepare_hornet_visual_review.py \
             --input training/vespa-velutina-cc0-source-audit.csv \
             --output training/vespa-velutina-visual-review.csv
+      - name: Render mobile-friendly read-only visual review gallery
+        run: |
+          python training/render_hornet_review_gallery.py \
+            --input training/vespa-velutina-visual-review.csv \
+            --output training/vespa-velutina-review-gallery.html
       - name: Summarize actual candidate counts
         if: always()
         shell: bash
@@ -87,5 +93,6 @@ jobs:
             training/inaturalist-annotation-tasks.json
             training/vespa-velutina-cc0-source-audit.csv
             training/vespa-velutina-visual-review.csv
+            training/vespa-velutina-review-gallery.html
           if-no-files-found: ignore
           retention-days: 14
