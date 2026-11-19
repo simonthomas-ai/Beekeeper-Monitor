@@ -32,6 +32,7 @@ jobs:
           if [ -d review ]; then
             mkdir -p _site/review
             cp review/{velutina,crabro,apis,bombus,vespula}.html _site/review/
+            if [ -f review/all.html ]; then cp review/all.html _site/review/; fi
           fi
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
