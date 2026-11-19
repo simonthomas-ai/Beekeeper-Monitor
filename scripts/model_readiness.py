@@ -7,7 +7,7 @@ import os
 root = Path(__file__).resolve().parents[1]
 classes = ["vespa_velutina", "varroa_destructor", "drone_brood",
            "pollen_bearing_bee", "bee_swarm", "queen_bee"]
-base = root / "training" / "datasets"
+base = root / "datasets" / "beekeeper"
 splits = ("train", "val", "test")
 rows = []
 for split in splits:
