@@ -15,7 +15,7 @@ LICENSES = {
     "cc-by": ("CC-BY-VERSION-UNVERIFIED", ""),
 }
 FIELDS = ["source_id", "source_url", "image_url", "creator", "license", "license_url", "attribution", "observation_id", "photo_id", "species_candidate", "review_status"]
-SPECIES = ("Vespa velutina", "Vespa crabro", "Vespula vulgaris", "Vespula germanica", "Apis mellifera", "Bombus terrestris", "Bombus lapidarius")
+SPECIES = ("Vespa velutina", "Bombus lapidarius", "Vespa crabro", "Vespula vulgaris", "Vespula germanica", "Apis mellifera", "Bombus terrestris")
 
 
 def fetch_observations(species, page):
@@ -34,7 +34,7 @@ def fetch_observations(species, page):
 
 def discover(target, max_pages, pause):
     rows, seen_photos, seen_observations = [], set(), set()
-    # Round-robin across species prevents abundant species consuming the full quota.
+    # Round-robin across species prevents abundant species consuming the full quota.\n    # Prioritize scarce target species first, but retain one record per observation.
     for page in range(1, max_pages + 1):
         found_any = False
         for species in SPECIES:
