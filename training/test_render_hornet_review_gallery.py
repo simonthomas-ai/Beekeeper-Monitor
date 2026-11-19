@@ -15,6 +15,16 @@ class ReviewGalleryTests(unittest.TestCase):
         self.assertIn("UNREVIEWED", page)
         self.assertIn("https://static.inaturalist.org/photos/123/large.jpg", page)
 
+    def test_manual_review_export_never_approves_training(self):
+        page = render([{"training_approved": "NO", "observation_id": "12", "photo_id": "34"}])
+        self.assertIn('data-key="12:34"', page)
+        self.assertIn('value="CONFIRMED"', page)
+        self.assertIn('value="WRONG_SPECIES"', page)
+        self.assertIn('value="UNCERTAIN"', page)
+        self.assertIn('"training_approved"', page)
+        self.assertIn('note,"NO"', page)
+        self.assertIn("vespa-velutina-manual-review.csv", page)
+
     def test_rejects_external_image_and_source(self):
         page = render([{"training_approved": "NO", "large_review_url": "https://evil.example/pic.jpg", "source_url": "javascript:alert(1)"}])
         self.assertNotIn("evil.example", page)
