@@ -17,7 +17,9 @@ FIELDS = ["observation_id", "photo_id", "api_taxon", "api_quality_grade",
 
 def large_url(url):
     p = urlsplit(url)
-    if (p.scheme != "https" or p.username or p.password or p.port not in (None, 443)\n            or not p.hostname or not p.hostname.endswith(".inaturalist.org")\n            or not p.path.endswith("/square.jpg")):
+    if (p.scheme != "https" or p.username or p.password or p.port not in (None, 443)
+            or not p.hostname or not p.hostname.endswith(".inaturalist.org")
+            or not p.path.endswith("/square.jpg")):
         return ""
     return urlunsplit((p.scheme, p.netloc, p.path[:-len("square.jpg")] + "large.jpg", "", ""))
 
