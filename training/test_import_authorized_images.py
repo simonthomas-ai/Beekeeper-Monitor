@@ -16,6 +16,10 @@ class ImportSafetyTests(unittest.TestCase):
         self.assertEqual(mod.ALLOWED, {"CC0-1.0", "CC-BY-4.0"})
         self.assertNotIn("CC-BY-VERSION-UNVERIFIED", mod.ALLOWED)
 
+    def test_canonical_license_references(self):
+        self.assertEqual(mod.LICENSE_URLS['CC0-1.0'], 'https://creativecommons.org/publicdomain/zero/1.0/')
+        self.assertEqual(mod.LICENSE_URLS['CC-BY-4.0'], 'https://creativecommons.org/licenses/by/4.0/')
+
     def test_provenance_fields_retained(self):
         for field in ("source_id", "source_url", "image_url", "creator",
                       "license", "license_url", "attribution", "sha256"):
