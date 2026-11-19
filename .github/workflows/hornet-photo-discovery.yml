@@ -11,6 +11,7 @@ on:
       - 'training/audit_inaturalist_candidates.py'
       - 'training/prepare_species_review.py'
       - 'training/prepare_annotation_tasks.py'
+      - 'training/verify_inaturalist_photo_metadata.py'
 permissions:
   contents: read
 jobs:
@@ -30,6 +31,12 @@ jobs:
         run: python training/prepare_species_review.py
       - name: Generate traceable annotation tasks for human review
         run: python training/prepare_annotation_tasks.py
+      - name: Recheck CC0 Vespa velutina photo metadata at iNaturalist
+        run: |
+          python training/verify_inaturalist_photo_metadata.py \
+            --input training/inaturalist-review-queue.csv \
+            --output training/vespa-velutina-cc0-source-audit.csv \
+            --species 'Vespa velutina' --license CC0-1.0 --limit 100
       - name: Summarize actual candidate counts
         if: always()
         shell: bash
@@ -50,6 +57,15 @@ jobs:
                   for name, count in sorted(Counter(row["species_candidate"] for row in rows).items()):
                       out.write(f"- {name}: {count}\n")
                   out.write("\nCC BY versions require verification. The CSV is a review queue, not approved training data.\n")
+              audit = Path("training/vespa-velutina-cc0-source-audit.csv")
+              if audit.exists():
+                  with audit.open(newline="", encoding="utf-8") as stream:
+                      checks = list(csv.DictReader(stream))
+                  matched = sum(r["license_metadata_match"] == "YES" for r in checks)
+                  errors = sum(bool(r["error"]) for r in checks)
+                  out.write(f"\n**Vespa velutina CC0 source metadata:** {len(checks)} checked; {matched} API license-code matches; {errors} API errors. **0 visually or legally approved**.\n")
+              else:
+                  out.write("\n**Vespa velutina CC0 source audit missing:** check job logs.\n")
           PY
       - name: Upload review CSV
         if: always()
@@ -63,5 +79,6 @@ jobs:
             training/inaturalist-species-review.json
             training/inaturalist-annotation-tasks.csv
             training/inaturalist-annotation-tasks.json
+            training/vespa-velutina-cc0-source-audit.csv
           if-no-files-found: ignore
           retention-days: 14
