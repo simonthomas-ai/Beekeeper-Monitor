@@ -34,17 +34,22 @@ def fetch_observations(species, page):
 
 def discover(target, max_pages, pause):
     rows, seen_photos, seen_observations = [], set(), set()
+    # Each species gets its own target share, so abundant species cannot exhaust the quota.
+    quota = {name: target // len(SPECIES) + (i < target % len(SPECIES)) for i, name in enumerate(SPECIES)}
+    counts = {name: 0 for name in SPECIES}
     # Round-robin across species prevents abundant species consuming the full quota.\n    # Prioritize scarce target species first, but retain one record per observation.
     for page in range(1, max_pages + 1):
         found_any = False
         for species in SPECIES:
             if len(rows) >= target:
                 return rows
+            if counts[species] >= quota[species]:
+                continue
             observations = fetch_observations(species, page)
             if observations:
                 found_any = True
             for obs in observations:
-                if len(rows) >= target:
+                if len(rows) >= target or counts[species] >= quota[species]:
                     break
                 if (obs.get("taxon") or {}).get("name") != species:
                     continue
@@ -69,6 +74,7 @@ def discover(target, max_pages, pause):
                     })
                     seen_photos.add(photo_id)
                     seen_observations.add(obs_id)
+                    counts[species] += 1
                     break  # At most one photo per independent observation
             if pause:
                 time.sleep(pause)
