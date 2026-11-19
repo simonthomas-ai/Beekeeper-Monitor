@@ -1,0 +1,53 @@
+name: Verify Grab3D bee asset provenance
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/verify-grab3d-bee.yml'
+      - 'training/inspect_external_glb.py'
+      - 'training/test_inspect_external_glb.py'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify GLB inspector unit tests
+        run: python -m unittest discover -s training -p 'test_inspect_external_glb.py' -v
+      - name: Fetch publisher originals for isolated review
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/vespaguard-bee
+          curl --fail --location --retry 2 --max-time 120 --silent --show-error https://grab3d.com/dl/bee/bee.glb -o /tmp/vespaguard-bee/bee.glb
+          curl --fail --location --retry 2 --max-time 30 --silent --show-error https://grab3d.com/dl/bee/LICENSE.txt -o /tmp/vespaguard-bee/LICENSE.txt
+          curl --fail --location --retry 2 --max-time 30 --silent --show-error https://grab3d.com/dl/bee/manifest.json -o /tmp/vespaguard-bee/manifest.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("/tmp/vespaguard-bee")
+          manifest = json.loads((root / "manifest.json").read_text())
+          expected = manifest["files"]["glb"]["bytes"]
+          actual = (root / "bee.glb").stat().st_size
+          if actual != expected:
+              raise SystemExit(f"Downloaded GLB byte length mismatch: {actual} vs {expected}")
+          if manifest.get("extras", {}).get("license") != "CC0-1.0":
+              raise SystemExit("Manifest license not CC0-1.0")
+          print(f"Publisher GLB length matches manifest: {actual} bytes")
+          PY
+      - name: Inspect GLB and publisher provenance without training approval
+        run: |
+          python training/inspect_external_glb.py --glb /tmp/vespaguard-bee/bee.glb --license /tmp/vespaguard-bee/LICENSE.txt --manifest /tmp/vespaguard-bee/manifest.json --output training/grab3d-bee-provenance-review.json
+      - name: Upload JSON report only, never model files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grab3d-bee-provenance-review
+          path: training/grab3d-bee-provenance-review.json
+          if-no-files-found: warn
+          retention-days: 14
