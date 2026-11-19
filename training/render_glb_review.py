@@ -26,16 +26,8 @@ def render(glb: Path, output: Path):
     faces = meshes.faces
     indices = np.linspace(0, len(faces) - 1, min(12000, len(faces)), dtype=int)
     tris = (meshes.vertices[faces[indices]] - center) / np.max(span)
-    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-    views = [("Front", (0, 0)), ("Side", (0, 90)), ("Top", (90, 0)), ("Rear", (0, 180))]
-    fig = plt.figure(figsize=(12, 12))
-    for i, (name, (elev, azim)) in enumerate(views, 1):
-        ax = fig.add_subplot(2, 2, i, projection="3d")
-        ax.add_collection3d(Poly3DCollection(tris, facecolor="#b9a479", edgecolor="none", alpha=1))
-        ax.set(xlim=(-.6,.6), ylim=(-.6,.6), zlim=(-.6,.6), title=f"{name} (orientation unverified)")
-        ax.view_init(elev=elev, azim=azim)
-        ax.set_axis_off()
-    fig.suptitle("Grab3D bee — geometry preview ONLY; taxonomy / rights NOT approved")
+    # Project dense triangle centroids and vertices into orthogonal 2D views.\n    # A dark, high-contrast point cloud avoids matplotlib 3D face-order artifacts.\n    points = tris.reshape(-1, 3)\n    views = [("XY projection", (0, 1)), ("XZ projection", (0, 2)),\n             ("YZ projection", (1, 2)), ("XY reverse", (0, 1))]\n    fig, axes = plt.subplots(2, 2, figsize=(12, 12))\n    for ax, (name, (a, b)) in zip(axes.flat, views):\n        projected = points[:, [a, b]]\n        if name == "XY reverse":\n            projected = projected * [-1, 1]\n        ax.scatter(projected[:, 0], projected[:, 1], s=0.45, c="#202020", alpha=0.85, linewidths=0, rasterized=True)\n        ax.set(xlim=(-.55,.55), ylim=(-.55,.55), title=f"{name} (axes, anatomy unverified)")\n        ax.set_aspect("equal", adjustable="box")\n        ax.axis("off")
+    fig.suptitle("Grab3D bee — high-contrast geometry preview ONLY; taxonomy / rights NOT approved")
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output, dpi=120, bbox_inches="tight")
     plt.close(fig)
