@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "reviewed_at": "2026-11-19",
+  "policy": "Only documented real sources; no model considered integrated until weights, license, inference, and independent evaluation pass",
+  "sources": [
+    {
+      "id": "vespai",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://github.com/andrw3000/vespai",
+      "kind": "model-and-code",
+      "license": "CC BY-NC-SA 4.0; access restrictions apply",
+      "status": "review-required",
+      "notes": "Research model, YOLOv5 weights referenced; access and permitted reuse must be checked"
+    },
+    {
+      "id": "hornet3000",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://github.com/vespCV/hornet3000",
+      "kind": "model-and-dataset-reference",
+      "license": "GPL-3.0 repository; dataset licenses separate",
+      "status": "review-required",
+      "notes": "YOLO hornet detection, verify downloadable model and dataset rights"
+    },
+    {
+      "id": "varrodetector",
+      "modules": [
+        "varroa"
+      ],
+      "url": "https://github.com/jodivaso/VarroDetector",
+      "kind": "software-and-model",
+      "license": "verify repository and weight terms",
+      "status": "review-required",
+      "notes": "Varroa on sticky sheets; Windows/Linux desktop software, not browser model"
+    },
+    {
+      "id": "gratheon-varroa",
+      "modules": [
+        "varroa"
+      ],
+      "url": "https://github.com/Gratheon/models-varroa-on-bee",
+      "kind": "inference-service",
+      "license": "verify repository and weight terms",
+      "status": "review-required",
+      "notes": "Bee-image mite detection; reported metrics are external, not project validation"
+    },
+    {
+      "id": "gratheon-queen",
+      "modules": [
+        "queen"
+      ],
+      "url": "https://github.com/Gratheon/models-queen-bee-detector",
+      "kind": "training-and-inference-code",
+      "license": "verify",
+      "status": "weights-not-public",
+      "notes": "Repository explicitly says weights not committed"
+    },
+    {
+      "id": "buzzlytics",
+      "modules": [
+        "pollen",
+        "varroa"
+      ],
+      "url": "https://github.com/okayxsh/Buzzlytics---CSCI435",
+      "kind": "training-code",
+      "license": "verify",
+      "status": "review-required",
+      "notes": "Pollen bee and mite pipeline; weights availability must be checked"
+    },
+    {
+      "id": "honeybee-dataset",
+      "modules": [
+        "queen",
+        "pollen",
+        "brood"
+      ],
+      "url": "https://universe.roboflow.com/matt-nudi/honey-bee-detection-model-zgjnb/dataset/2",
+      "kind": "dataset",
+      "license": "verify dataset terms",
+      "status": "review-required",
+      "notes": "Reported classes include queens, workers, drones and pollen bees; not necessarily drone brood"
+    },
+    {
+      "id": "varroa-zenodo",
+      "modules": [
+        "varroa"
+      ],
+      "url": "https://zenodo.org/records/4085044",
+      "kind": "dataset",
+      "license": "verify record",
+      "status": "review-required",
+      "notes": "VarroaDataset; independently verify splits and rights"
+    },
+    {
+      "id": "hornet-audio",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://github.com/philippkueng/auditive_detection_of_asian_hornets",
+      "kind": "audio-research",
+      "license": "verify",
+      "status": "review-required",
+      "notes": "Audio detection pipeline; not yet validated on iPhone"
+    },
+    {
+      "id": "beehive-audio",
+      "modules": [
+        "swarm"
+      ],
+      "url": "https://zenodo.org/records/7052981",
+      "kind": "dataset",
+      "license": "verify record",
+      "status": "review-required",
+      "notes": "Beehive audio; swarm labels and validity must be established"
+    }
+  ]
+}
