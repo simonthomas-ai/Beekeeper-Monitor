@@ -36,6 +36,7 @@ jobs:
         id: importtests
         continue-on-error: true
         run: python3 -m unittest discover -s training -p 'test_import_authorized_images.py' -v
+          python3 -m unittest discover -s training -p 'test_prepare_hornet_visual_review.py' -v
       - name: KI-Dateninventur
         id: model
         continue-on-error: true
@@ -54,7 +55,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile training/validate_reviewed_annotations.py training/prepare_annotation_tasks.py training/prepare_species_review.py training/audit_inaturalist_candidates.py
+          python3 -m py_compile training/validate_reviewed_annotations.py training/prepare_annotation_tasks.py training/prepare_species_review.py training/audit_inaturalist_candidates.py training/prepare_hornet_visual_review.py training/verify_inaturalist_photo_metadata.py
           if [ -f training/reviewed-annotations.json ]; then
             python3 training/validate_reviewed_annotations.py training/reviewed-annotations.json
           else
