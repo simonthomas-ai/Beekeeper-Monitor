@@ -1,6 +1,6 @@
 'use strict';
-const CACHE='beekeeper-shell-v5';
-const FILES=['./','./index.html','./style.css','./app.js','./manifest.webmanifest','./icon.svg'];
+const CACHE='beekeeper-shell-v6';
+const FILES=['./','./index.html','./style.css','./app.js','./live-media.js','./manifest.webmanifest','./icon.svg'];
 const SHELL=new Set(FILES.map(path=>new URL(path,self.registration.scope).href));
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting()));
