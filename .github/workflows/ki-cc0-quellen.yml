@@ -32,6 +32,13 @@ jobs:
         run: python3 training/verify_inaturalist_photo_metadata.py --input training/inaturalist-review-queue.csv --output training/velutina-photo-verification.csv --species 'Vespa velutina' --limit 50
       - name: Visuelle Pruefgalerie fuer echte Hornissenbilder erstellen
         run: python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/velutina-visual-review.html
+      - name: Pruefgalerie fuer alle fuenf Arten erstellen
+        run: |
+          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/velutina-visual-review.html --species 'Vespa velutina'
+          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/crabro-visual-review.html --species 'Vespa crabro'
+          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/apis-visual-review.html --species 'Apis mellifera'
+          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/bombus-visual-review.html --species 'Bombus terrestris'
+          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/vespula-visual-review.html --species 'Vespula vulgaris'
       - name: Ergebnis
         if: always()
         run: |
@@ -55,5 +62,5 @@ jobs:
             training/inaturalist-species-review.csv
             training/inaturalist-species-review.json
             training/velutina-photo-verification.csv
-            training/velutina-visual-review.html
+            training/*-visual-review.html
           if-no-files-found: ignore
