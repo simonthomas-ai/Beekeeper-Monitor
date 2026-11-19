@@ -27,7 +27,7 @@ jobs:
       - name: Stage public PWA files only
         run: |
           mkdir -p _site
-          cp index.html style.css app.js sw.js manifest.webmanifest icon.svg _site/
+          cp index.html style.css app.js live-media.js sw.js manifest.webmanifest icon.svg _site/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
