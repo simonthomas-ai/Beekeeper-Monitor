@@ -27,6 +27,10 @@ def candidates(rows):
             "scientific_name": json.dumps(r.get("scientific_name", []), ensure_ascii=False),
             "record_link": str(r.get("record_link", "")),
             "mesh_url": str(r.get("mesh_url", "")),
+            "preview_url": str(r.get("preview_url", "")),
+            "voyager_url": str(r.get("voyager_url", "")),
+            "vertices": str(r.get("vertices", "")),
+            "faces": str(r.get("faces", "")),
             "license": "CC0-1.0",
             "media_usage_access": "CC0",
             "species_verified": "NO",
@@ -58,7 +62,7 @@ def main():
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["package_id", "title", "scientific_name", "record_link", "mesh_url", "license", "media_usage_access", "species_verified", "geometry_verified", "training_approved", "review_notes"])
+        writer = csv.DictWriter(handle, fieldnames=["package_id", "title", "scientific_name", "record_link", "mesh_url", "preview_url", "voyager_url", "vertices", "faces", "license", "media_usage_access", "species_verified", "geometry_verified", "training_approved", "review_notes"])
         writer.writeheader()
         writer.writerows(records)
     print(f"Found {len(records)} CC0 metadata-matched 3D candidates; zero training approvals. No meshes downloaded or rendered.")
