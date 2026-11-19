@@ -1,0 +1,28 @@
+name: Audit European apiary taxa
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'training/european-apiary-priority-taxa.csv'
+      - 'training/audit_european_taxa.py'
+      - '.github/workflows/european-taxa.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Match names against Catalogue of Life XR
+        run: python training/audit_european_taxa.py
+      - name: Upload audit for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: european-apiary-taxon-audit
+          path: training/european-apiary-taxonomy-audit.csv
+          if-no-files-found: ignore
