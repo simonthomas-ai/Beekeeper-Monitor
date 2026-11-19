@@ -29,6 +29,9 @@ jobs:
         id: tests
         continue-on-error: true
         run: npm run test:e2e
+      - name: KI-Datenbereitschaft dokumentieren
+        if: always()
+        run: python3 scripts/model_readiness.py
       - name: Ergebnisübersicht erstellen
         if: always()
         env:
