@@ -1,0 +1,13 @@
+# Each class needs real, manually verified images and bounding-box labels.
+# Images and labels are NOT included; no fabricated training samples.
+path: datasets/beekeeper
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: vespa_velutina
+  1: varroa_destructor
+  2: drone_brood
+  3: pollen_bearing_bee
+  4: bee_swarm
+  5: queen_bee
