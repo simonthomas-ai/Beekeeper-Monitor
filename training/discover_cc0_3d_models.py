@@ -66,6 +66,8 @@ def main():
         writer.writeheader()
         writer.writerows(records)
     print(f"Found {len(records)} CC0 metadata-matched 3D candidates; zero training approvals. No meshes downloaded or rendered.")
+    for item in records:
+        print("3D candidate:", json.dumps({key: item[key] for key in ("package_id", "title", "scientific_name", "record_link", "voyager_url", "preview_url", "vertices", "faces")}, ensure_ascii=False))
 
 if __name__ == "__main__":
     main()
