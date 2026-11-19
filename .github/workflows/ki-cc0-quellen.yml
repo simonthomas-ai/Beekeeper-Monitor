@@ -1,0 +1,41 @@
+name: Echte CC0-Bildquellen fuer KI pruefen
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 1'
+permissions:
+  contents: read
+jobs:
+  candidates:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: iNaturalist CC0-Metadaten recherchieren (keine KI-Freigabe)
+        run: python3 training/discover_cc0_candidates.py --per-species 50
+      - name: Lizenz- und Dublettenpruefung
+        run: python3 training/audit_inaturalist_candidates.py --input training/inaturalist-review-queue.csv --output training/inaturalist-metadata-audit.json
+      - name: Artenpruefung vorbereiten
+        run: python3 training/prepare_species_review.py --input training/inaturalist-review-queue.csv --output training/inaturalist-species-review.csv
+      - name: Ergebnis
+        if: always()
+        run: |
+          echo '## KI-Bildquellen – Recherche, keine Trainingsfreigabe' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f training/inaturalist-review-queue.csv ]; then
+            echo "Ungepruefte CC0-Fotokandidaten: $(($(wc -l < training/inaturalist-review-queue.csv)-1))" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo 'Keine Bilder heruntergeladen. Keine Artenbestimmung fachlich verifiziert. Keine Annotationen erzeugt. 0 freigegebene Trainingsbilder; keine gemessene Modellgenauigkeit.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Metadaten und Prueflisten bereitstellen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ki-cc0-quellen-prueflisten
+          path: |
+            training/inaturalist-review-queue.csv
+            training/inaturalist-metadata-audit.json
+            training/inaturalist-species-review.csv
+            training/inaturalist-species-review.json
+          if-no-files-found: ignore
