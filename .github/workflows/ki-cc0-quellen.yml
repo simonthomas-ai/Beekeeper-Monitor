@@ -14,6 +14,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Offline-Test der paginierten Bildrecherche
+        run: python3 -m unittest training.test_discover_cc0_candidates -v
       - name: iNaturalist CC0-Metadaten recherchieren (keine KI-Freigabe)
         run: python3 training/discover_cc0_candidates.py --per-species 50
       - name: Lizenz- und Dublettenpruefung
