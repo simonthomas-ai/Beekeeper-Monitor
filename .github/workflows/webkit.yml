@@ -1,0 +1,38 @@
+name: Safari WebKit and iPhone emulation
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  webkit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Run Safari-engine WebKit suite
+        run: npx playwright test --browser webkit
+      - name: Run iPhone WebKit emulation suite
+        run: npx playwright test --config playwright.iphone.config.cjs
+      - name: Summarize WebKit coverage
+        if: always()
+        run: |
+          echo '## Safari / iPhone browser checks' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Playwright WebKit desktop and iPhone 13 emulation. Camera and microphone are mocked, not physical hardware.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload WebKit failures
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webkit-failure-artifacts
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
