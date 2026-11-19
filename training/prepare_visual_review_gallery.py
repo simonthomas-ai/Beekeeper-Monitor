@@ -34,6 +34,7 @@ def gallery(source, output, species="Vespa velutina"):
 <select id="decision"><option value="PENDING">Noch ungeprüft</option><option value="LIKELY">Art wahrscheinlich – Expertenprüfung nötig</option><option value="REJECT">Bild ungeeignet / falsche Art</option></select>
 <p><small>Zum Markieren: einen Rahmen mit dem Finger über das Tier ziehen. Die Box wird relativ zur Bildfläche gespeichert; bei Letterboxing muss sie vor Training korrigiert werden.</small></p>
 <div class="actions"><button id="clear">Markierungen löschen</button><button id="prev">Zurück</button><button id="next">Weiter</button><button id="export">Prüfliste als JSON speichern</button></div>
+<p><label for="restore">Gesicherte Prüfliste wiederherstellen (JSON)</label> <input id="restore" type="file" accept=".json,application/json"></p><p id="restore-status" role="status"></p>
 <script>
 const items=__DATA__;
 const key="vespaguard-review-v1-"+__SPECIES_JSON__;
@@ -83,6 +84,54 @@ $("viewer").onpointerdown=e=>{if(e.pointerType==="mouse"&&e.button!==0)return;st
 $("viewer").onpointerup=e=>{if(!start)return;const end=pos(e),x=Math.min(start.x,end.x),y=Math.min(start.y,end.y),w=Math.abs(end.x-start.x),h=Math.abs(end.y-start.y);start=null;if(w<.015||h<.015)return;const v=current();v.boxes.push({x:x+w/2,y:y+h/2,width:w,height:h});persist(v);render()};
 $("viewer").onpointercancel=()=>{start=null};
 $("export").onclick=()=>{const records=items.map(item=>({...item,review:saved[item.photo_id]||{decision:"PENDING",boxes:[]},training_eligible:false}));const blob=new Blob([JSON.stringify({format:"vespaguard-unverified-mobile-review-v1",species:__SPECIES_JSON__,records},null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="vespaguard-review-"+__SLUG__+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+// Restore is deliberately limited to the currently displayed, known photo IDs.
+// Never accept training approval or arbitrary metadata from imported files.
+$("restore").onchange=async()=>{
+  const file=$("restore").files[0];
+  if(!file)return;
+  try{
+    if(file.size>5*1024*1024)throw Error("Datei ist zu groß (maximal 5 MB).");
+    const payload=JSON.parse(await file.text());
+    if(!payload||payload.format!=="vespaguard-unverified-mobile-review-v1"||!Array.isArray(payload.records))
+      throw Error("Unbekanntes Sicherungsformat.");
+    if(payload.species!=="ALL"&&!["Vespa velutina","Vespa crabro","Apis mellifera","Bombus terrestris","Vespula vulgaris"].includes(payload.species))
+      throw Error("Unbekannte Art.");
+    const known=new Map(items.map(item=>[String(item.photo_id),item]));
+    const imported={};const seen=new Set();
+    for(const row of payload.records){
+      if(!row||typeof row!=="object"||row.training_eligible!==false)
+        throw Error("Ungültige oder freigegebene Datensätze sind nicht zulässig.");
+      const id=String(row.photo_id);
+      const original=known.get(id);
+      if(!original||seen.has(id)||row.species_candidate!==original.species_candidate||
+         row.image_url!==original.image_url||row.source_url!==original.source_url)
+        throw Error("Foto-ID, Art oder Quelle stimmt nicht mit dieser Galerie überein.");
+      seen.add(id);
+      const v=row.review;
+      if(!v||!["PENDING","LIKELY","REJECT"].includes(v.decision)||!Array.isArray(v.boxes)||v.boxes.length>100)
+        throw Error("Ungültige Prüfentscheidung.");
+      const boxes=v.boxes.map(b=>{
+        if(!b||typeof b!=="object"||!["x","y","width","height"].every(k=>typeof b[k]==="number"&&Number.isFinite(b[k])))
+          throw Error("Ungültige Markierung.");
+        const {x,y,width,height}=b;
+        if(width<=0||height<=0||x-width/2<0||x+width/2>1||y-height/2<0||y+height/2>1)
+          throw Error("Markierung außerhalb des Fotos.");
+        return {x,y,width,height};
+      });
+      imported[id]={decision:v.decision,boxes};
+    }
+    if(!seen.size)throw Error("Keine Fotos enthalten.");
+    const conflicts=Object.keys(imported).filter(id=>saved[id]&&JSON.stringify(saved[id])!==JSON.stringify(imported[id])).length;
+    if(conflicts&&!confirm(conflicts+" vorhandene Bewertungen werden überschrieben. Fortfahren?"))return;
+    const merged={...saved,...imported};
+    localStorage.setItem(key,JSON.stringify(merged));
+    saved=merged;
+    render();
+    $("restore-status").textContent=Object.keys(imported).length+" Foto-Bewertungen erfolgreich wiederhergestellt.";
+  }catch(e){
+    $("restore-status").textContent="Wiederherstellung abgebrochen: "+e.message;
+  }finally{$("restore").value="";}
+};
 render();
 </script></html>"""
     page = page.replace("__SPECIES__", title).replace("__SPECIES_JSON__", json.dumps(species)).replace("__DATA__", data).replace("__SLUG__", json.dumps(species.lower().replace(" ", "-")))
