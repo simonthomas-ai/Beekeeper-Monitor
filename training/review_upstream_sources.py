@@ -2,6 +2,7 @@
 """Parallel upstream source snapshots for license review; never import/execute code."""
 import concurrent.futures
 import json
+import re
 import os
 import pathlib
 import subprocess
@@ -34,7 +35,26 @@ def inspect(name, root):
                        env={**os.environ, "GIT_TERMINAL_PROMPT": "0"})
         sha = subprocess.run(["git", "-C", str(target), "rev-parse", "HEAD"],
                              check=True, capture_output=True, text=True, timeout=15).stdout.strip()
-        result.update(cloned=True, commit=sha, review_status="awaiting_per-file_license_review")
+        tree = subprocess.run(["git", "-C", str(target), "ls-tree", "-r", "--name-only", "HEAD"],
+                              check=True, capture_output=True, text=True, timeout=30).stdout.splitlines()
+        license_paths = [p for p in tree if re.search(r"(^|/)(LICENSE|LICENCE|COPYING|NOTICE)([._-].*)?$", p, re.I)]
+        asset_paths = [p for p in tree if re.search(r"\.(pt|pth|onnx|h5|tflite|safetensors|weights|ckpt|csv|zip|jpg|jpeg|png|wav|mp3|mp4)$", p, re.I)]
+        result.update(cloned=True, commit=sha, tracked_files=len(tree),
+                      license_files=license_paths[:80], asset_file_count=len(asset_paths),
+                      asset_path_examples=asset_paths[:40],
+                      review_status="license_and_asset_review_required")
+        texts = {}
+        for path in license_paths[:12]:
+            try:
+                raw = subprocess.run(["git", "-C", str(target), "show", f"HEAD:{path}"],
+                                     check=True, capture_output=True, timeout=20).stdout
+                if len(raw) <= 100_000:
+                    texts[path] = raw.decode("utf-8", errors="replace")[:12000]
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                pass
+        result["license_texts"] = texts
+        result["license_approved"] = False  # Discovery is not a legal review.
+
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
         result.update(error=str(exc)[:500], review_status="clone_failed")
     return result
