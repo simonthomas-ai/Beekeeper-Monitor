@@ -29,11 +29,7 @@ test('mobile gallery: finger drag creates and clears a box',async({page})=>{
  const rect=await page.locator('#viewer').boundingBox();
  expect(rect).toBeTruthy();
  const a={x:rect.x+rect.width*.2,y:rect.y+rect.height*.2},b={x:rect.x+rect.width*.7,y:rect.y+rect.height*.7};
- await page.evaluate(([a,b])=>{
-  const el=document.querySelector('#viewer');
-  el.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:1,pointerType:'touch',clientX:a.x,clientY:a.y}));
-  el.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:1,pointerType:'touch',clientX:b.x,clientY:b.y}));
- },[a,b]);
+ await page.mouse.move(a.x,a.y);\n await page.mouse.down();\n await page.mouse.move(b.x,b.y,{steps:5});\n await page.mouse.up();
  await expect(page.locator('#overlay rect')).toHaveCount(1);
  await page.locator('#clear').click();
  await expect(page.locator('#overlay rect')).toHaveCount(0);
