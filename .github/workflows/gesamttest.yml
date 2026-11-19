@@ -32,6 +32,10 @@ jobs:
         id: browser
         continue-on-error: true
         run: npm run test:e2e
+      - name: Sicherheits- und Lizenzprotokolltests des Bildimports
+        id: importtests
+        continue-on-error: true
+        run: python3 -m unittest discover -s training -p 'test_import_authorized_images.py' -v
       - name: KI-Dateninventur
         id: model
         continue-on-error: true
@@ -75,6 +79,7 @@ jobs:
           STATIC: ${{ steps.static.outcome }}
           BROWSER: ${{ steps.browser.outcome }}
           MODEL: ${{ steps.model.outcome }}
+          IMPORTTESTS: ${{ steps.importtests.outcome }}
           TAXONOMY: ${{ steps.taxonomy.outcome }}
           TRAINING: ${{ steps.training.outcome }}
           ANNOTATIONS: ${{ steps.annotations.outcome }}
@@ -86,6 +91,7 @@ jobs:
           echo "| PWA und Quellcode | $STATIC |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Browsertests | $BROWSER |" >> "$GITHUB_STEP_SUMMARY"
           echo "| KI-Dateninventur | $MODEL |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Bildimport-Sicherheit und Herkunftsnachweise | $IMPORTTESTS |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Europaeische Taxonomie (Online-API) | $TAXONOMY |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Echte KI-Trainingsdaten und Annotationen | $TRAINING |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Fachlich gepruefte Annotationseintraege | $ANNOTATIONS |" >> "$GITHUB_STEP_SUMMARY"
@@ -107,6 +113,7 @@ jobs:
           STATIC: ${{ steps.static.outcome }}
           BROWSER: ${{ steps.browser.outcome }}
           MODEL: ${{ steps.model.outcome }}
+          IMPORTTESTS: ${{ steps.importtests.outcome }}
           TAXONOMY: ${{ steps.taxonomy.outcome }}
           TRAINING: ${{ steps.training.outcome }}
           ANNOTATIONS: ${{ steps.annotations.outcome }}
@@ -115,6 +122,7 @@ jobs:
           test "$STATIC" = success
           test "$BROWSER" = success
           test "$MODEL" = success
+          test "$IMPORTTESTS" = success
           test "$TAXONOMY" = success
           test "$TRAINING" = success
           test "$ANNOTATIONS" = success
