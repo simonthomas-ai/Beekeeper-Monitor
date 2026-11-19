@@ -58,3 +58,40 @@ test('deleting an observation requires confirmation and persists',async({page})=
  await page.reload();
  await expect(page.locator('#entries')).toContainText('Noch keine Beobachtungen');
 });
+
+test('offline observations can be saved after the shell is cached',async({page,context})=>{
+ await page.goto('/');
+ await page.evaluate(()=>navigator.serviceWorker.ready);
+ await context.setOffline(true);
+ await page.reload();
+ await page.getByLabel('Eigene Beobachtung').fill('Offline-Testeintrag');
+ await page.getByRole('button',{name:'Auf diesem Gerät speichern'}).click();
+ await expect(page.getByRole('status')).toContainText('lokal gespeichert');
+ await page.reload();
+ await expect(page.locator('#entries')).toContainText('Offline-Testeintrag');
+ await context.setOffline(false);
+});
+test('malicious note is displayed as text, not HTML',async({page})=>{
+ await page.goto('/');
+ await page.getByLabel('Eigene Beobachtung').fill('<img src=x onerror=alert(1)>');
+ await page.getByRole('button',{name:'Auf diesem Gerät speichern'}).click();
+ await expect(page.locator('#entries')).toContainText('<img src=x onerror=alert(1)>');
+ await expect(page.locator('#entries img')).toHaveCount(0);
+});
+test('denied geolocation does not save an incomplete observation',async({page,context})=>{
+ await context.grantPermissions([]);
+ await page.goto('/');
+ await page.getByLabel('Eigene Beobachtung').fill('Nicht ohne Standort speichern');
+ await page.locator('#location').check();
+ await page.getByRole('button',{name:'Auf diesem Gerät speichern'}).click();
+ await expect(page.getByRole('status')).toContainText('Nicht gespeichert: Standort');
+ await expect(page.locator('#entries')).not.toContainText('Nicht ohne Standort speichern');
+});
+test('rejects oversized or non-image uploads',async({page})=>{
+ await page.goto('/');
+ await page.getByLabel('Eigene Beobachtung').fill('Unzulässiger Dateianhang');
+ await page.locator('#photo').setInputFiles({name:'unsafe.txt',mimeType:'text/plain',buffer:Buffer.from('unsafe')});
+ await page.getByRole('button',{name:'Auf diesem Gerät speichern'}).click();
+ await expect(page.getByRole('status')).toContainText('Nur Bilddateien');
+ await expect(page.locator('#entries')).not.toContainText('Unzulässiger Dateianhang');
+});
