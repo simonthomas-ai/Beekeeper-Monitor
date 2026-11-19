@@ -53,7 +53,20 @@ jobs:
           git add review/velutina.html review/crabro.html review/apis.html review/bombus.html review/vespula.html
           if ! git diff --cached --quiet; then
             git commit -m "Publish unreviewed mobile species galleries [skip ci]"
-            git push origin HEAD:main
+            # Other workflows may push to main during image discovery.
+            # Rebase only this generated-gallery commit, then retry.
+            for attempt in 1 2 3 4 5; do
+              git fetch origin main
+              git rebase origin/main
+              if git push origin HEAD:main; then
+                echo "Five mobile galleries published to main."
+                exit 0
+              fi
+              echo "Concurrent push detected (attempt ${attempt}/5); retrying."
+              sleep 3
+            done
+            echo "Could not publish galleries after five retries."
+            exit 1
           fi
       - name: Ergebnis
         if: always()
