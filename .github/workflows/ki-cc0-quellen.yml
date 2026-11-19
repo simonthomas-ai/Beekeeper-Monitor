@@ -6,6 +6,7 @@ on:
     paths:
       - 'training/discover_cc0_candidates.py'
       - 'training/test_discover_cc0_candidates.py'
+      - 'training/prepare_visual_review_gallery.py'
       - '.github/workflows/ki-cc0-quellen.yml'
   schedule:
     - cron: '17 6 * * 1'
