@@ -1,0 +1,21 @@
+name: Validate PWA
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate app
+        run: |
+          test -s index.html
+          test -s style.css
+          test -s app.js
+          test -s sw.js
+          python -m json.tool manifest.webmanifest >/dev/null
+          node --check app.js
+          node --check sw.js
