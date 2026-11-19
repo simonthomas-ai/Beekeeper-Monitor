@@ -1,0 +1,34 @@
+scientific_name,group,priority,decision,notes
+Vespa velutina,hornet,critical,alert_candidate,Requires independent confirmation and calibrated threshold
+Vespa crabro,hornet,critical,no_alert,Native European hornet and key hard negative
+Vespula vulgaris,wasp,high,observe,Common wasp
+Vespula germanica,wasp,high,observe,German wasp
+Dolichovespula media,wasp,medium,observe,Medium wasp
+Polistes dominula,wasp,medium,observe,Paper wasp
+Apis mellifera,honeybee,critical,no_alert,Honeybee
+Bombus terrestris,wild_bee,high,no_alert,Bumblebee
+Bombus lapidarius,wild_bee,high,no_alert,Bumblebee
+Bombus pascuorum,wild_bee,high,no_alert,Bumblebee
+Bombus hortorum,wild_bee,high,no_alert,Bumblebee
+Andrena flavipes,wild_bee,high,no_alert,Mining bee
+Andrena cineraria,wild_bee,high,no_alert,Mining bee
+Osmia bicornis,wild_bee,high,no_alert,Mason bee
+Osmia cornuta,wild_bee,high,no_alert,Mason bee
+Megachile centuncularis,wild_bee,medium,no_alert,Leafcutter bee
+Xylocopa violacea,wild_bee,high,no_alert,Carpenter bee
+Anthophora plumipes,wild_bee,high,no_alert,Flower bee
+Colletes hederae,wild_bee,medium,no_alert,Ivy bee
+Halictus rubicundus,wild_bee,medium,no_alert,Sweat bee
+Lasioglossum calceatum,wild_bee,medium,no_alert,Sweat bee
+Nomada flava,wild_bee,medium,no_alert,Cuckoo bee
+Hylaeus communis,wild_bee,medium,no_alert,Masked bee
+Eristalis tenax,hoverfly,high,no_alert,Drone fly mimic
+Volucella zonaria,hoverfly,high,no_alert,Hornet mimic
+Volucella inanis,hoverfly,high,no_alert,Hornet mimic
+Syrphus ribesii,hoverfly,medium,no_alert,Hoverfly
+Bombylius major,bee_fly,high,no_alert,Bee fly
+Galleria mellonella,moth,high,pest_review,Greater wax moth
+Achroia grisella,moth,high,pest_review,Lesser wax moth
+Aethina tumida,beetle,critical,pest_review,Small hive beetle
+Forficula auricularia,earwig,medium,observe,European earwig
+Varroa destructor,mite,critical,pest_review,Not an insect
