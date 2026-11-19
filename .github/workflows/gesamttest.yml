@@ -35,11 +35,11 @@ jobs:
         id: browser
         continue-on-error: true
         run: npm run test:e2e
-      - name: Safari-WebKit-Browsertests (15)
+      - name: Safari-WebKit-Browsertests (18)
         id: webkit
         continue-on-error: true
         run: npx playwright test --browser webkit
-      - name: iPhone-WebKit-Emulation (15)
+      - name: iPhone-WebKit-Emulation (18)
         id: iphone
         if: always()
         continue-on-error: true
@@ -50,6 +50,7 @@ jobs:
         run: |
           python3 -m unittest discover -s training -p 'test_import_authorized_images.py' -v
           python3 -m unittest discover -s training -p 'test_prepare_hornet_visual_review.py' -v
+          python3 -m unittest discover -s training -p 'test_stage_mobile_reviews.py' -v
       - name: KI-Dateninventur
         id: model
         continue-on-error: true
@@ -68,7 +69,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile training/validate_reviewed_annotations.py training/prepare_annotation_tasks.py training/prepare_species_review.py training/audit_inaturalist_candidates.py training/prepare_hornet_visual_review.py training/verify_inaturalist_photo_metadata.py
+          python3 -m py_compile training/validate_reviewed_annotations.py training/prepare_annotation_tasks.py training/prepare_species_review.py training/audit_inaturalist_candidates.py training/prepare_hornet_visual_review.py training/verify_inaturalist_photo_metadata.py training/stage_mobile_reviews.py
           if [ -f training/reviewed-annotations.json ]; then
             python3 training/validate_reviewed_annotations.py training/reviewed-annotations.json
           else
@@ -106,9 +107,9 @@ jobs:
           echo '| Prüfung | Ergebnis |' >> "$GITHUB_STEP_SUMMARY"
           echo '|---|---|' >> "$GITHUB_STEP_SUMMARY"
           echo "| PWA und Quellcode | $STATIC |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Chromium (15 Tests) | $BROWSER |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Safari WebKit (15 Tests) | $WEBKIT |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| iPhone-WebKit-Emulation (15 Tests) | $IPHONE |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Chromium (18 Tests) | $BROWSER |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Safari WebKit (18 Tests) | $WEBKIT |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| iPhone-WebKit-Emulation (18 Tests) | $IPHONE |" >> "$GITHUB_STEP_SUMMARY"
           echo '## KI-Forschungsstand (nicht als einsatzbereit freigegeben)' >> "$GITHUB_STEP_SUMMARY"
           echo "| KI-Dateninventur | $MODEL |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Bildimport-Sicherheit und Herkunftsnachweise | $IMPORTTESTS |" >> "$GITHUB_STEP_SUMMARY"
