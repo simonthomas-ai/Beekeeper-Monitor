@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Echte CC0-Bildquellen fuer KI pruefen"]
+    types: [completed]
 permissions:
   contents: read
   pages: write
@@ -12,12 +15,15 @@ concurrency:
   cancel-in-progress: true
 jobs:
   deploy:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - name: Check app before publishing
         run: |
           python scripts/check_sources.py
@@ -34,6 +40,9 @@ jobs:
             cp review/{velutina,crabro,apis,bombus,vespula}.html _site/review/
             if [ -f review/all.html ]; then cp review/all.html _site/review/; fi
           fi
+          # Fail closed rather than silently publishing a missing review link.
+          test -s _site/review/all.html
+          grep -q "vespaguard-unverified-mobile-review-v1" _site/review/all.html
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
