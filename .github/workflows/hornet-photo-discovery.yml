@@ -1,4 +1,4 @@
-name: Hornet photo source discovery
+name: Insect photo source discovery
 on:
   workflow_dispatch:
     inputs:
@@ -31,7 +31,7 @@ jobs:
           from pathlib import Path
           path = Path("training/inaturalist-review-queue.csv")
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as out:
-              out.write("## Hornet image candidate discovery\n\n")
+              out.write("## Insect image candidate discovery\n\n")
               if not path.exists():
                   out.write("**FAILED:** No candidate file produced. Check the job log.\n")
               else:
