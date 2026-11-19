@@ -3,6 +3,7 @@
 import argparse
 import csv
 import json
+import re
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -19,7 +20,7 @@ def candidates(rows):
             continue
         fields = ("title", "package_title", "scientific_name", "tax_order", "object_type")
         description = " ".join(str(r.get(k, "")) for k in fields).lower()
-        if not any(term in description for term in TERMS):
+        if not any(re.search(r"\\b" + re.escape(term) + r"\\b", description) for term in TERMS):
             continue
         found.append({
             "package_id": str(r.get("package_id", "")),
