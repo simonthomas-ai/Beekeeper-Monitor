@@ -1,0 +1,77 @@
+name: Autarke Projektsteuerung
+run-name: Autarke Kontrolle – ${{ github.event_name }}
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 * * 1'
+permissions:
+  contents: read
+concurrency:
+  group: autonomous-control
+  cancel-in-progress: false
+jobs:
+  control:
+    name: Projekt prüfen und Quellen erfassen
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate static app
+        id: static
+        continue-on-error: true
+        run: |
+          python3 scripts/check_sources.py
+          python3 scripts/test_static.py
+          node --check app.js
+          node --check sw.js
+      - name: Run browser tests
+        id: browser
+        continue-on-error: true
+        run: npm run test:e2e
+      - name: Check training readiness
+        id: readiness
+        continue-on-error: true
+        run: python3 scripts/model_readiness.py
+      - name: Discover up to 1000 independent photo candidates
+        id: discovery
+        continue-on-error: true
+        run: python3 training/discover_inaturalist_candidates.py --target 1000 --max-pages 12
+      - name: Publish unified report
+        if: always()
+        env:
+          STATIC_RESULT: ${{ steps.static.outcome }}
+          BROWSER_RESULT: ${{ steps.browser.outcome }}
+          READINESS_RESULT: ${{ steps.readiness.outcome }}
+          DISCOVERY_RESULT: ${{ steps.discovery.outcome }}
+        run: |
+          python3 scripts/autonomous_control_report.py
+      - name: Preserve reports and review queue
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autonomous-control-results
+          path: |
+            training/inaturalist-review-queue.csv
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Fail on incomplete checks
+        if: always()
+        env:
+          STATIC_RESULT: ${{ steps.static.outcome }}
+          BROWSER_RESULT: ${{ steps.browser.outcome }}
+          READINESS_RESULT: ${{ steps.readiness.outcome }}
+          DISCOVERY_RESULT: ${{ steps.discovery.outcome }}
+        run: |
+          test "$STATIC_RESULT" = success
+          test "$BROWSER_RESULT" = success
+          test "$READINESS_RESULT" = success
+          test "$DISCOVERY_RESULT" = success
