@@ -1,64 +1,68 @@
 name: Ein-Klick-Gesamttest
-run-name: Gesamttest – ${{ github.ref_name }}
 on:
   workflow_dispatch:
   push:
     branches: [main]
 permissions:
   contents: read
-concurrency:
-  group: gesamttest-${{ github.ref }}
-  cancel-in-progress: false
 jobs:
   gesamttest:
-    name: Gesamttest und Ergebnisbericht
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     container:
       image: mcr.microsoft.com/playwright:v1.56.1-noble
     steps:
-      - name: Quellcode laden
-        uses: actions/checkout@v4
-      - name: Node.js einrichten
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Abhängigkeiten installieren
-        run: npm install --no-audit --no-fund
-      - name: Browser-Integrationstests ausführen
-        id: tests
+      - run: npm install --no-audit --no-fund
+      - name: PWA, Quellcode und Datenquellen
+        id: static
+        continue-on-error: true
+        run: |
+          python3 -m json.tool manifest.webmanifest >/dev/null
+          python3 scripts/check_sources.py
+          python3 scripts/test_static.py
+          node --check app.js
+          node --check sw.js
+      - name: Browser-Integrationstests
+        id: browser
         continue-on-error: true
         run: npm run test:e2e
-      - name: KI-Datenbereitschaft dokumentieren
-        if: always()
+      - name: KI-Dateninventur
+        id: model
+        continue-on-error: true
         run: python3 scripts/model_readiness.py
-      - name: Ergebnisübersicht erstellen
-        if: always()
-        env:
-          TEST_RESULT: ${{ steps.tests.outcome }}
+      - name: Öffentliche Website
+        id: site
+        continue-on-error: true
         shell: bash
         run: |
-          {
-            echo '# Beekeeper-Monitor – Gesamttest'
-            echo
-            echo "Repository: \`$GITHUB_REPOSITORY\`"
-            echo "Commit: \`$GITHUB_SHA\`"
-            echo "Testlauf: #$GITHUB_RUN_NUMBER"
-            echo
-            if [ "$TEST_RESULT" = success ]; then
-              echo '## Ergebnis: Browser-Integrationstests bestanden'
-            else
-              echo '## Ergebnis: Browser-Integrationstests fehlgeschlagen oder nicht ausgeführt'
-            fi
-            echo
-            echo 'Geprüft: die im Repository vorhandene Playwright-Testsuite.'
-            echo 'Nicht automatisch nachgewiesen: KI-Erkennungsgenauigkeit, echte SMS-Zustellung, produktive Push-Nachrichten und Hardwarefunktionen.'
-            echo
-            echo "Testlauf-Link: https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-            echo
-            echo 'Bei Fehlern: Jobprotokoll und hochgeladene Testartefakte prüfen.'
-          } >> "$GITHUB_STEP_SUMMARY"
-      - name: Testberichte und Screenshots sichern
+          set -euo pipefail
+          URL=https://simonthomas-ai.github.io/Beekeeper-Monitor/
+          curl -fLsS --retry 2 --max-time 40 "$URL" -o /tmp/index.html
+          grep -q 'Beekeeper Monitor' /tmp/index.html
+          for asset in app.js style.css sw.js manifest.webmanifest icon.svg; do
+            curl -fLsS --retry 2 --max-time 40 "${URL}${asset}" -o /dev/null
+          done
+      - name: Einheitlicher Ergebnisbericht
+        if: always()
+        env:
+          STATIC: ${{ steps.static.outcome }}
+          BROWSER: ${{ steps.browser.outcome }}
+          MODEL: ${{ steps.model.outcome }}
+          SITE: ${{ steps.site.outcome }}
+        run: |
+          echo '# Beekeeper-Monitor Gesamttest' >> "$GITHUB_STEP_SUMMARY"
+          echo '| Prüfung | Ergebnis |' >> "$GITHUB_STEP_SUMMARY"
+          echo '|---|---|' >> "$GITHUB_STEP_SUMMARY"
+          echo "| PWA und Quellcode | $STATIC |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Browsertests | $BROWSER |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| KI-Dateninventur | $MODEL |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Öffentliche Website | $SITE |" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Eine erfolgreiche Dateninventur belegt keine KI-Genauigkeit, SMS-Zustellung oder Hardwarefunktion.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Browser-Testartefakte
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -67,9 +71,15 @@ jobs:
             test-results/
             playwright-report/
           if-no-files-found: ignore
-          retention-days: 14
-      - name: Gesamtergebnis festlegen
+      - name: Gesamtergebnis
         if: always()
         env:
-          TEST_RESULT: ${{ steps.tests.outcome }}
-        run: test "$TEST_RESULT" = success
+          STATIC: ${{ steps.static.outcome }}
+          BROWSER: ${{ steps.browser.outcome }}
+          MODEL: ${{ steps.model.outcome }}
+          SITE: ${{ steps.site.outcome }}
+        run: |
+          test "$STATIC" = success
+          test "$BROWSER" = success
+          test "$MODEL" = success
+          test "$SITE" = success
