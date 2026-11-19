@@ -17,7 +17,15 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - name: Run full Chromium integration suite
+        run: npm run test:e2e
+      - name: Record browser test outcome
+        if: always()
+        shell: bash
+        run: |
+          echo '## Browser integration tests' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The test run above is authoritative; inspect logs and artifacts for failures.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Coverage: persistence, JSON export/import, duplicate prevention, offline use, deletion, HTML injection, GPS denial, invalid files.' >> "$GITHUB_STEP_SUMMARY"
       - name: Upload browser failure traces and screenshots
         if: failure()
         uses: actions/upload-artifact@v4
