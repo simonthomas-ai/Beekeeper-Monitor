@@ -115,6 +115,83 @@
       "license": "verify record",
       "status": "review-required",
       "notes": "Beehive audio; swarm labels and validity must be established"
+    },
+    {
+      "id": "isr-velutina-roboflow",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://universe.roboflow.com/institute-of-systems-and-robotics-isr/vespa-velutina-hihv9-upzpe/dataset/1",
+      "kind": "annotated-object-detection-dataset",
+      "license": "CC BY 4.0 (source listing; confirm downloadable artifact terms)",
+      "status": "candidate-license-listed",
+      "notes": "1,508 images listed; YOLO format available; download may require Roboflow account/API key; review splits and leakage"
+    },
+    {
+      "id": "velutina-roboflow-2024",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://universe.roboflow.com/vespa-velutina-pobjr/vespa-velutina-nubcn/dataset/1",
+      "kind": "annotated-object-detection-dataset",
+      "license": "CC BY 4.0 (source listing; confirm downloaded artifact terms)",
+      "status": "candidate-license-listed",
+      "notes": "1,566 images listed; assess duplicates and false negatives against ISR dataset"
+    },
+    {
+      "id": "varroa-in-hive-v2",
+      "modules": [
+        "varroa"
+      ],
+      "url": "https://zenodo.org/records/23276947",
+      "kind": "dataset-code-model-weights",
+      "license": "check individual files and record before reuse",
+      "status": "candidate-weights-available",
+      "notes": "2,823 annotated RGB images and YOLO weights; original labels may mark bee with mite rather than mite itself; inspect v2 mite-level reinspection layer"
+    },
+    {
+      "id": "varroa-ev2",
+      "modules": [
+        "varroa"
+      ],
+      "url": "https://zenodo.org/records/13771384",
+      "kind": "annotated-dataset",
+      "license": "check record rights",
+      "status": "candidate-review-required",
+      "notes": "1,987 healthy and 3,183 infested bee images; visible mites may not be present in every infested frame"
+    },
+    {
+      "id": "gratheon-varroa-model",
+      "modules": [
+        "varroa"
+      ],
+      "url": "https://github.com/Gratheon/models-varroa-on-bee",
+      "kind": "model-code",
+      "license": "verify code and weights separately",
+      "status": "candidate-review-required",
+      "notes": "Repository reports per-class varroa recall 0.651 on its own validation, not project-independent validation"
+    },
+    {
+      "id": "gratheon-queen-model",
+      "modules": [
+        "queen"
+      ],
+      "url": "https://github.com/Gratheon/models-queen-bee-detector",
+      "kind": "training-code",
+      "license": "verify",
+      "status": "weights-not-public",
+      "notes": "Published reported test metrics; weights intentionally excluded from Git"
+    },
+    {
+      "id": "hornet-waspinator",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://github.com/gitDew/waspinator",
+      "kind": "inference-software",
+      "license": "verify source and weights",
+      "status": "candidate-review-required",
+      "notes": "Raspberry Pi detection code; do not enable trapping hardware"
     }
   ]
 }
