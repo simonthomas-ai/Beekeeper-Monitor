@@ -64,15 +64,16 @@ def main():
     if args.validate_only:
         return
     from ultralytics import YOLO
-    # Independent model per class, with other-class images retained as negatives.
-    for index,name in enumerate(CLASSES):
-        from tempfile import TemporaryDirectory
-        # Ultralytics multi-class dataset training produces a single six-class model.
-        # Avoid misrepresenting this as six separately trained models.
-        break
-    model=YOLO('yolo11n.pt')
-    model.train(data=str(root/'training/data.yaml'),epochs=args.epochs,imgsz=args.imgsz,device=args.device,project=str(root/'runs'),name='six-class-detector',exist_ok=False)
-    model.val(data=str(root/'training/data.yaml'),split='test')
+    # A single multi-class detector; it is NOT six independent validated models.
+    from tempfile import TemporaryDirectory
+    with TemporaryDirectory() as temp:
+        cfg=yaml.safe_load((root/'training/data.yaml').read_text(encoding='utf-8'))
+        cfg['path']=str((root/cfg['path']).resolve())
+        resolved=Path(temp)/'data.yaml'
+        resolved.write_text(yaml.safe_dump(cfg),encoding='utf-8')
+        model=YOLO('yolo11n.pt')
+        model.train(data=str(resolved),epochs=args.epochs,imgsz=args.imgsz,device=args.device,project=str(root/'runs'),name='six-class-detector',exist_ok=False)
+        model.val(data=str(resolved),split='test')
     print('Training completed. Evaluate per-class precision/recall before deployment.')
 
 if __name__=='__main__':
