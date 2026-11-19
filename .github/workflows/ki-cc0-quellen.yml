@@ -1,6 +1,12 @@
 name: Echte CC0-Bildquellen fuer KI pruefen
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'training/discover_cc0_candidates.py'
+      - 'training/test_discover_cc0_candidates.py'
+      - '.github/workflows/ki-cc0-quellen.yml'
   schedule:
     - cron: '17 6 * * 1'
 permissions:
