@@ -9,6 +9,7 @@ on:
       - 'training/discover_inaturalist_candidates.py'
       - '.github/workflows/hornet-photo-discovery.yml'
       - 'training/audit_inaturalist_candidates.py'
+      - 'training/prepare_species_review.py'
 permissions:
   contents: read
 jobs:
@@ -24,6 +25,8 @@ jobs:
         run: python training/discover_inaturalist_candidates.py --target 1000 --max-pages 12
       - name: Audit candidate metadata quality
         run: python training/audit_inaturalist_candidates.py
+      - name: Prepare species-grouped expert annotation queue
+        run: python training/prepare_species_review.py
       - name: Summarize actual candidate counts
         if: always()
         shell: bash
@@ -53,5 +56,7 @@ jobs:
           path: |
             training/inaturalist-review-queue.csv
             training/inaturalist-metadata-audit.json
+            training/inaturalist-species-review.csv
+            training/inaturalist-species-review.json
           if-no-files-found: ignore
           retention-days: 14
