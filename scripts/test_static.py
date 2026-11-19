@@ -24,7 +24,8 @@ assert set(["hornet","varroa","brood","pollen","swarm","queen"]) <= set(sum((s["
 assert "noch nicht validiert" in html
 assert 'id="import"' in html
 assert "validObservation" in app
-assert "beekeeper-shell-v4" in sw
+assert "async function remove(id)" in app
+assert "beekeeper-shell-v5" in sw
 assert "SHELL.has(url.href)" in sw
 pages=(root/".github/workflows/pages.yml").read_text()
 assert "path: _site" in pages
