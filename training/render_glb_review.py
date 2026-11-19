@@ -12,7 +12,7 @@ import trimesh
 
 def render(glb: Path, output: Path):
     scene = trimesh.load(str(glb), force="scene", process=False)
-    meshes = scene.dump(concatenate=True)
+    meshes = scene.to_geometry()
     if not isinstance(meshes, trimesh.Trimesh) or len(meshes.faces) == 0:
         raise ValueError("No mesh faces available")
     if not np.isfinite(meshes.vertices).all():
