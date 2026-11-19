@@ -4,7 +4,7 @@ test('real observation persists after reload and can be exported',async({page})=
  await expect(page.getByRole('heading',{name:'Beekeeper Monitor'})).toBeVisible();
  await page.getByLabel('Eigene Beobachtung').fill('Echte Testeingabe durch Browserautomation');
  await page.getByRole('button',{name:'Auf diesem Gerät speichern'}).click();
- await expect(page.getByRole('status')).toContainText('lokal gespeichert');
+ await expect(page.locator('#status')).toContainText('lokal gespeichert');
  await expect(page.locator('#entries')).toContainText('Echte Testeingabe durch Browserautomation');
  await page.reload();
  await expect(page.locator('#entries')).toContainText('Echte Testeingabe durch Browserautomation');
@@ -32,16 +32,16 @@ test('backup restores genuine observations without duplicates',async({page})=>{
  const backup={format:'beekeeper-monitor-v2',observations:[{id:'backup-test-001',at:'2026-11-19T10:00:00.000Z',type:'Varroa',note:'Aus echter Sicherungsdatei wiederhergestellt'}]};
  const payload=Buffer.from(JSON.stringify(backup));
  await page.locator('#import').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:payload});
- await expect(page.getByRole('status')).toContainText('1 Beobachtungen wiederhergestellt');
+ await expect(page.locator('#status')).toContainText('1 Beobachtungen wiederhergestellt');
  await expect(page.locator('#entries')).toContainText('Aus echter Sicherungsdatei wiederhergestellt');
  await page.locator('#import').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:payload});
- await expect(page.getByRole('status')).toContainText('0 Beobachtungen wiederhergestellt');
+ await expect(page.locator('#status')).toContainText('0 Beobachtungen wiederhergestellt');
  await expect(page.locator('#entries li')).toHaveCount(1);
 });
 test('invalid backup is rejected',async({page})=>{
  await page.goto('/');
  await page.locator('#import').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{"format":"unknown","observations":[]}')});
- await expect(page.getByRole('status')).toContainText('Import fehlgeschlagen');
+ await expect(page.locator('#status')).toContainText('Import fehlgeschlagen');
 });
 
 test('deleting an observation requires confirmation and persists',async({page})=>{
@@ -66,7 +66,7 @@ test('offline observations can be saved after the shell is cached',async({page,c
  await page.reload();
  await page.getByLabel('Eigene Beobachtung').fill('Offline-Testeintrag');
  await page.getByRole('button',{name:'Auf diesem Gerät speichern'}).click();
- await expect(page.getByRole('status')).toContainText('lokal gespeichert');
+ await expect(page.locator('#status')).toContainText('lokal gespeichert');
  await page.reload();
  await expect(page.locator('#entries')).toContainText('Offline-Testeintrag');
  await context.setOffline(false);
@@ -84,7 +84,7 @@ test('denied geolocation does not save an incomplete observation',async({page,co
  await page.getByLabel('Eigene Beobachtung').fill('Nicht ohne Standort speichern');
  await page.locator('#location').check();
  await page.getByRole('button',{name:'Auf diesem Gerät speichern'}).click();
- await expect(page.getByRole('status')).toContainText('Nicht gespeichert: Standort');
+ await expect(page.locator('#status')).toContainText('Nicht gespeichert: Standort');
  await expect(page.locator('#entries')).not.toContainText('Nicht ohne Standort speichern');
 });
 test('rejects oversized or non-image uploads',async({page})=>{
@@ -92,6 +92,6 @@ test('rejects oversized or non-image uploads',async({page})=>{
  await page.getByLabel('Eigene Beobachtung').fill('Unzulässiger Dateianhang');
  await page.locator('#photo').setInputFiles({name:'unsafe.txt',mimeType:'text/plain',buffer:Buffer.from('unsafe')});
  await page.getByRole('button',{name:'Auf diesem Gerät speichern'}).click();
- await expect(page.getByRole('status')).toContainText('Nur Bilddateien');
+ await expect(page.locator('#status')).toContainText('Nur Bilddateien');
  await expect(page.locator('#entries')).not.toContainText('Unzulässiger Dateianhang');
 });
