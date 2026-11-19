@@ -10,10 +10,11 @@ import prepare_hornet_visual_review as review
 
 class ReviewQueueTests(unittest.TestCase):
     def test_large_url_only_https_square(self):
-        self.assertEqual(review.large_url("https://example.org/photos/1/square.jpg"),
-                         "https://example.org/photos/1/large.jpg")
-        self.assertEqual(review.large_url("http://example.org/photos/1/square.jpg"), "")
-        self.assertEqual(review.large_url("https://example.org/photos/1/original.jpg"), "")
+        self.assertEqual(review.large_url("https://static.inaturalist.org/photos/1/square.jpg"),
+                         "https://static.inaturalist.org/photos/1/large.jpg")
+        self.assertEqual(review.large_url("http://static.inaturalist.org/photos/1/square.jpg"), "")
+        self.assertEqual(review.large_url("https://example.org/photos/1/square.jpg"), "")
+        self.assertEqual(review.large_url("https://static.inaturalist.org/photos/1/original.jpg"), "")
 
     def test_only_verified_metadata_and_never_approve(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -26,7 +27,7 @@ class ReviewQueueTests(unittest.TestCase):
             base.update(observation_id="1", photo_id="2", api_photo_found="YES",
                         license_metadata_match="YES", api_photo_license="cc0",
                         api_taxon="Vespa velutina",
-                        api_photo_url="https://example.org/photos/2/square.jpg")
+                        api_photo_url="https://static.inaturalist.org/photos/2/square.jpg")
             invalid = dict(base, observation_id="3", error="API failed")
             with source.open("w", newline="", encoding="utf-8") as f:
                 writer = csv.DictWriter(f, fieldnames=keys)
@@ -41,7 +42,7 @@ class ReviewQueueTests(unittest.TestCase):
             self.assertEqual(rows[0]["visual_species_verified"], "NO")
             self.assertEqual(rows[0]["rights_verified"], "NO")
             self.assertEqual(rows[0]["large_review_url"],
-                             "https://example.org/photos/2/large.jpg")
+                             "https://static.inaturalist.org/photos/2/large.jpg")
 
 
 if __name__ == "__main__":
