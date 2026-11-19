@@ -192,6 +192,84 @@
       "license": "verify source and weights",
       "status": "candidate-review-required",
       "notes": "Raspberry Pi detection code; do not enable trapping hardware"
+    },
+    {
+      "id": "korea-hornet-six-species-2023",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://journal.bee.or.kr/_common/do.php?a=full&aidx=38225&b=12&bidx=3451",
+      "kind": "peer-reviewed-research",
+      "license": "dataset download and reuse permission not established",
+      "status": "paper-only-rights-unverified",
+      "notes": "Korean six-species YOLO study: 5705 train, 900 val, 900 test; useful for distinguishing V. velutina from V. crabro and bees; no downloadable dataset verified"
+    },
+    {
+      "id": "korea-hornet-six-species-2022",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://journal.bee.or.kr/_common/do.php?a=full&aidx=34406&b=&bidx=3086",
+      "kind": "peer-reviewed-research",
+      "license": "dataset reuse not established",
+      "status": "paper-only-rights-unverified",
+      "notes": "7505 species-labeled hornet/bee images; 941 V. velutina training, 150 val, 150 test; request access from authors"
+    },
+    {
+      "id": "korea-rda-solar-hornet-monitor",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://www.kci.go.kr/kciportal/ci/sereArticleSearch/ciSereArtiView.kci?sereArticleSearchBean.artiId=ART002770673",
+      "kind": "peer-reviewed-research",
+      "license": "dataset and model reuse not established",
+      "status": "paper-only-rights-unverified",
+      "notes": "Solar low-power YOLO system; 1928 images, paper reports 98.2% accuracy, not reproducible Beekeeper Monitor performance"
+    },
+    {
+      "id": "korea-hornet-nest-drones",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://journal.bee.or.kr/_common/do.php?a=full&aidx=34407&bidx=3086",
+      "kind": "peer-reviewed-research",
+      "license": "dataset reuse not established",
+      "status": "paper-only-rights-unverified",
+      "notes": "11838 drone-captured hornet-nest images; NEST detection task, not flying-hornet species detection"
+    },
+    {
+      "id": "korea-national-ecology-hornet-coordinates",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://www.data.go.kr/data/15099053/fileData.do",
+      "kind": "distribution-coordinate-dataset",
+      "license": "CC0 per public-data listing; confirm official page",
+      "status": "candidate-metadata-only",
+      "notes": "Geographic distribution CSV; useful for mapping, not image model training"
+    },
+    {
+      "id": "japan-kyushu-vespa-reference",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://www.agr.kyushu-u.ac.jp/lab/ine/ueno/wasp.html",
+      "kind": "taxonomic-reference-images",
+      "license": "site grants unapproved use to news media with attribution only; ML training permission NOT granted",
+      "status": "reference-only-no-training-rights",
+      "notes": "Tsumaaka suzumebachi = Vespa velutina; use as species reference; do not scrape images into training"
+    },
+    {
+      "id": "china-modelscope-insecta",
+      "modules": [
+        "hornet",
+        "queen"
+      ],
+      "url": "https://www.modelscope.cn/datasets/Genius-Society/insecta/summary",
+      "kind": "image-classification-dataset",
+      "license": "CC-BY-NC-ND listed; derivative training/redistribution rights require legal review",
+      "status": "reference-only-license-restricted",
+      "notes": "Chinese insect atlas, 1.11 GB; species coverage and annotations for desired classes not verified; do not auto-ingest"
     }
   ]
 }
