@@ -1,0 +1,29 @@
+name: Hornet dataset integrity
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'datasets/hornet/**'
+      - 'training/validate_hornet.py'
+      - '.github/workflows/hornet-data.yml'
+  pull_request:
+    paths:
+      - 'datasets/hornet/**'
+      - 'training/validate_hornet.py'
+      - '.github/workflows/hornet-data.yml'
+permissions:
+  contents: read
+jobs:
+  integrity:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect genuine hornet training data
+        shell: bash
+        run: |
+          if [ -d datasets/hornet/images/train ]; then
+            python3 training/validate_hornet.py --dataset datasets/hornet
+          else
+            echo 'NO DATA: Authentic hornet images have not been provided.'
+            echo 'No training or model accuracy is claimed.'
+          fi
