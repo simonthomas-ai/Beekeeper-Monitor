@@ -92,6 +92,8 @@ jobs:
           STATIC: ${{ steps.static.outcome }}
           BROWSER: ${{ steps.browser.outcome }}
           MODEL: ${{ steps.model.outcome }}
+          TAXONOMY: ${{ steps.taxonomy.outcome }}
+          TRAINING: ${{ steps.training.outcome }}
           SITE: ${{ steps.site.outcome }}
         run: |
           test "$STATIC" = success
