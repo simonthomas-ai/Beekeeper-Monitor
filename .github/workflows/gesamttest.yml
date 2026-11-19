@@ -38,7 +38,8 @@ jobs:
       - name: Sicherheits- und Lizenzprotokolltests des Bildimports
         id: importtests
         continue-on-error: true
-        run: python3 -m unittest discover -s training -p 'test_import_authorized_images.py' -v
+        run: |
+          python3 -m unittest discover -s training -p 'test_import_authorized_images.py' -v
           python3 -m unittest discover -s training -p 'test_prepare_hornet_visual_review.py' -v
       - name: KI-Dateninventur
         id: model
