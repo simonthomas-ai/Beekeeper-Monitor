@@ -1,0 +1,21 @@
+name: Audit research source catalog
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 7 * * 1'
+  push:
+    paths:
+      - 'sources/catalog.json'
+      - 'scripts/check_sources.py'
+      - '.github/workflows/sources.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate source schema
+        run: python scripts/check_sources.py
+      - name: Check source availability (informational)
+        run: python scripts/check_sources.py --online
