@@ -7,6 +7,7 @@ on:
       - 'training/inspect_external_glb.py'
       - 'training/test_inspect_external_glb.py'
       - 'training/render_glb_review.py'
+      - 'training/render_glb_textured_review.py'
 permissions:
   contents: read
 jobs:
@@ -48,6 +49,11 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check 'trimesh==4.9.0' 'matplotlib==3.10.7' 'numpy==2.3.4'
           python training/render_glb_review.py --glb /tmp/vespaguard-bee/bee.glb --output training/grab3d-bee-geometry-preview.png
+      - name: Render six textured anatomical review views (Blender)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender
+          blender -b -t 2 --python training/render_glb_textured_review.py -- /tmp/vespaguard-bee/bee.glb training/grab3d-bee-textured-review
       - name: Upload review reports and preview only, never model files
         if: always()
         uses: actions/upload-artifact@v4
@@ -57,5 +63,6 @@ jobs:
             training/grab3d-bee-provenance-review.json
             training/grab3d-bee-geometry-preview.png
             training/grab3d-bee-geometry-preview.json
+            training/grab3d-bee-textured-review/
           if-no-files-found: warn
           retention-days: 14
