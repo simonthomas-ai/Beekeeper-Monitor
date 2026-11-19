@@ -1,0 +1,31 @@
+name: CC0 insect 3D candidate discovery
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'training/discover_cc0_3d_models.py'
+      - 'training/test_discover_cc0_3d_models.py'
+      - '.github/workflows/cc0-insect-3d.yml'
+permissions:
+  contents: read
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test safe license and species filters
+        run: python -m unittest discover -s training -p 'test_discover_cc0_3d_models.py' -v
+      - name: Inventory Smithsonian CC0 insect models
+        run: python training/discover_cc0_3d_models.py
+      - name: Upload review-only inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cc0-insect-3d-review
+          path: training/cc0-3d-insect-candidates.csv
+          if-no-files-found: warn
+          retention-days: 14
