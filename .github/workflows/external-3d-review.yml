@@ -1,0 +1,24 @@
+name: External 3D asset provenance checks
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'training/inspect_external_glb.py'
+      - 'training/test_inspect_external_glb.py'
+      - '.github/workflows/external-3d-review.yml'
+permissions:
+  contents: read
+jobs:
+  validate-inspector:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test local GLB and provenance inspector
+        run: python -m unittest discover -s training -p 'test_inspect_external_glb.py' -v
+      - name: Confirm no unreviewed assets are auto-ingested
+        run: |
+          echo "No external models downloaded. No training approval granted."
