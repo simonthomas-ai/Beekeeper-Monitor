@@ -11,7 +11,7 @@ import urllib.request
 
 LICENSES = {
     "cc0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
-    "cc-by": ("CC-BY-4.0", "https://creativecommons.org/licenses/by/4.0/"),
+    "cc-by": ("CC-BY-VERSION-UNVERIFIED", ""),
 }
 FIELDS = ["source_id", "source_url", "image_url", "creator", "license", "license_url", "attribution", "observation_id", "photo_id", "species_candidate", "review_status"]
 SPECIES = ("Vespa velutina", "Vespa crabro", "Vespula vulgaris")
@@ -64,7 +64,7 @@ def main():
         writer.writeheader()
         writer.writerows(rows)
     print(f"Created {len(rows)} candidate photo records. All UNREVIEWED.")
-    print("CC BY version must be confirmed on each original photo page before import.")
+    print("CC BY versions are explicitly UNVERIFIED; inspect the original photo license before import.")
     print("No images downloaded, no training labels produced, no accuracy claimed.")
 
 if __name__ == "__main__":
