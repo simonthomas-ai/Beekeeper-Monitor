@@ -28,12 +28,18 @@ jobs:
         run: python3 training/audit_inaturalist_candidates.py --input training/inaturalist-review-queue.csv --output training/inaturalist-metadata-audit.json
       - name: Artenpruefung vorbereiten
         run: python3 training/prepare_species_review.py --input training/inaturalist-review-queue.csv --output training/inaturalist-species-review.csv
+      - name: Hornissen-Fotometadaten einzeln gegen iNaturalist pruefen
+        run: python3 training/verify_inaturalist_photo_metadata.py --input training/inaturalist-review-queue.csv --output training/velutina-photo-verification.csv --species 'Vespa velutina' --limit 50
       - name: Ergebnis
         if: always()
         run: |
           echo '## KI-Bildquellen – Recherche, keine Trainingsfreigabe' >> "$GITHUB_STEP_SUMMARY"
           if [ -f training/inaturalist-review-queue.csv ]; then
             echo "Ungepruefte CC0-Fotokandidaten: $(($(wc -l < training/inaturalist-review-queue.csv)-1))" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f training/velutina-photo-verification.csv ]; then
+            echo '### Einzelpruefung Asiatische Hornisse' >> "$GITHUB_STEP_SUMMARY"
+            python3 -c 'import csv; p="training/velutina-photo-verification.csv"; r=list(csv.DictReader(open(p))); ok=sum(x["api_photo_found"]=="YES" and x["license_metadata_match"]=="YES" and x["api_taxon"]=="Vespa velutina" and x["api_quality_grade"]=="research" for x in r); print(f"API-Metadaten bestaetigt: {ok}/{len(r)}; visuelle Artenpruefung weiterhin offen")' >> "$GITHUB_STEP_SUMMARY"
           fi
           echo 'Keine Bilder heruntergeladen. Keine Artenbestimmung fachlich verifiziert. Keine Annotationen erzeugt. 0 freigegebene Trainingsbilder; keine gemessene Modellgenauigkeit.' >> "$GITHUB_STEP_SUMMARY"
       - name: Metadaten und Prueflisten bereitstellen
@@ -46,4 +52,5 @@ jobs:
             training/inaturalist-metadata-audit.json
             training/inaturalist-species-review.csv
             training/inaturalist-species-review.json
+            training/velutina-photo-verification.csv
           if-no-files-found: ignore
