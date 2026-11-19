@@ -43,3 +43,18 @@ test('invalid backup is rejected',async({page})=>{
  await page.locator('#import').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{"format":"unknown","observations":[]}')});
  await expect(page.getByRole('status')).toContainText('Import fehlgeschlagen');
 });
+
+test('deleting an observation requires confirmation and persists',async({page})=>{
+ await page.goto('/');
+ await page.getByLabel('Eigene Beobachtung').fill('Zu löschender lokaler Eintrag');
+ await page.getByRole('button',{name:'Auf diesem Gerät speichern'}).click();
+ await expect(page.locator('#entries')).toContainText('Zu löschender lokaler Eintrag');
+ page.once('dialog',dialog=>dialog.dismiss());
+ await page.getByRole('button',{name:'Beobachtung löschen: Asiatische Hornisse'}).click();
+ await expect(page.locator('#entries')).toContainText('Zu löschender lokaler Eintrag');
+ page.once('dialog',dialog=>dialog.accept());
+ await page.getByRole('button',{name:'Beobachtung löschen: Asiatische Hornisse'}).click();
+ await expect(page.locator('#entries')).not.toContainText('Zu löschender lokaler Eintrag');
+ await page.reload();
+ await expect(page.locator('#entries')).toContainText('Noch keine Beobachtungen');
+});
