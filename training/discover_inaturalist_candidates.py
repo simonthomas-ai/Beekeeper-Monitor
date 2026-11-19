@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Find iNaturalist hornet photos with per-photo open license metadata.
+"""Find iNaturalist bee, bumblebee, wasp and hornet photos with per-photo open license metadata.
 
 Produces a REVIEW QUEUE, never training labels or automatically approved images.
 """
@@ -14,7 +14,7 @@ LICENSES = {
     "cc-by": ("CC-BY-VERSION-UNVERIFIED", ""),
 }
 FIELDS = ["source_id", "source_url", "image_url", "creator", "license", "license_url", "attribution", "observation_id", "photo_id", "species_candidate", "review_status"]
-SPECIES = ("Vespa velutina", "Vespa crabro", "Vespula vulgaris")
+SPECIES = ("Vespa velutina", "Vespa crabro", "Vespula vulgaris", "Vespula germanica", "Apis mellifera", "Bombus terrestris", "Bombus lapidarius")
 
 def main():
     ap = argparse.ArgumentParser()
