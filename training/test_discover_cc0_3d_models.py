@@ -2,6 +2,10 @@ import unittest
 from discover_cc0_3d_models import candidates
 
 class CC0ModelDiscoveryTests(unittest.TestCase):
+    def test_no_beet_or_beef_false_positives(self):
+        rows = [{"row": {"title": title, "license": "CC0-1.0", "media_usage_access": "CC0"}} for title in ("De la Fuente sugar beet knife", "Bully beef can opener")]
+        self.assertEqual(candidates(rows), [])
+
     def test_only_cc0_and_no_approvals(self):
         rows = [
             {"row": {"package_id": "1", "title": "Vespa crabro", "license": "CC0-1.0", "media_usage_access": "CC0", "mesh_url": "https://example.org/model.glb"}},
