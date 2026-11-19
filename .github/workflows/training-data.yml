@@ -1,0 +1,21 @@
+name: Verify real training data
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'training/**'
+      - 'datasets/**'
+      - '.github/workflows/training-data.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install PyYAML
+      - name: Validate dataset (fails until real labeled images exist)
+        run: python training/train.py --validate-only
