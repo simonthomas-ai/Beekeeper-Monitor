@@ -162,6 +162,9 @@ def make_handler(
 
         def _json(self, status, body):
             raw = json.dumps(body, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+            if len(raw) > MAX_EXPORT_BYTES:
+                status = 413
+                raw = b'{"error":"response_too_large"}'
             self.send_response(status)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
@@ -305,6 +308,7 @@ def make_handler(
                         return
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("X-Content-Type-Options", "nosniff")
                     self.send_header(
                         "Content-Disposition",
                         'attachment; filename="beekeeper-station-events.json"',
