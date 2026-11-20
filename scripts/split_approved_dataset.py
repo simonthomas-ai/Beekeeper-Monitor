@@ -9,6 +9,8 @@ import random
 import sys
 
 SPLITS = ("train", "val", "test")
+CLASS_MAP = {"velutina": "vespa_velutina", "crabro": "vespa_crabro", "apis": "apis_mellifera", "bombus": "bombus_spp", "vespula": "other_vespidae"}
+CANONICAL = {"vespa_velutina", "vespa_crabro", "other_vespidae", "apis_mellifera", "bombus_spp", "syrphidae", "other_insect"}
 
 def split_manifest(data, seed=42):
     items = data.get("items", [])
@@ -16,6 +18,7 @@ def split_manifest(data, seed=42):
         raise ValueError("No approved images supplied")
     groups = defaultdict(list)
     hashes = set()
+    group_classes = defaultdict(set)
     for item in items:
         if item.get("human_approved_for_training") is not True or item.get("species_verified") is not True:
             raise ValueError("Unapproved image in input")
@@ -29,7 +32,13 @@ def split_manifest(data, seed=42):
         label = str(item.get("suggested_class", "")).strip()
         if not group or not label:
             raise ValueError("Every image needs an observation_group and class")
-        groups[(label, group)].append(item)
+        label = CLASS_MAP.get(label, label)
+        if label not in CANONICAL:
+            raise ValueError(f"Unknown model class: {label}")
+        group_classes[group].add(label)
+        groups[(label, group)].append({**item, "suggested_class": label})
+    if any(len(classes) > 1 for classes in group_classes.values()):
+        raise ValueError("Observation group spans multiple classes; reconcile groups before splitting")
     by_class = defaultdict(list)
     for (label, group), batch in groups.items():
         by_class[label].append((group, batch))
