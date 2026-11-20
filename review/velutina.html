@@ -9,7 +9,7 @@
 <p id="state"></p>
 <label for="decision">Visuelle Prüfung</label>
 <select id="decision"><option value="PENDING">Noch ungeprüft</option><option value="LIKELY">Art wahrscheinlich – Expertenprüfung nötig</option><option value="REJECT">Bild ungeeignet / falsche Art</option></select>
-<p><small>Zum Markieren: einen Rahmen mit dem Finger über das Tier ziehen. Die Box wird relativ zur Bildfläche gespeichert; bei Letterboxing muss sie vor Training korrigiert werden.</small></p>
+<p><small>Zum Markieren: einen Rahmen mit dem Finger über das Tier ziehen. Die Box wird relativ zur Bildfläche gespeichert; bei eingefügten Bildrändern muss sie vor dem Training korrigiert werden.</small></p>
 <div class="actions"><button id="clear">Markierungen löschen</button><button id="prev">Zurück</button><button id="next">Weiter</button><button id="export">Prüfliste als JSON speichern</button></div>
 <p><label for="restore">Gesicherte Prüfliste wiederherstellen (JSON)</label> <input id="restore" type="file" accept=".json,application/json"></p><p id="restore-status" role="status"></p>
 <script>
