@@ -28,18 +28,19 @@ These tools do not supply the dataset. The source image's own license, the uploa
 
 ## Scope and class policy
 
-The current dataset schema expects six object-detection classes:
+The camera-training baseline is a **seven-class insect detector** aimed at the Asian hornet field workflow:
 
-0. `vespa_velutina`
-1. `varroa_destructor`
-2. `drone_brood`
-3. `pollen_bearing_bee`
-4. `bee_swarm`
-5. `queen_bee`
+0. `vespa_velutina` — Asian hornet
+1. `vespa_crabro` — European hornet
+2. `other_vespidae` — other wasps in the Vespidae family
+3. `apis_mellifera` — honey bee
+4. `bombus_spp` — bumblebees
+5. `syrphidae` — hoverflies
+6. `other_insect` — other insects and hard negatives
 
-This is a provisional engineering taxonomy, not a biological standard. In particular, Varroa mite inspection, brood-cell inspection and flying insect detection have very different image scales and acquisition setups. Do not mix them into one camera detector merely because they fit a single class index. Keep them as separately evaluated tasks and models when their camera modalities differ. The six-class trainer exists as a gated baseline only; a domain review should decide whether this should become several task-specific models before collecting production labels.
+This is a provisional engineering taxonomy. Species identification must be reviewed by a qualified human expert; the model cannot infer a nest location or authorise destruction. `other_vespidae` and `other_insect` are important hard-negative groups, not catch-all classes for unidentified positives. When species cannot be reliably determined, keep the image in an unlabelled review queue rather than forcing a false positive label.
 
-For the Vespa task, include difficult negative examples and confusion species (especially Vespa crabro, Vespula, Dolichovespula, bees, hoverflies and unknown insects) in a broader taxonomy plan. The existing six-class YAML does not yet represent those negatives; do not map them falsely to another positive class. Until the taxonomy is expanded and validated, preserve unknown/other records outside the six-class training set.
+The previous mixed hive-inspection classes (Varroa mite counts, brood, pollen loads, swarms and queen identification) belong to separate imaging tasks and must not be mixed into this insect-camera detector. They can be supported later by their own datasets, task-specific models and acceptance protocols.
 
 ## Intake sequence
 
@@ -104,7 +105,7 @@ Get-FileHash .\models\yolo11n.pt -Algorithm SHA256
 python training/train.py --pretrained-model .\models\yolo11n.pt --pretrained-model-sha256 <64-character-lowercase-sha256> --pretrained-model-source-url https://github.com/ultralytics/assets/releases --accept-agpl --device cpu
 ~~~
 
-Automatic checkpoint downloads are intentionally disabled. The script checks the local checkpoint hash and exact Ultralytics package version, trains a single six-class baseline, evaluates the held-out test split, exports an ONNX model with an explicit post-NMS matrix6 output, and writes a model manifest plus training evidence. The confidence threshold in that initial manifest is a configurable starting value only; it is not calibrated.
+Automatic checkpoint downloads are intentionally disabled. The script checks the local checkpoint hash and exact Ultralytics package version, trains a single seven-class baseline, evaluates the held-out test split, exports an ONNX model with an explicit post-NMS matrix6 output, and writes a model manifest plus training evidence. The confidence threshold in that initial manifest is a configurable starting value only; it is not calibrated.
 
 Actual Ultralytics training is additionally gated behind explicit `--accept-agpl` because the configured Ultralytics path has AGPL-3.0 obligations. This flag is an operator acknowledgement, not legal advice. The generated ONNX export uses the post-NMS six-column format consumed by BeeKeeper3000's camera inference adapter. The exported model and manifest remain marked **experimental**; the configured confidence threshold is not a calibrated operating threshold.
 
