@@ -2,6 +2,13 @@ name: GBIF open media candidate discovery
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'training/discover_gbif_media_candidates.py'
+      - 'training/test_discover_gbif_media_candidates.py'
+      - 'training/OPEN-DATA-SOURCES.md'
+      - 'sources/catalog.json'
+      - '.github/workflows/gbif-media-discovery.yml'
   schedule:
     - cron: '37 4 * * 2'
 
@@ -24,6 +31,7 @@ jobs:
       - name: Test license filters and metadata candidate contract
         run: python -m unittest training.test_discover_gbif_media_candidates -v
       - name: Query the official GBIF API for licensed image metadata only
+        if: github.event_name != 'pull_request'
         run: python training/discover_gbif_media_candidates.py --target 500 --max-pages 2 --limit 100 --pause 0.7 --allow-unavailable
       - name: Summarize candidate status
         if: always()
