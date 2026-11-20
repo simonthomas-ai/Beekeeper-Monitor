@@ -1,0 +1,25 @@
+name: Varroa pinned model download and integrity
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-integrity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Test downloader with synthetic bytes (no network)
+        run: python3 -m unittest discover -s tests -p test_download_verified_varroa.py -v
+      - name: Download pinned upstream weights as inert bytes and verify exact Git blob
+        run: |
+          python3 -m scripts.download_verified_varroa \
+            --output "${RUNNER_TEMP}/varroa-source.pt" \
+            --record "${RUNNER_TEMP}/varroa-provenance.json"
+      - name: Publish provenance only, never PyTorch weights
+        uses: actions/upload-artifact@v4
+        with:
+          name: varroa-source-provenance
+          path: ${{ runner.temp }}/varroa-provenance.json
+          retention-days: 7
+          if-no-files-found: error
