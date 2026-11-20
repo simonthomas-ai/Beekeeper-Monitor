@@ -135,7 +135,7 @@ def _write_status(path, status):
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_name(target.name + ".tmp")
     temporary.write_text(
-        json.dumps(status, ensure_ascii=False, indent=2, sort_keys=True) + "\\n",
+        json.dumps(status, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     temporary.replace(target)
