@@ -6,6 +6,7 @@ on:
       - hardware/kicad-sensoradapter-v01-20261120
       - hardware/kicad-drc-rebuild-20261120
       - hardware/kicad-drc-finalize-20261120
+      - hardware/kicad-verify-local-lib-20261120
     paths:
       - 'hardware/sensoradapter-v01/**'
       - '.github/workflows/kicad-drc.yml'
