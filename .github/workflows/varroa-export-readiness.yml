@@ -1,0 +1,22 @@
+name: Varroa export readiness safety gate
+on:
+  push:
+    paths:
+      - 'scripts/varroa_export_readiness.py'
+      - 'tests/test_varroa_export_readiness.py'
+      - '.github/workflows/varroa-export-readiness.yml'
+  pull_request:
+    paths:
+      - 'scripts/varroa_export_readiness.py'
+      - 'tests/test_varroa_export_readiness.py'
+      - '.github/workflows/varroa-export-readiness.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - run: python3 -m unittest discover -s tests -p test_varroa_export_readiness.py -v
