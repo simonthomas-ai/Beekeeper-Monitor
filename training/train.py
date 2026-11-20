@@ -31,6 +31,16 @@ def validate(root):
         images=sorted(p for p in image_dir.rglob('*') if p.suffix.lower() in IMAGE_SUFFIXES)
         if not images:
             raise ValueError(f'No real images in {image_dir}')
+        expected_labels = {
+            image.relative_to(image_dir).with_suffix('.txt').as_posix()
+            for image in images
+        }
+        actual_labels = {
+            label.relative_to(label_dir).as_posix()
+            for label in label_dir.rglob('*.txt')
+        }
+        if expected_labels != actual_labels:
+            raise ValueError(f'Label files do not match images in {split}: missing={len(expected_labels-actual_labels)} orphan={len(actual_labels-expected_labels)}')
         for img in images:
             relative=img.relative_to(image_dir).with_suffix('.txt')
             label=label_dir/relative
@@ -58,7 +68,8 @@ def validate(root):
                 counts[CLASSES[cls]]+=1
         report[split]={'images':len(images),'objects':counts}
     # Per-class coverage must be present in each split before claiming all models trained.
-    for split,info in report.items():
+    for split in SPLITS:
+        info = report[split]
         for name,count in info['objects'].items():
             if count<1:
                 raise ValueError(f'No real annotated examples of {name} in {split}')
