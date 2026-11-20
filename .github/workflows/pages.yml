@@ -8,6 +8,7 @@ on:
     types: [completed]
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 concurrency:
@@ -54,5 +55,21 @@ jobs:
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
           path: _site
+      - name: Wait for uploaded Pages artifact to become visible
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 12); do
+            if gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" --paginate --jq '.artifacts[] | select(.name == "github-pages" and .expired == false) | .id' | grep -Eq '^[0-9]+@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+; then
+              echo "Pages artifact is available through the Actions API."
+              exit 0
+            fi
+            echo "Pages artifact not yet visible (attempt ${attempt}/12); retrying in 5 seconds."
+            sleep 5
+          done
+          echo "::error::Uploaded github-pages artifact did not become visible within 60 seconds."
+          exit 1
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
