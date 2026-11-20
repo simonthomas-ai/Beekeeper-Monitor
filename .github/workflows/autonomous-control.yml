@@ -6,6 +6,7 @@ on:
     - cron: '17 4 * * 1'
 permissions:
   contents: read
+  issues: write
 concurrency:
   group: autonomous-control
   cancel-in-progress: false
@@ -63,6 +64,46 @@ jobs:
             playwright-report/
           if-no-files-found: ignore
           retention-days: 14
+      - name: Record failed checks as a GitHub issue
+        if: ${{ always() && (steps.static.outcome != 'success' || steps.browser.outcome != 'success' || steps.readiness.outcome != 'success' || steps.discovery.outcome != 'success') }}
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        env:
+          STATIC_RESULT: ${{ steps.static.outcome }}
+          BROWSER_RESULT: ${{ steps.browser.outcome }}
+          READINESS_RESULT: ${{ steps.readiness.outcome }}
+          DISCOVERY_RESULT: ${{ steps.discovery.outcome }}
+        with:
+          script: |
+            const title = '[Autarke Kontrolle] Fehlgeschlagene Projektprüfung';
+            const results = {
+              'Static app': process.env.STATIC_RESULT,
+              'Browser tests': process.env.BROWSER_RESULT,
+              'Training readiness script': process.env.READINESS_RESULT,
+              'Photo discovery': process.env.DISCOVERY_RESULT
+            };
+            const failed = Object.entries(results).filter(([, result]) => result !== 'success');
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              'Automatisch durch die wöchentliche Projektsteuerung erfasst.',
+              '',
+              ...Object.entries(results).map(([name, status]) => `- ${name}: **${status}**`),
+              '',
+              `Protokolle und Artefakte: ${runUrl}`,
+              '',
+              'Bitte Ursache prüfen. Keine automatische Codeänderung oder Lizenzfreigabe.'
+            ].join('\\n');
+            const { data: issues } = await github.rest.issues.listForRepo({
+              ...context.repo, state: 'open', per_page: 100
+            });
+            const existing = issues.find(issue => !issue.pull_request && issue.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({
+                ...context.repo, issue_number: existing.number,
+                body: `Erneuter Fehler: ${runUrl}\\n\\n${failed.map(([name, status]) => `- ${name}: ${status}`).join('\\n')}`
+              });
+            } else {
+              await github.rest.issues.create({...context.repo, title, body});
+            }
       - name: Fail on incomplete checks
         if: always()
         env:
