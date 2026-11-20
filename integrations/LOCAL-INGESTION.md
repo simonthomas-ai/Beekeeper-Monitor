@@ -46,6 +46,41 @@ All endpoints require `Authorization: Bearer <token>`.
 
 Events are validated against `integrations/event_contracts.py`. The database has a maximum-row bound and expires records older than the configured retention period on writes. Expired records are also purged once at startup and then by a maintenance thread (default every 3600 seconds). Configure the interval with `VESPAGUARD_RETENTION_INTERVAL_SECONDS` (300–86400 seconds). Configure backup and deletion policies appropriate to the deployment.
 
+## Backup, verification and restore
+
+The project provides an explicit SQLite online-backup tool. It creates a transactionally consistent snapshot while the service is running, runs SQLite integrity/schema checks, and refuses to overwrite existing files. It does not encrypt backup contents or schedule automatic backups.
+
+Run from the repository root:
+
+PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force "$env:LOCALAPPDATA\BeeKeeper-Monitor\backups" | Out-Null
+python -m integrations.store_backup backup --source "$env:LOCALAPPDATA\BeeKeeper-Monitor\events.sqlite3" --destination "$env:LOCALAPPDATA\BeeKeeper-Monitor\backups\events-2026-11-20.sqlite3"
+python -m integrations.store_backup verify --source "$env:LOCALAPPDATA\BeeKeeper-Monitor\backups\events-2026-11-20.sqlite3"
+# Restore only to a NEW, non-existing destination path:
+python -m integrations.store_backup restore --backup "$env:LOCALAPPDATA\BeeKeeper-Monitor\backups\events-2026-11-20.sqlite3" --destination "$env:LOCALAPPDATA\BeeKeeper-Monitor\restore-test\events.sqlite3"
+```
+
+Linux/macOS:
+
+```sh
+install -d -m 700 "$HOME/.local/share/beekeeper-monitor/backups"
+python -m integrations.store_backup backup \
+  --source "$HOME/.local/share/beekeeper-monitor/events.sqlite3" \
+  --destination "$HOME/.local/share/beekeeper-monitor/backups/events-2026-11-20.sqlite3"
+python -m integrations.store_backup verify \
+  --source "$HOME/.local/share/beekeeper-monitor/backups/events-2026-11-20.sqlite3"
+# Restore only to a NEW, non-existing destination path:
+python -m integrations.store_backup restore \
+  --backup "$HOME/.local/share/beekeeper-monitor/backups/events-2026-11-20.sqlite3" \
+  --destination "$HOME/.local/share/beekeeper-monitor/restore-test/events.sqlite3"
+```
+
+Never test restore over the live database. Stop the service before any manually planned cutover, verify the restored file, compare event counts, and preserve the previous database until acceptance is complete. Backups contain potentially sensitive station metadata. Store them on BitLocker/FileVault/LUKS or another approved encrypted volume. On Windows apply NTFS ACLs to the backup directory and files; the utility does not set Windows ACLs. On POSIX it requires a service-owned private directory (0700) and produces private files (0600).
+
+The utility does not create a backup schedule, rotate old backups, encrypt archives, copy them off-device or prove a disaster-recovery RPO/RTO. Those remain deployment-level operations.
+
 ## Storage and privacy limits
 
 - SQLite data is stored at `VESPAGUARD_INGEST_DB`; default path is `integrations/data/events.sqlite3`.
@@ -53,7 +88,7 @@ Events are validated against `integrations/event_contracts.py`. The database has
 - On Windows, enforce NTFS ACLs for the service account and administrators before first start; this service does not modify Windows ACLs.
 - This implementation does **not** provide database encryption at rest. Use BitLocker/FileVault/LUKS or an approved encrypted storage volume.
 - The service has no public listener, user accounts, remote roles or central identity provider.
-- Retention runs at startup and periodically in this service. Backups, replicas, logs, browser IndexedDB and exports require separate retention/deletion handling; automatic encrypted backup/restore is not implemented.
+- Retention runs at startup and periodically in this service. A manual SQLite backup/verify/restore utility is available as `python -m integrations.store_backup`; backups are not encrypted, scheduled or rotated. Replicas, logs, browser IndexedDB and exports require separate retention/deletion handling.
 - Event labels and device identifiers can still be personal or commercially sensitive information. Minimize them.
 - A successful 202 means the local SQLite transaction committed; it does not establish remote replication or a legal retention basis.
 
