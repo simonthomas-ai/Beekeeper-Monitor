@@ -54,11 +54,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p build/kicad
+          mkdir -p "$GITHUB_WORKSPACE/build/kicad"
+          cd hardware/sensoradapter-v01
+          test -f fp-lib-table
           kicad-cli pcb drc \
-            --output build/kicad/drc-report.txt \
+            --output "$GITHUB_WORKSPACE/build/kicad/drc-report.txt" \
             --exit-code-violations \
-            hardware/sensoradapter-v01/sensoradapter-v01.kicad_pcb
+            sensoradapter-v01.kicad_pcb
       - name: DRC-Bericht archivieren
         if: always()
         uses: actions/upload-artifact@v4
