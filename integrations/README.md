@@ -68,12 +68,12 @@ Invoke-RestMethod -Method Delete -Uri "http://127.0.0.1:8765/api/v1/events/<64-s
 
 | Typ | Erlaubte Felder |
 | --- | --- |
-| `camera_detection` | `label`, `confidence` |
+| `camera_detection` | `label`, `confidence`; optional: `origin_event_id`, `verification_status="unverified"`, `prey_detected` |
 | `acoustic_event` | `label`, `confidence` |
 | `hive_telemetry` | `temperature_c`, `humidity_pct` |
 | `varroa_count` | `mites`, `bees_examined` |
 
-`device_id` und `source` sind kurze technische Kennungen, keine Namen, E-Mail-Adressen oder sonstigen Personenkennungen. Stationen, die Peilungen oder Standorte übertragen müssen, benötigen einen separaten, ausdrücklich modellierten und zugriffsbeschränkten Vertrag. Dieses Schema nimmt keine Koordinaten an.
+`device_id` und `source` sind kurze technische Kennungen, keine Namen, E-Mail-Adressen oder sonstigen Personenkennungen. Die optionale Quellereignis-ID ist eine druckbare ASCII-Kennung mit maximal 128 Zeichen; `verification_status` darf ausschließlich `unverified` sein, damit ein Adapter keine Expertenbestätigung vortäuscht. Stationen, die Peilungen oder Standorte übertragen müssen, benötigen einen separaten, ausdrücklich modellierten und zugriffsbeschränkten Vertrag. Dieses Schema nimmt keine Koordinaten an.
 
 ## Datenschutz- und Betriebsgrenzen
 
