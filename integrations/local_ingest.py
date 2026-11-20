@@ -10,12 +10,13 @@ import re
 import threading
 import time
 from collections import defaultdict, deque
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import SimpleHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 from integrations.event_contracts import HiveEvent
 from integrations.event_store import SQLiteEventStore
+from pathlib import Path
 
 MAX_BODY = 32768
 READ_TIMEOUT_SECONDS = 5
@@ -65,7 +66,7 @@ class BoundedThreadingHTTPServer(ThreadingMixIn, HTTPServer):
         return request, address
 
 
-def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_LIMIT_WINDOW_SECONDS):
+def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_LIMIT_WINDOW_SECONDS, web_root=None):
     if not token or len(token) < 24:
         raise ValueError("Set a random ingestion token of at least 24 characters")
     if not callable(sink) or rate_limit < 1 or rate_window < 1:
@@ -73,11 +74,61 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
 
     requests = defaultdict(deque)
     requests_lock = threading.Lock()
+    public_root = Path(web_root or Path(__file__).resolve().parents[1]).resolve()
+    public_files = {"index.html", "app.js", "integrations-ui.js", "live-media.js",
+                    "style.css", "manifest.webmanifest", "icon.svg", "sw.js"}
+    public_dirs = {"review", "sources"}
+    public_extensions = {".html", ".js", ".css", ".json", ".csv", ".svg",
+                         ".png", ".jpg", ".jpeg", ".webp", ".avif", ".ico"}
 
-    class Handler(BaseHTTPRequestHandler):
+    class Handler(SimpleHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
         server_version = "BeeKeeperIngest"
         sys_version = ""
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=str(public_root), **kwargs)
+
+        def translate_path(self, path):
+            raw = unquote(urlsplit(path).path)
+            if "\\\\" in raw or "\x00" in raw:
+                return str(public_root / "__not_found__")
+            parts = raw.split("/")
+            if any(part in (".", "..") or part.startswith(".") for part in parts if part):
+                return str(public_root / "__not_found__")
+            parts = [part for part in parts if part]
+            if not parts:
+                return str(public_root / "index.html")
+            if len(parts) == 1 and parts[0] in public_files:
+                return str(public_root / parts[0])
+            if parts[0] not in public_dirs:
+                return str(public_root / "__not_found__")
+            candidate = public_root.joinpath(*parts)
+            try:
+                resolved = candidate.resolve()
+                resolved.relative_to(public_root)
+            except (OSError, ValueError):
+                return str(public_root / "__not_found__")
+            if resolved.suffix.lower() not in public_extensions or not resolved.is_file():
+                return str(public_root / "__not_found__")
+            return str(resolved)
+
+        def list_directory(self, path):
+            self.send_error(404)
+            return None
+
+        def end_headers(self):
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Referrer-Policy", "no-referrer")
+            self.send_header("Content-Security-Policy",
+                             "default-src 'self'; script-src 'self'; object-src 'none'; "
+                             "base-uri 'self'; frame-ancestors 'none'; "
+                             "img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; "
+                             "connect-src 'self'; media-src 'self' blob:; "
+                             "form-action 'self'")
+            self.send_header("Permissions-Policy",
+                             "camera=(self), microphone=(self), geolocation=(self)")
+            super().end_headers()
 
         def log_message(self, fmt, *args):
             # Avoid writing client-controlled strings, payloads or headers to logs.
@@ -173,8 +224,7 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
         def do_GET(self):
             parsed = urlsplit(self.path)
             if parsed.path != "/api/v1/events":
-                self._json(404, {"error": "not_found"})
-                return
+                return super().do_GET()
             if not self._authorized():
                 self._json(401, {"error": "unauthorized"})
                 return
