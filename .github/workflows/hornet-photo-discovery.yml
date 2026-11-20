@@ -15,6 +15,7 @@ on:
       - 'training/prepare_hornet_visual_review.py'
       - 'training/render_hornet_review_gallery.py'
       - 'training/test_render_hornet_review_gallery.py'
+      - 'training/test_hornet_license_audit.py'
 permissions:
   contents: read
 jobs:
@@ -28,6 +29,8 @@ jobs:
           python-version: '3.12'
       - name: Test safe visual gallery rendering
         run: python -m unittest discover -s training -p 'test_render_hornet_review_gallery.py' -v
+      - name: Test fail-closed hornet license audit
+        run: python -m unittest discover -s training -p 'test_hornet_license_audit.py' -v
       - name: Search up to 1000 licensed insect photo candidates
         run: python training/discover_inaturalist_candidates.py --target 1000 --max-pages 12
       - name: Audit candidate metadata quality
