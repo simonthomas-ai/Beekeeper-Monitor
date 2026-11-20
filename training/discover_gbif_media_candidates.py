@@ -28,10 +28,14 @@ FIELDS = [
 ]
 LICENSES = {
     "cc0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
+    "http://creativecommons.org/publicdomain/zero/1.0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
+    "http://creativecommons.org/publicdomain/zero/1.0/": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
     "cc0_1_0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
     "https://creativecommons.org/publicdomain/zero/1.0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
     "https://creativecommons.org/publicdomain/zero/1.0/": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
     "cc by 4.0": ("CC-BY-4.0", "https://creativecommons.org/licenses/by/4.0/"),
+    "http://creativecommons.org/licenses/by/4.0": ("CC-BY-4.0", "https://creativecommons.org/licenses/by/4.0/"),
+    "http://creativecommons.org/licenses/by/4.0/": ("CC-BY-4.0", "https://creativecommons.org/licenses/by/4.0/"),
     "cc_by_4_0": ("CC-BY-4.0", "https://creativecommons.org/licenses/by/4.0/"),
     "https://creativecommons.org/licenses/by/4.0": ("CC-BY-4.0", "https://creativecommons.org/licenses/by/4.0/"),
     "https://creativecommons.org/licenses/by/4.0/": ("CC-BY-4.0", "https://creativecommons.org/licenses/by/4.0/"),
