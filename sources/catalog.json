@@ -275,8 +275,7 @@
       "id": "gbif-occurrence-media-api",
       "modules": [
         "hornet",
-        "pollinators",
-        "taxonomy"
+        "pollen"
       ],
       "url": "https://techdocs.gbif.org/en/openapi/v1/occurrence",
       "kind": "image-media-metadata-api",
@@ -287,8 +286,8 @@
     {
       "id": "smithsonian-open-access",
       "modules": [
-        "taxonomy",
-        "insect-reference"
+        "hornet",
+        "pollen"
       ],
       "url": "https://www.si.edu/openaccess/devtools",
       "kind": "open-access-collection-api",
@@ -300,8 +299,7 @@
       "id": "wikimedia-commons-insects",
       "modules": [
         "hornet",
-        "pollinators",
-        "taxonomy"
+        "pollen"
       ],
       "url": "https://commons.wikimedia.org/wiki/Commons:Licensing",
       "kind": "free-media-library",
@@ -313,8 +311,7 @@
       "id": "openverse-discovery",
       "modules": [
         "hornet",
-        "pollinators",
-        "taxonomy"
+        "pollen"
       ],
       "url": "https://docs.openverse.org/api/",
       "kind": "licensed-media-discovery-index",
@@ -326,8 +323,7 @@
       "id": "inaturalist-media-api",
       "modules": [
         "hornet",
-        "pollinators",
-        "taxonomy"
+        "pollen"
       ],
       "url": "https://api.inaturalist.org/v1/observations",
       "kind": "citizen-science-media-metadata-api",
