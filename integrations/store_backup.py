@@ -100,7 +100,8 @@ def _snapshot_to_new_file(source_path: str | os.PathLike,
             source_connection.close()
 
         verify_database(temporary)
-        with temporary.open("rb") as handle:
+        with temporary.open("rb+") as handle:
+            handle.flush()
             os.fsync(handle.fileno())
 
         # Reserve the final name with O_EXCL so another process cannot cause an
