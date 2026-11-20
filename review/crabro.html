@@ -18,7 +18,7 @@ const key="vespaguard-review-v1-"+"Vespa crabro";
 let saved={};try{saved=JSON.parse(localStorage.getItem(key)||"{}")}catch(e){saved={}}
 const $=id=>document.getElementById(id);
 const unified="Vespa crabro"==="ALL";
-let index=0,start=null;
+let index=0,start=null,activePointerId=null;
 let visible=items.map((_,i)=>i);
 if(unified){
   $("unified-controls").hidden=false;
@@ -56,7 +56,7 @@ $("decision").onchange=()=>{const v=current();v.decision=$("decision").value;per
 $("prev").onclick=()=>{index=(index-1+visible.length)%visible.length;render()};
 $("next").onclick=()=>{index=(index+1)%visible.length;render()};
 $("clear").onclick=()=>{
-  start=null;
+  start=null;activePointerId=null;
   const item=selected();
   const v=current();
   const cleared={decision:v.decision,boxes:[]};
@@ -73,20 +73,26 @@ function pos(e){
 }
 $("viewer").onpointerdown=e=>{
   if(e.pointerType==="mouse"&&e.button!==0)return;
+  if(activePointerId!==null)return;
+  activePointerId=e.pointerId;
   start=pos(e);
+  $("viewer").setPointerCapture(e.pointerId);
 };
-window.addEventListener("pointerup",e=>{
-  if(!start)return;
+$("viewer").onpointerup=e=>{
+  if(!start||e.pointerId!==activePointerId)return;
   const end=pos(e),x=Math.min(start.x,end.x),y=Math.min(start.y,end.y);
   const w=Math.abs(end.x-start.x),h=Math.abs(end.y-start.y);
-  start=null;
+  start=null;activePointerId=null;
+  if($("viewer").hasPointerCapture(e.pointerId))$("viewer").releasePointerCapture(e.pointerId);
   if(w<.015||h<.015)return;
   const v=current();
   v.boxes.push({x:x+w/2,y:y+h/2,width:w,height:h});
   persist(v);
   render();
-});
-$("viewer").onpointercancel=()=>{start=null};
+};
+$("viewer").onpointercancel=e=>{
+  if(e.pointerId===activePointerId){start=null;activePointerId=null;}
+};
 $("export").onclick=()=>{const records=items.map(item=>({...item,review:saved[item.photo_id]||{decision:"PENDING",boxes:[]},training_eligible:false}));const blob=new Blob([JSON.stringify({format:"vespaguard-unverified-mobile-review-v1",species:"Vespa crabro",records},null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="vespaguard-review-"+"vespa-crabro"+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 // Restore is deliberately limited to the currently displayed, known photo IDs.
 // Never accept training approval or arbitrary metadata from imported files.
