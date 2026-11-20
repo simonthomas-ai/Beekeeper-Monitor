@@ -4,6 +4,7 @@ on:
     branches:
       - hardware/kicad-cli-drc-20261120
       - hardware/kicad-sensoradapter-v01-20261120
+      - hardware/kicad-drc-rebuild-20261120
     paths:
       - 'hardware/sensoradapter-v01/**'
       - '.github/workflows/kicad-drc.yml'
@@ -48,6 +49,7 @@ jobs:
             exit 1
           fi
           kicad-cli pcb drc --help
+          echo 'KiCad DRC-Unterbefehl verfuegbar.'
       - name: PCB-Designregelpruefung
         shell: bash
         run: |
