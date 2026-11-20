@@ -16,7 +16,14 @@ REQUIRED_FIELDS = {
     "hive_telemetry": {"temperature_c", "humidity_pct"},
     "varroa_count": {"mites", "bees_examined"},
 }
-IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$")
+IDENTIFIER = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9._:-]{0,79}$")
+SOURCE_EVENT_ID = re.compile(r"^[\x21-\x7E]{1,128}$")
+OPTIONAL_FIELDS = {
+    "camera_detection": {"origin_event_id", "verification_status", "prey_detected"},
+    "acoustic_event": set(),
+    "hive_telemetry": set(),
+    "varroa_count": set(),
+}
 
 
 @dataclass(frozen=True)
@@ -49,10 +56,11 @@ class HiveEvent:
             raise ValueError("Payload must be object")
 
         expected = REQUIRED_FIELDS[self.kind]
-        # Reject every extra field, not only known sensitive fields. This
-        # prevents media, coordinates, free-form personal data and spoofed
-        # approval flags from silently entering the metadata store.
-        if set(self.payload) != expected:
+        allowed = expected | OPTIONAL_FIELDS[self.kind]
+        # Allow only documented machine metadata. This prevents media,
+        # coordinates, arbitrary personal data and spoofed approvals entering
+        # the local metadata store.
+        if not expected.issubset(self.payload) or not set(self.payload).issubset(allowed):
             raise ValueError("Payload fields do not match the strict event contract")
 
         if self.kind in {"camera_detection", "acoustic_event"}:
@@ -71,6 +79,15 @@ class HiveEvent:
                 or not 0 <= confidence <= 1
             ):
                 raise ValueError("Invalid confidence")
+            if self.kind == "camera_detection":
+                if "origin_event_id" in self.payload:
+                    origin_id = self.payload["origin_event_id"]
+                    if not isinstance(origin_id, str) or not SOURCE_EVENT_ID.fullmatch(origin_id):
+                        raise ValueError("Invalid origin event ID")
+                if "verification_status" in self.payload and self.payload["verification_status"] != "unverified":
+                    raise ValueError("Only unverified candidate status is accepted")
+                if "prey_detected" in self.payload and type(self.payload["prey_detected"]) is not bool:
+                    raise ValueError("prey_detected must be boolean")
         elif self.kind == "hive_telemetry":
             temperature = self.payload["temperature_c"]
             humidity = self.payload["humidity_pct"]
