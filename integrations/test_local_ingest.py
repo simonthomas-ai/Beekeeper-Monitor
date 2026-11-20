@@ -81,6 +81,24 @@ class LocalIngestTests(unittest.TestCase):
         data["payload"]["training_approved"] = True
         self.assertEqual(self.send(data=json.dumps(data)), 400)
 
+    def test_timezone_offset_is_rejected_until_timestamp_is_normalized_to_utc(self):
+        event = HiveEvent(
+            "hive_telemetry", "sensor-1", "2026-11-20T10:00:00+01:00",
+            {"temperature_c": 21.5, "humidity_pct": 45},
+        )
+        with self.assertRaises(ValueError):
+            event.validate()
+
+    def test_duplicate_authorization_headers_are_rejected(self):
+        raw = (
+            b"GET /api/v1/events HTTP/1.1\\r\\n"
+            b"Host: localhost\\r\\n"
+            b"Authorization: Bearer " + TOKEN.encode("ascii") + b"\\r\\n"
+            b"Authorization: Bearer wrong-token-value-123456789\\r\\n"
+            b"Connection: close\\r\\n\\r\\n"
+        )
+        self.assertIn(b" 401 ", self._raw_status(raw))
+
     def test_documented_bridge_metadata_is_accepted_but_stays_unverified(self):
         event = HiveEvent(
             "camera_detection", "yard_cam_north", "2026-11-20T07:00:00Z",
