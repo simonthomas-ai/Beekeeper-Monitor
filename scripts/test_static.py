@@ -33,6 +33,6 @@ assert "./live-media.js" in sw
 assert "SHELL.has(url.href)" in sw
 pages=(root/".github/workflows/pages.yml").read_text()
 assert "path: _site" in pages
-assert "cp index.html style.css app.js live-media.js sw.js manifest.webmanifest icon.svg _site/" in pages
+assert "cp index.html style.css app.js integrations-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/" in pages
 assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
 print("Static PWA and research catalog checks passed; real-device and AI tests remain outstanding.")
