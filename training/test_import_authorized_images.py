@@ -108,10 +108,26 @@ class ImportSafetyTests(unittest.TestCase):
     def test_existing_manifest_is_not_overwritten(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
-            manifest = root / "licenses.csv"
+            queue = root / "queue.csv"
+            with queue.open("w", newline="", encoding="utf-8") as stream:
+                writer = csv.DictWriter(stream, fieldnames=mod.FIELDS)
+                writer.writeheader()
+                writer.writerow({
+                    "source_id": "photo-1",
+                    "source_url": "https://source.example/photo-1",
+                    "image_url": "https://image.example/photo-1.jpg",
+                    "creator": "Creator",
+                    "license": "CC0-1.0",
+                    "license_url": mod.LICENSE_URLS["CC0-1.0"],
+                    "attribution": "Creator / source",
+                })
+            dataset = root / "dataset"
+            dataset.mkdir()
+            manifest = dataset / "licenses.csv"
             manifest.write_text("do-not-overwrite\n", encoding="utf-8")
-            with self.assertRaises(FileExistsError):
-                mod.import_candidates("unused.csv", root)
+            with patch.object(mod, "public_https", side_effect=lambda url: url):
+                with self.assertRaises(FileExistsError):
+                    mod.import_candidates(queue, dataset)
             self.assertEqual(manifest.read_text(encoding="utf-8"), "do-not-overwrite\n")
 
     def test_existing_candidate_file_is_not_deleted(self):
