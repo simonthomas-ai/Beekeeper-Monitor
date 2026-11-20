@@ -9,8 +9,12 @@ import re
 from pathlib import Path
 import yaml
 from provenance import validate_provenance
+try:
+    from .class_schema import CLASS_NAMES
+except ImportError:  # Supports direct execution: python training/train.py
+    from class_schema import CLASS_NAMES
 
-CLASSES=['vespa_velutina','vespa_crabro','other_vespidae','apis_mellifera','bombus_spp','syrphidae','other_insect']
+CLASSES = list(CLASS_NAMES)
 SPLITS=('train','val','test')
 IMAGE_SUFFIXES={'.jpg','.jpeg','.png','.webp'}
 def validate(root):
