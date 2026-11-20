@@ -22,7 +22,7 @@ for pad in range(1, 5):
     assert len(re.findall(pattern, pcb)) == 2, f"PCB pad {pad} missing or duplicated"
 for number, name in enumerate(("3V3", "GND", "SDA", "SCL"), 1):
     assert f'(net {number} "{name}")' in pcb, f"Missing net {name}"
-    assert len(re.findall(rf'\\(net {number}\\)', pcb)) >= 3, f"Net {name} lacks expected pad/track references"
+    assert pcb.count(f'(net {number} ') >= 3, f"Net {name} lacks expected pad/track references"
 assert '(layer "Edge.Cuts")' in pcb, "Board outline missing"
 print("PASS: footprint library, two connectors, 8 pads, 4 nets, outline")
 print("NOTE: KiCad DRC and electrical/fabrication checks remain mandatory")
