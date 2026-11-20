@@ -31,6 +31,7 @@ jobs:
           # Projektsymbolbibliothek ist identisch mit den eingebetteten Symbolen.
           LOCAL_SYMBOL_LIB="$PWD/hardware/sensoradapter-v01/VespaGuard_Connector.kicad_sym"
           test -s "$LOCAL_SYMBOL_LIB" || exit 1
+          mkdir -p "$HOME/.config/kicad/9.0"
           printf '(sym_lib_table\n  (version 7)\n  (lib (name "VespaGuard_Connector")(type "KiCad")(uri "%s")(options "")(descr "Versionierte VespaGuard-Steckverbinder"))\n)\n' "$LOCAL_SYMBOL_LIB" > "$HOME/.config/kicad/9.0/sym-lib-table"
           kicad-cli sch erc --help
       - name: ERC ausfuehren
