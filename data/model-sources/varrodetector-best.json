@@ -1,0 +1,12 @@
+{
+  "schema": "vespaguard.upstream-model-source.v1",
+  "module": "varroa_board",
+  "repository": "https://github.com/jodivaso/varrodetector",
+  "path": "model/weights/best.pt",
+  "git_blob_sha1": "3ae15dc3efc69376d7c6a6f0730aa3e91d559768",
+  "bytes": 9596067,
+  "repository_license_spdx": "AGPL-3.0",
+  "weights_license_independently_confirmed": false,
+  "approval": "blocked_pending_license_and_independent_validation",
+  "source": "GitHub repository tree, inspected 2026-11-20"
+}
