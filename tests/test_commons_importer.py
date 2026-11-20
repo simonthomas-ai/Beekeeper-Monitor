@@ -20,6 +20,18 @@ class ImporterTests(unittest.TestCase):
         for license_name in ["", "CC BY-NC 4.0", "CC BY-SA 4.0", "All Rights Reserved", "CC BY-ND 4.0"]:
             self.assertFalse(module.allowed(license_name), license_name)
 
+    def test_fallback_on_empty_category(self):
+        empty = {"query": {"pages": {}}}
+        candidate = {"query": {"pages": {"1": {"title": "File:Hornet.jpg",
+            "imageinfo": [{"url": "https://upload.wikimedia.org/hornet.jpg",
+            "mime": "image/jpeg", "extmetadata": {"LicenseShortName": {"value": "CC0"}}}]}}}}
+        with tempfile.TemporaryDirectory() as tmp, patch.object(module, "get_json", side_effect=[empty, candidate]) as api, patch.object(sys, "argv", ["import", "--class-name", "velutina", "--output", tmp]):
+            module.main()
+            data = json.loads((Path(tmp) / "velutina" / "manifest.json").read_text())
+        self.assertEqual(api.call_count, 2)
+        self.assertEqual(len(data["items"]), 1)
+        self.assertFalse(data["items"][0]["species_verified"])
+
     def test_metadata_only_no_download(self):
         response = {"query": {"pages": {
             "1": {"title": "File:Velutina.jpg", "imageinfo": [{"url": "https://upload.wikimedia.org/a.jpg", "mime": "image/jpeg", "extmetadata": {"LicenseShortName": {"value": "CC BY 4.0"}, "Artist": {"value": "Author"}}}]},

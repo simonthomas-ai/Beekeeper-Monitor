@@ -13,6 +13,7 @@ CATEGORIES = {
     "velutina": "Category:Vespa_velutina_nigrithorax",
     "crabro": "Category:Vespa_crabro",
 }
+FALLBACK_CATEGORIES = {"velutina": ["Category:Vespa_velutina"], "crabro": []}
 def get_json(params):
     url = API + "?" + urlencode(params)
     with urlopen(Request(url, headers={"User-Agent": "VespaGuardResearchImporter/0.1 (noncommercial research; github.com/simonthomas-ai/Beekeeper-Monitor)"}), timeout=30) as response:
@@ -40,7 +41,17 @@ def main():
         raise RuntimeError('Commons API returned an error or incomplete response')
     entries = []
     seen = set()
-    for page in payload.get("query", {}).get("pages", {}).values():
+    pages = list(payload.get("query", {}).get("pages", {}).values())
+    if not pages:
+        for category in FALLBACK_CATEGORIES[args.class_name]:
+            fallback_query = {**query, "gcmtitle": category}
+            fallback = get_json(fallback_query)
+            if "error" in fallback or "query" not in fallback:
+                raise RuntimeError("Commons fallback API error")
+            pages.extend(fallback.get("query", {}).get("pages", {}).values())
+            if pages:
+                break
+    for page in pages:
         info = (page.get("imageinfo") or [{}])[0]
         meta = info.get("extmetadata") or {}
         lic = meta.get("LicenseShortName", {}).get("value", "")
