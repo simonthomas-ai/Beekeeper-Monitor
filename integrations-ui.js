@@ -92,12 +92,31 @@
     }
   }
 
-  async function refresh() {
-    setStatus('Lade lokale Stationsereignisse …');
+  async function refresh(quiet = false) {
+    if (!quiet) setStatus('Lade lokale Stationsereignisse …');
     const data = await api('/api/v1/events?limit=100');
     if (!data || !Array.isArray(data.events)) throw new Error('Ungültige Antwort des lokalen Servers.');
     renderRows(data.events);
-    setStatus(data.count + ' lokale Stationsereignisse geladen. Unbestätigte Kandidaten sind keine Artbestimmung.');
+    if (window.BeekeeperAlerts) window.BeekeeperAlerts.process(data.events);
+    if (!quiet) setStatus(data.count + ' lokale Stationsereignisse geladen. Unbestätigte Kandidaten sind keine Artbestimmung.');
+  }
+
+  // Automatische Aktualisierung nur, solange verbunden und Warnung eingeschaltet.
+  let pollTimer = 0;
+  let polling = false;
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = window.setInterval(async () => {
+      if (polling || !activeToken) return;
+      if (!window.BeekeeperAlerts || !window.BeekeeperAlerts.isEnabled()) return;
+      polling = true;
+      try { await refresh(true); } catch (error) { setStatus('Automatische Aktualisierung fehlgeschlagen: ' + error.message); }
+      finally { polling = false; }
+    }, 20000);
+  }
+  function stopPolling() {
+    if (pollTimer) window.clearInterval(pollTimer);
+    pollTimer = 0;
   }
 
   async function exportEvents() {
@@ -162,8 +181,10 @@
     exportButton.disabled = false;
     try {
       await refresh();
+      startPolling();
     } catch (error) {
       activeToken = '';
+      stopPolling();
       exportButton.disabled = true;
       clearList();
       setStatus('Verbindung fehlgeschlagen: ' + error.message);
@@ -174,6 +195,7 @@
 
   window.addEventListener('pagehide', () => {
     activeToken = '';
+    stopPolling();
     exportButton.disabled = true;
   });
 })();

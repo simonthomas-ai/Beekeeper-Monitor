@@ -12,12 +12,13 @@ Live: https://simonthomas-ai.github.io/Beekeeper-Monitor/
 - Kamera- und Mikrofonzugriff für manuelle Beobachtung (`live-media.js`)
 - Lokaler Empfangsdienst für Stationsereignisse: authentifiziert, nur Loopback, SQLite-Speicher mit Deduplizierung, Aufbewahrungsfrist, Export und Löschung ([integrations/](integrations/README.md))
 - Datenschutz-Grenze: nur validierte Metadaten, keine Bilder, kein Audio, keine GPS-Koordinaten; Bridge-Ereignisse bleiben unbestätigte Kandidaten
+- Abschaltbare lokale Warnung (Banner, Ton, Systembenachrichtigung) bei Velutina-Verdacht ab einstellbarer Konfidenz, nur bei geöffneter und verbundener Seite; immer als unbestätigter Verdacht gekennzeichnet
 - Prüfpipeline für Trainingsdaten: Lizenz- und Provenienz-Gates pro Bild, sieben Klassen, Split-Leckage-Prüfung ([training/](training/README.md))
 
 ## Noch nicht vorhanden
 
 - Freigegebenes Erkennungsmodell und Erkennung im Browser
-- Automatische Benachrichtigung des Imkers (SMS/Push)
+- Benachrichtigung ohne geöffnete Seite (SMS, Server-Push); dafür braucht es einen separat geprüften Dienst
 - Abnahme auf echten Geräten und im Feld
 
 ## Lokal ausprobieren

@@ -313,6 +313,14 @@ class AuthenticatedStoreApiTests(unittest.TestCase):
         self.assertIn('id="station-events-form"', body)
         self.assertIn('id="station-events-export"', body)
         self.assertIn('integrations-ui.js', body)
+        self.assertIn('id="hornet-alert"', body)
+
+    def test_alert_scripts_are_served_by_local_receiver(self):
+        for path, marker in (("/alert-rules.js", "BeekeeperAlertRules"), ("/alert-ui.js", "BeekeeperAlerts")):
+            with self.subTest(path=path):
+                status, body = self.request("GET", path)
+                self.assertEqual(status, 200)
+                self.assertIn(marker, body)
 
     def test_private_source_files_are_not_served(self):
         for path in ("/integrations/local_ingest.py", "/integrations/event_store.py",
