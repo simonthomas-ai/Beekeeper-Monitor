@@ -115,10 +115,27 @@ class SketchfabDiscoveryTests(unittest.TestCase):
             return {"results": [item, item]}
         diagnostics = {}
         rows, errors = discover(fetch, diagnostics)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["license_slug"], "cc0")
+        self.assertEqual(rows[0]["training_approved"], "NO")
+        self.assertEqual(errors, [])
+        self.assertEqual(diagnostics["model_detail_outcomes"]["verified_allowed"], 1)
+        self.assertEqual(len([url for url in calls if "/v3/models/" in url]), 1)
+
+    def test_model_detail_noncommercial_stays_rejected(self):
+        item = {"uid": "abcdef1234567890", "license": {"uid": "other"},
+                "isDownloadable": True}
+        def fetch(url):
+            if "/v3/licences/" in url:
+                raise urllib.error.HTTPError(url, 404, "Not Found", None, None)
+            if "/v3/models/" in url:
+                return {"license": {"slug": "cc-by-nc"}}
+            return {"results": [item]}
+        diagnostics = {}
+        rows, errors = discover(fetch, diagnostics)
         self.assertEqual(rows, [])
         self.assertEqual(errors, [])
-        self.assertEqual(diagnostics["model_detail_outcomes"]["field_uid_str"], 1)
-        self.assertEqual(len([url for url in calls if "/v3/models/" in url]), 1)
+        self.assertEqual(diagnostics["model_detail_outcomes"]["unverified_detail"], 1)
 
     def test_upstream_failure_is_not_zero_candidates_claim(self):
         rows, errors = discover(lambda url: (_ for _ in ()).throw(OSError("offline")))
