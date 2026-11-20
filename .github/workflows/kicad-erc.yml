@@ -41,10 +41,10 @@ jobs:
           mkdir -p "$HOME/.config/kicad/9.0"
           printf '(fp_lib_table\n  (version 7)\n  (lib (name "Connector_PinHeader_2.54mm")(type "KiCad")(uri "%s/Connector_PinHeader_2.54mm.pretty")(options "")(descr "VespaGuard project footprint"))\n)\n' "$PWD" > "$HOME/.config/kicad/9.0/fp-lib-table"
           cd ../..
-          # KiCad ERC resolves symbol libraries separately from footprint libraries.
-          SYMBOL_LIB=/usr/share/kicad/symbols/Connector_Generic.kicad_sym
-          test -s "$SYMBOL_LIB" || { echo "::error::KiCad-Symbolbibliothek fehlt: $SYMBOL_LIB"; exit 1; }
-          printf '(sym_lib_table\n  (version 7)\n  (lib (name "Connector_Generic")(type "KiCad")(uri "%s")(options "")(descr "KiCad standard connector symbols"))\n)\n' "$SYMBOL_LIB" > "$HOME/.config/kicad/9.0/sym-lib-table"
+          # Symboltabelle nicht mit der fremden Standardbibliothek ueberschreiben.
+          # Die projektlokale Bibliothek muss beim ERC sichtbar bleiben.
+          test -s "$HOME/.config/kicad/9.0/sym-lib-table"
+          grep -q 'VespaGuard_Connector' "$HOME/.config/kicad/9.0/sym-lib-table"
           kicad-cli sch erc --exit-code-violations --output build/kicad/erc-report.txt hardware/sensoradapter-v01/sensoradapter-v01.kicad_sch
       - name: ERC-Bericht speichern
         if: always()
