@@ -32,7 +32,7 @@ export VESPAGUARD_RETENTION_INTERVAL_SECONDS=3600
 python -m integrations.local_ingest
 ```
 
-Then open `http://127.0.0.1:8765/` in the same browser. This local endpoint serves the static PWA and its authenticated station-event panel on the same origin as the API. The panel asks for the token each time; it is kept only in JavaScript memory and cleared on page exit. The public GitHub Pages copy does not connect to the local receiver.
+Then open `http://127.0.0.1:8765/` in the same browser. This local endpoint serves the static PWA and its authenticated station-event panel on the same origin as the API. The panel asks for the token each time; it is kept only in JavaScript memory and cleared on page exit. After connecting, the panel can download a versioned JSON export of up to 500 server-side station events or delete individual entries after confirmation. The public GitHub Pages copy does not connect to the local receiver.
 
 Keep the token in a local secret manager or protected environment file. Never commit it. The service binds to `127.0.0.1:8765` and must not be directly exposed to the public internet. The default rate limit is 60 requests per client IP per 60 seconds; maximum active request workers are 16 and request body size is capped at 32 KiB. Static serving is allowlisted; Python source, hidden files and private data directories are not served.
 
@@ -42,6 +42,7 @@ All endpoints require `Authorization: Bearer <token>`.
 
 - `POST /api/v1/events` — validate and durably insert an event. Returns 202 once the SQLite transaction commits. Repeating the exact same canonical event is idempotent.
 - `GET /api/v1/events?limit=100` — list up to 500 most recent metadata events.
+- `GET /api/v1/events/export?limit=500` — download a versioned JSON export of up to 500 most recent metadata events (8 MiB response cap). The export contains station identifiers and event metadata; protect it like the source database.
 - `DELETE /api/v1/events/{event_id}` — explicitly delete one event by its 64-character SHA-256 identifier.
 
 Events are validated against `integrations/event_contracts.py`. The database has a maximum-row bound and expires records older than the configured retention period on writes. Expired records are also purged once at startup and then by a maintenance thread (default every 3600 seconds). Configure the interval with `VESPAGUARD_RETENTION_INTERVAL_SECONDS` (300–86400 seconds). Configure backup and deletion policies appropriate to the deployment.
