@@ -34,6 +34,19 @@ class SplitTests(unittest.TestCase):
         data["items"][1]["sha256"] = data["items"][0]["sha256"]
         with self.assertRaises(ValueError):
             m.split_manifest(data)
+    def test_canonical_class_mapping(self):
+        result = m.split_manifest(self.dataset())
+        self.assertEqual(set(result["counts"]["train"]), {"vespa_velutina", "vespa_crabro"})
+    def test_cross_class_group_collision_rejected(self):
+        data = self.dataset()
+        data["items"][10]["observation_group"] = data["items"][0]["observation_group"]
+        with self.assertRaises(ValueError):
+            m.split_manifest(data)
+    def test_unknown_class_rejected(self):
+        data = self.dataset()
+        data["items"][0]["suggested_class"] = "unrecognized"
+        with self.assertRaises(ValueError):
+            m.split_manifest(data)
     def test_insufficient_groups_rejected(self):
         with self.assertRaises(ValueError):
             m.split_manifest({"items": [item("velutina", "one", 1)]})
