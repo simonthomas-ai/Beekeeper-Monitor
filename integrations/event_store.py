@@ -24,18 +24,29 @@ class SQLiteEventStore:
         self.retention_days = retention_days
         self.max_rows = max_rows
         target = Path(self.path).resolve()
-        target.parent.mkdir(parents=True, exist_ok=True)
+        target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if os.name == "posix":
+            # The parent directory protects transient SQLite WAL/SHM files too.
+            os.chmod(target.parent, 0o700)
         self._initialize()
-        try:
-            os.chmod(self.path, 0o600)
-        except OSError:
-            # Windows ACLs are managed by the service account and installation.
-            pass
+        self._secure_files()
+
+    def _secure_files(self):
+        """Restrict database and SQLite sidecars on POSIX systems."""
+        if os.name != "posix":
+            # Windows permissions must be established with explicit NTFS ACLs.
+            return
+        for candidate in (self.path, self.path + "-wal", self.path + "-shm"):
+            try:
+                os.chmod(candidate, 0o600)
+            except FileNotFoundError:
+                continue
 
     @contextmanager
     def _db(self):
         db = sqlite3.connect(self.path, timeout=5)
         try:
+            self._secure_files()
             db.execute("PRAGMA busy_timeout=5000")
             db.execute("PRAGMA foreign_keys=ON")
             yield db
@@ -45,6 +56,7 @@ class SQLiteEventStore:
             raise
         finally:
             db.close()
+            self._secure_files()
 
     def _initialize(self):
         with self._db() as db:
@@ -98,7 +110,7 @@ class SQLiteEventStore:
         ]
 
     def delete(self, event_id: str) -> bool:
-        if not isinstance(event_id, str) or len(event_id) != 64:
+        if not isinstance(event_id, str) or len(event_id) != 64 or any(ch not in "0123456789abcdef" for ch in event_id):
             raise ValueError("Invalid event ID")
         with self._db() as db:
             cursor = db.execute("DELETE FROM events WHERE event_id = ?", (event_id,))
