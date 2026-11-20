@@ -106,7 +106,8 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
             candidate = public_root.joinpath(*parts)
             try:
                 resolved = candidate.resolve()
-                resolved.relative_to(public_root)
+                allowed_base = (public_root / parts[0]).resolve()
+                resolved.relative_to(allowed_base)
             except (OSError, ValueError):
                 return str(public_root / "__not_found__")
             if resolved.suffix.lower() not in public_extensions or not resolved.is_file():
