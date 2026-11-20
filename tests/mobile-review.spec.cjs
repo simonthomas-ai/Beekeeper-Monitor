@@ -21,9 +21,21 @@ test.beforeEach(async({page})=>{
 test('mobile gallery: review persists when switching images',async({page})=>{
  await expect(page.locator('#counter')).toContainText('1/2');
  await page.locator('#decision').selectOption('LIKELY');
+ // Ensure the first image's decision has reached the gallery's persistent state
+ // before navigating; this is especially important in WebKit.
+ await expect.poll(async()=>page.evaluate(()=>{
+  const data=JSON.parse(localStorage.getItem('vespaguard-review-v1-Vespa velutina')||'{}');
+  return data['101']?.decision;
+ })).toBe('LIKELY');
  await page.locator('#next').click();
+ await expect(page.locator('#counter')).toContainText('2/2');
  await page.locator('#decision').selectOption('REJECT');
+ await expect.poll(async()=>page.evaluate(()=>{
+  const data=JSON.parse(localStorage.getItem('vespaguard-review-v1-Vespa velutina')||'{}');
+  return data['102']?.decision;
+ })).toBe('REJECT');
  await page.locator('#prev').click();
+ await expect(page.locator('#counter')).toContainText('1/2');
  await expect(page.locator('#decision')).toHaveValue('LIKELY');
  await expect(page.locator('#state')).toContainText('KEINE Trainingsfreigabe');
 });
