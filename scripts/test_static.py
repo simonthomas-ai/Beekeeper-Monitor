@@ -25,7 +25,7 @@ assert "noch nicht validiert" in html
 assert 'id="import"' in html
 assert "validObservation" in app
 assert "async function remove(id)" in app
-assert re.search(r"beekeeper-shell-v\\d+", sw)
+assert re.search(r"beekeeper-shell-v\d+", sw)
 assert "./wissen/wissenschaft-hornissen-bienen.html" in sw
 assert (root/"wissen/wissenschaft-hornissen-bienen.html").is_file()
 assert 'href="./wissen/wissenschaft-hornissen-bienen.html"' in html
