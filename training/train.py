@@ -3,7 +3,9 @@
 Fails closed if data or label metadata is absent. No fake model output.
 """
 import argparse
+import hashlib
 import json
+import re
 import os
 from pathlib import Path
 import yaml
@@ -112,7 +114,6 @@ def main():
     if ultralytics.__version__ != '8.4.215':
         parser.error('This export path is tested against ultralytics==8.4.215; install the pinned training requirements first.')
     from ultralytics import YOLO
-    import hashlib
     # A single multi-class detector; it is NOT six independent validated models.
     from tempfile import TemporaryDirectory
     with TemporaryDirectory() as temp:
