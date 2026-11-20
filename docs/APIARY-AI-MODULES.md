@@ -1,17 +1,17 @@
-# Apiary AI modules — experimental, not approved for diagnosis
+# KI-Module für die Imkerei – experimentell, nicht zur Diagnose freigegeben
 
-This catalog is an integration **contract**, not a model, weight file, or working inference implementation. Every module starts disabled; never present a result as confirmed without independent evidence and human review.
+Dieser Katalog beschreibt einen technischen **Integrationsvertrag**. Er ist weder ein KI-Modell noch eine Gewichtsdatei oder eine funktionsfähige Erkennungsimplementierung. Jedes Modul ist anfangs deaktiviert. Ergebnisse dürfen ohne unabhängige Belege und menschliche Prüfung niemals als bestätigt dargestellt werden.
 
-| Module ID | Task | Input | Candidate / status | Output | Field limitation |
+| Modulkennung | Aufgabe | Eingabe | Kandidat / Status | Ausgabe | Grenze im praktischen Einsatz |
 |---|---|---|---|---|---|
-| `varroa_board` | Count mites on removable bottom-board insert | Sharp overhead macro image + scale | VarroDetector candidate; rights and weight checks pending | Unconfirmed count + boxes | Cannot equate counts to infestation without sampling protocol |
-| `varroa_on_bee` | Detect visible mites on bees | Macro image of bee body | Gratheon models-varroa-on-bee, YOLO11n; rights and weights pending | Unconfirmed boxes | Reported varroa recall 0.651; negative result does not exclude infestation |
-| `queen_on_comb` | Locate queen on comb | Focused comb photo/video | Gratheon models-queen-bee-detector, YOLOv8n; rights and weights pending | Unconfirmed box | Reported recall 0.859; no detection does not mean queenless |
-| `swarm_activity` | Detect abnormal flight-entrance activity | Time-stamped counts, video + optionally hive weight | No validated swarm prediction model selected | Activity anomaly, never definitive swarm prediction | Orientation flights and weather can confound |
-| `pollen_flow` | Count pollen-bearing arrivals | Entrance video | New labeled data and model required | Pollen-carrying counts | Does not directly measure pollen stores |
-| `brood_pattern` | Describe visible brood pattern | Well-lit comb images | Separate segmentation dataset required | Review-only overlays | No disease diagnosis |
+| `varroa_board` | Milben auf einer herausnehmbaren Bodeneinlage zählen | Scharfes Makrobild von oben mit Maßstab | VarroDetector-Kandidat; Rechte und Gewichte ungeprüft | Unbestätigte Anzahl und Markierungen | Eine Milbenanzahl entspricht ohne Probenahmeprotokoll nicht unmittelbar dem Befallsgrad |
+| `varroa_on_bee` | Sichtbare Milben auf Bienen erkennen | Makrobild des Bienenkörpers | Gratheon `models-varroa-on-bee`, YOLO11n; Rechte und Gewichte ungeprüft | Unbestätigte Markierungen | Gemeldeter Varroa-Recall: 0,651; ein negatives Ergebnis schließt Befall nicht aus |
+| `queen_on_comb` | Königin auf der Wabe lokalisieren | Scharfes Wabenfoto oder -video | Gratheon `models-queen-bee-detector`, YOLOv8n; Rechte und Gewichte ungeprüft | Unbestätigte Markierung | Gemeldeter Recall: 0,859; eine fehlende Erkennung bedeutet nicht, dass keine Königin vorhanden ist |
+| `swarm_activity` | Ungewöhnliche Fluglochaktivität erkennen | Zeitgestempelte Zählwerte, Video und optional Stockgewicht | Kein validiertes Modell zur Schwarmvorhersage ausgewählt | Aktivitätsauffälligkeit, keine gesicherte Schwarmvorhersage | Orientierungsflüge und Wetter können Ergebnisse verfälschen |
+| `pollen_flow` | Anfliegende Bienen mit Pollen zählen | Fluglochvideo | Neue beschriftete Trainingsdaten und Modell nötig | Anzahl der Pollenträger | Misst nicht unmittelbar die Pollenvorräte |
+| `brood_pattern` | Sichtbares Brutbild beschreiben | Gut ausgeleuchtete Wabenbilder | Eigener Datensatz zur Bildsegmentierung erforderlich | Markierungen nur zur menschlichen Sichtung | Keine Krankheitsdiagnose |
 
-## Proposed standard module manifest
+## Vorgeschlagenes Standardmanifest für Module
 
 ```json
 {
@@ -30,20 +30,22 @@ This catalog is an integration **contract**, not a model, weight file, or workin
 }
 ```
 
-## Requirements before activating any module
+Die JSON-Feldnamen und Werte sind technische Kennungen und bleiben deshalb unverändert. Dieses Manifest ist ein **Beispiel**, keine Modellfreigabe.
 
-1. Verify original repository, exact version/commit, code and weights licenses, dependencies (including Ultralytics terms), training images and per-image attribution; record SHA-256 of the precise model artifact.
-2. Evaluate independent test images from new hives, devices, seasons and lighting. Publish per-class precision, recall, confidence intervals and false positives/negatives per operating hour; do not claim 99% without evidence.
-3. Run inference locally by default. Do not send images, audio or GPS to third-party APIs without a separate privacy review and user consent or other documented legal basis.
-4. Return `unconfirmed` candidate events only. Never auto-trigger treatment, queen replacement or swarm intervention.
-5. Test real iPhone, Android and Raspberry Pi hardware for latency, battery, offline recovery and thermal behavior.
-6. Keep existing hornet detector and PWA unaffected. Only integrate code and weights after explicit field release evidence is approved.
+## Voraussetzungen vor der Aktivierung eines Moduls
 
-## Candidate references (not incorporated)
+1. Original-Repository, exakte Version bzw. Commit, Lizenzen für Code und Gewichte, Abhängigkeiten einschließlich Ultralytics-Bedingungen sowie Trainingsbilder und Urhebernennung je Bild prüfen. Die SHA-256-Prüfsumme der konkreten Modellgewichtsdatei dokumentieren.
+2. Mit unabhängigen Testbildern von anderen Bienenständen, Geräten, Jahreszeiten und Beleuchtungsbedingungen bewerten. Für jede Klasse Präzision, Recall, Konfidenzintervalle sowie Fehlalarme und übersehene Fälle pro Betriebsstunde veröffentlichen. **Keine 99-%-Erkennungsquote ohne Belege behaupten.**
+3. Erkennung standardmäßig lokal ausführen. Bilder, Ton oder GPS-Daten nur nach gesonderter Datenschutzprüfung und Einwilligung oder einer anderen dokumentierten Rechtsgrundlage an fremde APIs übertragen.
+4. Ausschließlich unbestätigte Ereignisse (`unconfirmed`) ausgeben. Niemals automatisch Behandlungen, Königinnenwechsel oder Eingriffe bei Schwarmverdacht auslösen.
+5. Echte iPhones, Android-Geräte und Raspberry Pis auf Reaktionszeit, Akkubelastung, Wiederanlauf nach Offlinebetrieb und Temperaturentwicklung prüfen.
+6. Bestehende Hornissenerkennung und PWA nicht beeinträchtigen. Code und Gewichte erst nach dokumentierter und genehmigter Feldfreigabe integrieren.
+
+## Kandidatenquellen (nicht übernommen)
 
 - https://github.com/Gratheon/models-varroa-on-bee
 - https://github.com/Gratheon/models-queen-bee-detector
 - https://github.com/jodivaso/varrodetector
 - https://gratheon.com/research/models/
 
-Research metrics belong to the respective authors and are **not VespaGuard performance measurements**.
+Die genannten Forschungskennzahlen stammen von den jeweiligen Urhebern und sind **keine eigenen Leistungsmessungen von VespaGuard**.
