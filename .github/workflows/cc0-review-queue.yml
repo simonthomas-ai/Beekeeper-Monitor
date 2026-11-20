@@ -1,0 +1,45 @@
+name: CC0 image candidates for human review
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 1'
+permissions:
+  contents: read
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Discover CC0 metadata, not training labels
+        run: python training/discover_cc0_candidates.py --per-species 50 --max-pages 10 --output training/inaturalist-review-queue.csv
+      - name: Review queue summary
+        if: always()
+        shell: bash
+        run: |
+          echo '## CC0 candidates – NOT approved training data' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f training/inaturalist-review-queue.csv ]; then
+            python - <<'PY'
+          import csv, collections, os
+          with open('training/inaturalist-review-queue.csv', encoding='utf-8', newline='') as f:
+              rows=list(csv.DictReader(f))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as f:
+              f.write('| Species candidate | Unreviewed records |\n|---|---:|\n')
+              for species, count in sorted(collections.Counter(row['species_candidate'] for row in rows).items()):
+                  f.write(f'| {species} | {count} |\n')
+              f.write('\nNo image was approved or used for model training. Human species, license and box reviews remain mandatory.\n')
+          PY
+          else
+            echo 'No candidate metadata file produced; discovery may have failed.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Preserve candidate metadata for review
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cc0-unreviewed-candidates
+          path: training/inaturalist-review-queue.csv
+          if-no-files-found: warn
+          retention-days: 30
