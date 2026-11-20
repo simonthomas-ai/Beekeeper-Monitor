@@ -52,6 +52,8 @@ def discover(fetch=None, diagnostics=None):
     counters = {'raw_results': 0, 'accepted': 0, 'rejected': 0}
     per_query = []
     rejection_reasons = Counter()
+    license_shapes = Counter()
+    license_values = Counter()
     for term in TERMS:
         url = API + "?" + urllib.parse.urlencode({
             "type": "models", "q": term, "downloadable": "true", "count": MAX_RESULTS_PER_TERM})
@@ -63,6 +65,18 @@ def discover(fetch=None, diagnostics=None):
             counters["raw_results"] += len(results)
             per_query.append({"query": term, "raw_results": len(results)})
             for item in results:
+                if isinstance(item, dict):
+                    raw_license = item.get("license")
+                    if isinstance(raw_license, dict):
+                        license_shapes["object"] += 1
+                        license_values[str(raw_license.get("slug", ""))[:80]] += 1
+                    elif isinstance(raw_license, str):
+                        license_shapes["string"] += 1
+                        license_values[raw_license[:80]] += 1
+                    elif raw_license is None:
+                        license_shapes["missing"] += 1
+                    else:
+                        license_shapes["other"] += 1
                 if not isinstance(item, dict):
                     reason = "invalid_item"
                 else:
@@ -92,7 +106,7 @@ def discover(fetch=None, diagnostics=None):
         except (ValueError, OSError, TimeoutError, json.JSONDecodeError) as exc:
             errors.append({"query": term, "error_type": type(exc).__name__})
     if diagnostics is not None:
-        diagnostics.update({"counts": counters, "reasons": dict(rejection_reasons), "per_query": per_query,
+        diagnostics.update({"counts": counters, "reasons": dict(rejection_reasons), "license_shapes": dict(license_shapes), "license_values": dict(license_values), "per_query": per_query,
                             "note": "Only first page per query scanned; rejection reasons need further review."})
     return records, errors
 
