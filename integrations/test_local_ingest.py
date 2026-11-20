@@ -81,6 +81,33 @@ class LocalIngestTests(unittest.TestCase):
         data["payload"]["training_approved"] = True
         self.assertEqual(self.send(data=json.dumps(data)), 400)
 
+    def test_documented_bridge_metadata_is_accepted_but_stays_unverified(self):
+        event = HiveEvent(
+            "camera_detection", "yard_cam_north", "2026-11-20T07:00:00Z",
+            {
+                "label": "unverified_candidate:vespa_velutina",
+                "confidence": 0.83,
+                "origin_event_id": "event-1",
+                "verification_status": "unverified",
+                "prey_detected": True,
+            },
+            source="hornet3000",
+        )
+        self.assertTrue(HiveEvent.from_json(event.to_json()).validate() is None)
+
+    def test_expert_verification_cannot_be_asserted_by_bridge(self):
+        event = HiveEvent(
+            "camera_detection", "yard_cam_north", "2026-11-20T07:00:00Z",
+            {
+                "label": "vespa_velutina",
+                "confidence": 0.99,
+                "verification_status": "expert_confirmed",
+            },
+            source="hornet3000",
+        )
+        with self.assertRaises(ValueError):
+            event.validate()
+
     def test_oversized_body_rejected(self):
         self.assertEqual(self.send(data="x" * 32769), 413)
 
