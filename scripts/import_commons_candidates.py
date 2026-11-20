@@ -34,8 +34,10 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     query = {"action": "query", "generator": "categorymembers", "gcmtitle": CATEGORIES[args.class_name],
              "gcmtype": "file", "gcmlimit": args.limit, "prop": "imageinfo",
-             "iiprop": "url|extmetadata|mime|size", "iiurlwidth": 0, "format": "json"}
+             "iiprop": "url|extmetadata|mime|size", "format": "json"}
     payload = get_json(query)
+    if 'error' in payload or 'query' not in payload:
+        raise RuntimeError('Commons API returned an error or incomplete response')
     entries = []
     seen = set()
     for page in payload.get("query", {}).get("pages", {}).values():
