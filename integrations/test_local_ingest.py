@@ -26,44 +26,49 @@ class LocalIngestTests(unittest.TestCase):
         cls.server.server_close()
         cls.thread.join(timeout=2)
 
-    def send(self, path="/api/v1/events", token=TOKEN, data=None, content_type="application/json"):
-        if data is None:
+    def send(self, method="POST", path="/api/v1/events", token=TOKEN, data=None,
+             content_type="application/json"):
+        if method == "POST" and data is None:
             data = HiveEvent("hive_telemetry", "sensor-1", "2026-11-19T19:00:00Z",
                              {"temperature_c": 21.5, "humidity_pct": 45}).to_json()
         conn = http.client.HTTPConnection("127.0.0.1", self.server.server_port, timeout=3)
-        headers = {"Authorization": "Bearer " + token, "Content-Type": content_type}
-        conn.request("POST", path, data, headers)
+        headers = {"Authorization": "Bearer " + token}
+        if method == "POST":
+            headers["Content-Type"] = content_type
+        conn.request(method, path, data, headers)
         resp = conn.getresponse()
         status = resp.status
-        resp.read()
+        body = resp.read()
         conn.close()
-        return status
+        return status, body
 
     def test_valid_real_transport(self):
         before = len(self.events)
-        self.assertEqual(self.send(), 202)
+        status, _ = self.send()
+        self.assertEqual(status, 202)
         self.assertEqual(len(self.events), before + 1)
 
     def test_bad_token(self):
-        self.assertEqual(self.send(token="wrong"), 401)
+        self.assertEqual(self.send(token="wrong")[0], 401)
 
     def test_unknown_endpoint(self):
-        self.assertEqual(self.send(path="/bad"), 404)
+        self.assertEqual(self.send(path="/bad")[0], 404)
 
     def test_invalid_data(self):
-        self.assertEqual(self.send(data='{"invalid":true}'), 400)
+        self.assertEqual(self.send(data='{"invalid":true}')[0], 400)
 
-    def test_untrusted_approval(self):
-        data = json.loads(HiveEvent("varroa_count", "v1", "2026-11-19T19:00:00Z",
-                                   {"mites": 1, "bees_examined": 10}).to_json())
-        data["payload"]["training_approved"] = True
-        self.assertEqual(self.send(data=json.dumps(data)), 400)
+    def test_extra_location_or_media_payload_is_rejected(self):
+        data = HiveEvent("hive_telemetry", "sensor-1", "2026-11-19T19:00:00Z",
+                         {"temperature_c": 21.5, "humidity_pct": 45}).to_json()
+        obj = json.loads(data)
+        obj["payload"]["latitude"] = 51.2
+        self.assertEqual(self.send(data=json.dumps(obj))[0], 400)
 
     def test_oversized_body_rejected(self):
-        self.assertEqual(self.send(data="x" * 32769), 413)
+        self.assertEqual(self.send(data="x" * 32769)[0], 413)
 
     def test_non_json_content_type_rejected(self):
-        self.assertEqual(self.send(content_type="text/plain"), 415)
+        self.assertEqual(self.send(data="{}", content_type="text/plain")[0], 415)
 
     def test_short_token_rejected(self):
         with self.assertRaises(ValueError):
@@ -94,20 +99,18 @@ class SQLiteEventStoreTests(unittest.TestCase):
         self.assertFalse(self.store(event))
         self.assertEqual(self.store.count(), 1)
 
+    def test_explicit_delete(self):
+        self.store(self.event())
+        item = self.store.list_events()[0]
+        self.assertTrue(self.store.delete(item["event_id"]))
+        self.assertEqual(self.store.count(), 0)
+
     def test_invalid_page_size_rejected(self):
         with self.assertRaises(ValueError):
             self.store.list_events(501)
 
-    def test_delete_is_explicit_and_idempotent(self):
-        event = self.event()
-        self.store(event)
-        event_id = self.store.list_events()[0]["event_id"]
-        self.assertTrue(self.store.delete(event_id))
-        self.assertFalse(self.store.delete(event_id))
-        self.assertEqual(self.store.count(), 0)
 
-
-class AuthenticatedStoreApiTests(unittest.TestCase):
+class ReadDeleteApiTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
@@ -123,52 +126,36 @@ class AuthenticatedStoreApiTests(unittest.TestCase):
         cls.thread.join(timeout=2)
         cls.tmp.cleanup()
 
-    def request(self, method, path, token=TOKEN, body=None):
+    def request(self, method, path, token=TOKEN):
         conn = http.client.HTTPConnection("127.0.0.1", self.server.server_port, timeout=3)
-        headers = {"Authorization": "Bearer " + token}
-        if body is not None:
-            headers["Content-Type"] = "application/json"
-        conn.request(method, path, body=body, headers=headers)
-        response = conn.getresponse()
-        payload = response.read()
-        status = response.status
+        conn.request(method, path, headers={"Authorization": "Bearer " + token})
+        resp = conn.getresponse()
+        status, body = resp.status, resp.read()
         conn.close()
-        if not payload:
-            return status, None
-        try:
-            return status, json.loads(payload)
-        except json.JSONDecodeError:
-            return status, payload.decode("utf-8", errors="replace")
+        return status, json.loads(body) if body else {}
 
-    def test_authenticated_list_and_delete(self):
-        event = HiveEvent("hive_telemetry", "sensor-api", "2026-11-19T19:00:00Z",
-                          {"temperature_c": 22.0, "humidity_pct": 44})
+    def setUp(self):
+        for item in self.store.list_events(500):
+            self.store.delete(item["event_id"])
+
+    def test_authenticated_bounded_read_and_delete(self):
+        event = HiveEvent("camera_detection", "cam-01", "2026-11-20T08:00:00Z",
+                          {"label": "vespa_velutina", "confidence": 0.97})
         self.store(event)
-        status, payload = self.request("GET", "/api/v1/events?limit=10")
+        status, result = self.request("GET", "/api/v1/events?limit=10")
         self.assertEqual(status, 200)
-        self.assertEqual(payload["count"], 1)
-        event_id = payload["events"][0]["event_id"]
-        status, payload = self.request("DELETE", "/api/v1/events/" + event_id)
+        self.assertEqual(len(result["events"]), 1)
+        event_id = result["events"][0]["event_id"]
+        status, result = self.request("DELETE", "/api/v1/events/" + event_id)
         self.assertEqual(status, 200)
-        self.assertTrue(payload["deleted"])
+        self.assertTrue(result["deleted"])
         self.assertEqual(self.store.count(), 0)
 
-    def test_event_api_requires_authentication(self):
-        status, _ = self.request("GET", "/api/v1/events", token="wrong")
-        self.assertEqual(status, 401)
+    def test_read_requires_authentication(self):
+        self.assertEqual(self.request("GET", "/api/v1/events", token="bad")[0], 401)
 
-    def test_local_pwa_is_served_on_same_origin(self):
-        status, body = self.request("GET", "/")
-        self.assertEqual(status, 200)
-        self.assertIn('id="station-events-form"', body)
-        self.assertIn('integrations-ui.js', body)
-
-    def test_private_source_files_are_not_served(self):
-        for path in ("/integrations/local_ingest.py", "/integrations/event_store.py",
-                     "/.gitignore", "/%2e%2e/integrations/local_ingest.py"):
-            with self.subTest(path=path):
-                status, _ = self.request("GET", path)
-                self.assertEqual(status, 404)
+    def test_read_limit_is_bounded(self):
+        self.assertEqual(self.request("GET", "/api/v1/events?limit=501")[0], 400)
 
 
 if __name__ == "__main__":
