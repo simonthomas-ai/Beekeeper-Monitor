@@ -456,17 +456,18 @@ class AdditionalContractSecurityTests(unittest.TestCase):
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
             try:
+                crlf = bytes((13, 10))
                 raw = (
-                    b"GET /api/v1/events HTTP/1.1\\r\\n"
-                    b"Host: localhost\\r\\n"
-                    b"Authorization: Bearer " + TOKEN.encode("ascii") + b"\\r\\n"
-                    b"Authorization: Bearer another-token-value-123456789\\r\\n"
-                    b"Connection: close\\r\\n\\r\\n"
+                    b"GET /api/v1/events HTTP/1.1" + crlf
+                    + b"Host: localhost" + crlf
+                    + b"Authorization: Bearer " + TOKEN.encode("ascii") + crlf
+                    + b"Authorization: Bearer another-token-value-123456789" + crlf
+                    + b"Connection: close" + crlf + crlf
                 )
                 with socket.create_connection(("127.0.0.1", server.server_port), timeout=3) as client:
                     client.sendall(raw)
                     response = client.recv(4096)
-                self.assertIn(b" 401 ", response.split(b"\\r\\n", 1)[0])
+                self.assertIn(b" 401 ", response.split(crlf, 1)[0])
             finally:
                 server.shutdown()
                 server.server_close()
