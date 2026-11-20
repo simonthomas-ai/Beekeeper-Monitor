@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import stat
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -20,14 +21,19 @@ class SQLiteEventStore:
             raise ValueError("A database path is required")
         if not 1 <= retention_days <= 3650 or not 100 <= max_rows <= 2_000_000:
             raise ValueError("Invalid retention bounds")
-        self.path = str(Path(path).expanduser())
+        target = Path(path).expanduser().resolve()
+        self.path = str(target)
         self.retention_days = retention_days
         self.max_rows = max_rows
-        target = Path(self.path).resolve()
         target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         if os.name == "posix":
-            # The parent directory protects transient SQLite WAL/SHM files too.
-            os.chmod(target.parent, 0o700)
+            parent_stat = target.parent.stat()
+            if parent_stat.st_uid != os.getuid():
+                raise PermissionError("SQLite directory must be owned by the service account")
+            if stat.S_IMODE(parent_stat.st_mode) & 0o077:
+                raise PermissionError(
+                    "SQLite directory must be private (mode 0700); choose a dedicated data directory"
+                )
         self._initialize()
         self._secure_files()
 
