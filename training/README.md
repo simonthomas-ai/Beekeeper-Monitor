@@ -1,23 +1,21 @@
-# Training with genuine data
+# KI-Training mit echten Daten
 
-This pipeline trains **one seven-class object detector**, not six independently validated models. It does not pretend that an object detector can solve every task: swarm detection and brood classification may require separate architectures and temporal/context data.
+Diese Trainingspipeline erstellt **einen Objektdetektor für sieben Klassen**, nicht sechs unabhängig validierte Modelle. Ein Objektdetektor kann nicht jede imkerliche Aufgabe lösen: Schwarmvorhersage und Brutbewertung benötigen gegebenenfalls andere Architekturen sowie zeitliche und weitere Kontextdaten.
 
-## Requirements
+## Voraussetzungen
+- Echte, rechtlich nutzbare Bilder jeder Klasse mit manuell geprüften Begrenzungsrahmen im YOLO-Format.
+- Nachvollziehbare Herkunft und Lizenz für jede Datenquelle.
+- Getrennte Trainings-, Validierungs- und Testdaten, möglichst nach Bienenstand, Datum und Kamera getrennt, um Datenüberschneidungen zu vermeiden.
+- Genügend Beispiele je Klasse zur Leistungsbewertung. Das Skript prüft lediglich eine minimale, nicht leere Datenabdeckung – **keine wissenschaftlich ausreichende Datenmenge**.
+- Ausreichende Rechenleistung. Kostenlose GitHub-Actions-Runner sind **kein verlässlicher Ersatz für GPU-Training**.
 
-- Real, legally usable images from each class, manually verified bounding-box labels in YOLO format.
-- A documented dataset provenance and license for every source.
-- Separate train/validation/test splits, preferably separated by apiary, date and camera to prevent leakage.
-- Enough examples per class to assess performance; the script only checks minimal nonempty coverage, not scientific adequacy.
-- Compute capacity. Free GitHub Actions runners are **not** a reliable place for GPU training.
-
-## Usage
-
+## Verwendung
 ```sh
 python -m pip install -r training/requirements.txt
 python training/train.py --validate-only
 python training/train.py --epochs 60 --device 0
 ```
 
-Without actual labeled images the script fails deliberately. No fake images, placeholder weights, claimed 99% accuracy or fabricated test reports are generated.
+Fehlen echte beschriftete Bilder, schlägt die Prüfung absichtlich fehl. Es werden weder erfundene Bilder noch Platzhaltergewichte, angebliche 99 % Erkennungsgenauigkeit oder fingierte Testberichte erzeugt.
 
-For reproducible inference, model files must later be reviewed for licensing, converted to a mobile/browser-supported format, hashed, and independently evaluated. Never publish unreviewed dataset images.
+Vor reproduzierbarer Erkennung müssen die Modelldateien auf ihre Nutzungsrechte geprüft, in ein für Mobilgeräte/Browser geeignetes Format umgewandelt, per Prüfsumme abgesichert und unabhängig bewertet werden. Ungeprüfte Datensatzbilder dürfen nicht veröffentlicht werden.
