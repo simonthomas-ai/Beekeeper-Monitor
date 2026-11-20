@@ -96,14 +96,25 @@ does not encrypt the backup or prove that a second physical device can restore
 it. A device-level restore rehearsal is required before a pilot.
 
 The Monitor supports authenticated per-event deletion and time-based retention.
-The source event journal is bounded by retention/capacity and its backup/restore
-functions, but the current documented API does not provide a matching
-operator-facing per-event deletion endpoint. Define a source-side deletion and
-downstream propagation procedure before collecting personal or sensitive
-observations. Deleting a Monitor event does not automatically delete its source
-journal copy, bridge checkpoint, local browser export, backup copy or a
-previously distributed radio packet. Retention and deletion must therefore be
-defined across every copy, not only one database.
+The BeeKeeper3000 source journal now provides an authenticated per-event
+deletion endpoint (`DELETE /api/events?id=<event-id>`) with a bounded
+tombstone that blocks delayed replay during the configured source retention
+horizon. This removes the event from the source SQLite journal only. It does
+**not** automatically delete a Monitor copy, an event already fetched by an
+in-flight bridge page, an export/backup, or a previously transmitted radio
+packet. Conversely, deleting a Monitor event does not remove the source
+journal copy.
+
+Before collecting personal or sensitive observations, define an operator
+procedure across both systems: identify the stable event ID, delete from the
+source API, delete the corresponding Monitor event using the authenticated
+Monitor endpoint, allow in-flight bridge requests to settle and verify the
+event does not reappear, then account for existing exports/backups under the
+approved backup-retention/destruction policy. A radio packet already sent
+cannot be recalled; the tombstone only prevents a delayed source API replay
+within its retention horizon. The source deletion ledger is bounded and fails
+closed if its configured capacity is reached. Retention and deletion must
+therefore be governed across every copy, not only one database.
 
 ## 4. Data classification and handling
 
