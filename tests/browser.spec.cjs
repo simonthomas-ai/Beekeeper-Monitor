@@ -112,3 +112,43 @@ test('rejects oversized or non-image uploads',async({page})=>{
  await expect(page.locator('#status')).toContainText('Nur Bilddateien');
  await expect(page.locator('#entries')).not.toContainText('Unzulässiger Dateianhang');
 });
+
+test('PWA cache stores local application shell but not remote photo URLs',async({page})=>{
+ await page.goto('/');
+ await page.evaluate(()=>navigator.serviceWorker.ready);
+ await expect.poll(async()=>page.evaluate(async()=>{
+  const cached=await caches.match(new URL('./index.html',location.href).href);
+  return Boolean(cached);
+ })).toBe(true);
+ const result=await page.evaluate(async()=>{
+  const shell=['index.html','app.js','integrations-ui.js','alert-rules.js','alert-ui.js','live-media.js','manifest.webmanifest'];
+  const missing=[];
+  for(const file of shell){
+   const url=new URL('./'+file,location.href).href;
+   if(!(await caches.match(url)))missing.push(file);
+  }
+  const allKeys=(await Promise.all((await caches.keys()).map(async name=>(await caches.open(name)).keys()))).flat();
+  const foreign=allKeys.filter(req=>new URL(req.url).origin!==location.origin).map(req=>req.url);
+  return {missing,foreign};
+ });
+ expect(result.missing).toEqual([]);
+ expect(result.foreign).toEqual([]);
+});
+
+test('offline saved observation survives reconnect and export still works',async({page,context,browserName})=>{
+ await page.goto('/');
+ await page.evaluate(()=>navigator.serviceWorker.ready);
+ await context.setOffline(true);
+ if(browserName==='webkit')await verifyCachedShell(page);
+ else await page.reload();
+ await page.getByLabel('Eigene Beobachtung').fill('Unabhängiger Offline-Exporttest');
+ await page.getByRole('button',{name:'Auf diesem Gerät speichern'}).click();
+ await expect(page.locator('#entries')).toContainText('Unabhängiger Offline-Exporttest');
+ const downloadPromise=page.waitForEvent('download');
+ await page.getByRole('button',{name:'Als JSON exportieren'}).click();
+ const download=await downloadPromise;
+ expect(download.suggestedFilename()).toBe('beekeeper-beobachtungen.json');
+ await context.setOffline(false);
+ await page.reload();
+ await expect(page.locator('#entries')).toContainText('Unabhängiger Offline-Exporttest');
+});
