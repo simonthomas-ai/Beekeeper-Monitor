@@ -9,10 +9,15 @@ Requirements: Python 3.12 or newer. The receiver uses only the Python standard l
 PowerShell:
 
 ```powershell
-$env:VESPAGUARD_INGEST_TOKEN = [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 } | ForEach-Object { [byte]$_ }))
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$secretBytes = New-Object byte[] 32
+$rng.GetBytes($secretBytes)
+$rng.Dispose()
+$env:VESPAGUARD_INGEST_TOKEN = [Convert]::ToBase64String($secretBytes)
 $env:VESPAGUARD_INGEST_DB = "$env:LOCALAPPDATA\BeeKeeper-Monitor\events.sqlite3"
 $env:VESPAGUARD_RETENTION_DAYS = "90"
 $env:VESPAGUARD_MAX_EVENTS = "100000"
+$env:VESPAGUARD_RETENTION_INTERVAL_SECONDS = "3600"
 python -m integrations.local_ingest
 ```
 
@@ -23,6 +28,7 @@ export VESPAGUARD_INGEST_TOKEN="$(python -c 'import secrets; print(secrets.token
 export VESPAGUARD_INGEST_DB="$HOME/.local/share/beekeeper-monitor/events.sqlite3"
 export VESPAGUARD_RETENTION_DAYS=90
 export VESPAGUARD_MAX_EVENTS=100000
+export VESPAGUARD_RETENTION_INTERVAL_SECONDS=3600
 python -m integrations.local_ingest
 ```
 
@@ -38,15 +44,16 @@ All endpoints require `Authorization: Bearer <token>`.
 - `GET /api/v1/events?limit=100` — list up to 500 most recent metadata events.
 - `DELETE /api/v1/events/{event_id}` — explicitly delete one event by its 64-character SHA-256 identifier.
 
-Events are validated against `integrations/event_contracts.py`. The database has a maximum-row bound and expires records older than the configured retention period on writes. Configure backup and deletion policies appropriate to the deployment.
+Events are validated against `integrations/event_contracts.py`. The database has a maximum-row bound and expires records older than the configured retention period on writes. Expired records are also purged once at startup and then by a maintenance thread (default every 3600 seconds). Configure the interval with `VESPAGUARD_RETENTION_INTERVAL_SECONDS` (300–86400 seconds). Configure backup and deletion policies appropriate to the deployment.
 
 ## Storage and privacy limits
 
 - SQLite data is stored at `VESPAGUARD_INGEST_DB`; default path is `integrations/data/events.sqlite3`.
-- On POSIX, the database is chmod'd to 0600. On Windows, enforce NTFS ACLs for the service account and administrators.
+- On POSIX, use a dedicated service-owned database directory with mode 0700; the database and any SQLite WAL/SHM files are restricted to mode 0600. The service refuses to use an existing group/world-accessible directory instead of silently changing its permissions.
+- On Windows, enforce NTFS ACLs for the service account and administrators before first start; this service does not modify Windows ACLs.
 - This implementation does **not** provide database encryption at rest. Use BitLocker/FileVault/LUKS or an approved encrypted storage volume.
 - The service has no public listener, user accounts, remote roles or central identity provider.
-- Retention is local to this service. Backups, replicas, logs, browser IndexedDB and exports require separate retention/deletion handling.
+- Retention runs at startup and periodically in this service. Backups, replicas, logs, browser IndexedDB and exports require separate retention/deletion handling; automatic encrypted backup/restore is not implemented.
 - Event labels and device identifiers can still be personal or commercially sensitive information. Minimize them.
 - A successful 202 means the local SQLite transaction committed; it does not establish remote replication or a legal retention basis.
 

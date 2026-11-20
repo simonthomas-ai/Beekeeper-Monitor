@@ -1,11 +1,14 @@
 import http.client
 import json
 import os
+import stat
 import tempfile
 import threading
 import unittest
 
-from integrations.local_ingest import make_handler, make_server
+from datetime import datetime, timedelta, timezone
+
+from integrations.local_ingest import make_handler, make_server, retention_maintenance
 from integrations.event_contracts import HiveEvent
 from integrations.event_store import SQLiteEventStore
 
@@ -97,6 +100,43 @@ class SQLiteEventStoreTests(unittest.TestCase):
     def test_invalid_page_size_rejected(self):
         with self.assertRaises(ValueError):
             self.store.list_events(501)
+
+    def test_invalid_retention_maintenance_interval_rejected(self):
+        with self.assertRaises(ValueError):
+            retention_maintenance(self.store, threading.Event(), interval_seconds=10)
+
+    def test_expired_events_are_purged(self):
+        event_json = self.event().to_json()
+        old_received = (datetime.now(timezone.utc) - timedelta(days=100)).isoformat()
+        with self.store._db() as db:
+            db.execute(
+                "INSERT INTO events (event_id, kind, device_id, event_timestamp, received_at, event_json) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                ("a" * 64, "hive_telemetry", "old-sensor", "2026-08-01T00:00:00Z",
+                 old_received, event_json),
+            )
+        self.assertEqual(self.store.purge_expired(), 1)
+        self.assertEqual(self.store.count(), 0)
+
+    def test_private_sqlite_directory_and_file_modes(self):
+        private_dir = os.path.join(self.tmp.name, "private-store")
+        store = SQLiteEventStore(os.path.join(private_dir, "events.sqlite3"))
+        store(self.event())
+        if os.name == "posix":
+            directory_mode = stat.S_IMODE(os.stat(private_dir).st_mode)
+            file_mode = stat.S_IMODE(os.stat(store.path).st_mode)
+            self.assertEqual(directory_mode, 0o700)
+            self.assertEqual(file_mode, 0o600)
+
+    def test_refuses_shared_directory_without_changing_its_permissions(self):
+        if os.name != "posix":
+            self.skipTest("POSIX directory mode check")
+        shared_dir = os.path.join(self.tmp.name, "shared")
+        os.mkdir(shared_dir, 0o755)
+        os.chmod(shared_dir, 0o755)
+        with self.assertRaises(PermissionError):
+            SQLiteEventStore(os.path.join(shared_dir, "events.sqlite3"))
+        self.assertEqual(stat.S_IMODE(os.stat(shared_dir).st_mode), 0o755)
 
     def test_delete_is_explicit_and_idempotent(self):
         event = self.event()
