@@ -98,6 +98,60 @@ class SQLiteEventStoreTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.store.list_events(501)
 
+    def test_delete_is_explicit_and_idempotent(self):
+        event = self.event()
+        self.store(event)
+        event_id = self.store.list_events()[0]["event_id"]
+        self.assertTrue(self.store.delete(event_id))
+        self.assertFalse(self.store.delete(event_id))
+        self.assertEqual(self.store.count(), 0)
+
+
+class AuthenticatedStoreApiTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        cls.store = SQLiteEventStore(os.path.join(cls.tmp.name, "api.sqlite3"))
+        cls.server = make_server(TOKEN, cls.store)
+        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.thread.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+        cls.server.server_close()
+        cls.thread.join(timeout=2)
+        cls.tmp.cleanup()
+
+    def request(self, method, path, token=TOKEN, body=None):
+        conn = http.client.HTTPConnection("127.0.0.1", self.server.server_port, timeout=3)
+        headers = {"Authorization": "Bearer " + token}
+        if body is not None:
+            headers["Content-Type"] = "application/json"
+        conn.request(method, path, body=body, headers=headers)
+        response = conn.getresponse()
+        payload = response.read()
+        status = response.status
+        conn.close()
+        return status, json.loads(payload) if payload else None
+
+    def test_authenticated_list_and_delete(self):
+        event = HiveEvent("hive_telemetry", "sensor-api", "2026-11-19T19:00:00Z",
+                          {"temperature_c": 22.0, "humidity_pct": 44})
+        self.store(event)
+        status, payload = self.request("GET", "/api/v1/events?limit=10")
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["count"], 1)
+        event_id = payload["events"][0]["event_id"]
+        status, payload = self.request("DELETE", "/api/v1/events/" + event_id)
+        self.assertEqual(status, 200)
+        self.assertTrue(payload["deleted"])
+        self.assertEqual(self.store.count(), 0)
+
+    def test_event_api_requires_authentication(self):
+        status, _ = self.request("GET", "/api/v1/events", token="wrong")
+        self.assertEqual(status, 401)
+
 
 if __name__ == "__main__":
     unittest.main()
