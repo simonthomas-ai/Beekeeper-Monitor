@@ -341,5 +341,134 @@ class StorageFailureTests(unittest.TestCase):
             thread.join(timeout=3)
 
 
+
+class AdditionalContractSecurityTests(unittest.TestCase):
+    def test_bridge_metadata_is_accepted_but_remains_unverified(self):
+        event = HiveEvent(
+            "camera_detection",
+            "yard_cam_north",
+            "2026-11-20T10:00:00+01:00",
+            {
+                "label": "unverified_candidate:vespa_velutina",
+                "confidence": 0.83,
+                "origin_event_id": "hornet-event-001",
+                "verification_status": "unverified",
+                "prey_detected": True,
+            },
+            source="hornet3000",
+        )
+        parsed = HiveEvent.from_json(event.to_json())
+        self.assertEqual(parsed.payload["verification_status"], "unverified")
+
+    def test_untrusted_coordinates_media_and_free_fields_are_rejected(self):
+        valid = {
+            "kind": "camera_detection",
+            "device_id": "yard_cam_north",
+            "timestamp": "2026-11-20T10:00:00+01:00",
+            "source": "hornet3000",
+            "schema_version": 1,
+            "payload": {
+                "label": "vespa_velutina",
+                "confidence": 0.8,
+                "latitude": 51.2,
+                "image_base64": "not-accepted",
+            },
+        }
+        with self.assertRaises(ValueError):
+            HiveEvent.from_json(json.dumps(valid))
+
+    def test_duplicate_json_keys_are_rejected(self):
+        raw = (
+            '{"kind":"hive_telemetry","device_id":"sensor-01",'
+            '"timestamp":"2026-11-20T10:00:00Z","source":"station-01",'
+            '"schema_version":1,"payload":{"temperature_c":21.5,'
+            '"humidity_pct":45,"humidity_pct":99}}'
+        )
+        with self.assertRaises(ValueError):
+            HiveEvent.from_json(raw)
+
+    def test_explicit_timezone_offset_is_valid_but_naive_timestamp_is_not(self):
+        offset_event = HiveEvent(
+            "hive_telemetry", "sensor-01", "2026-11-20T10:00:00+01:00",
+            {"temperature_c": 21.5, "humidity_pct": 45},
+        )
+        self.assertIsNone(offset_event.validate())
+        naive_event = HiveEvent(
+            "hive_telemetry", "sensor-01", "2026-11-20T10:00:00",
+            {"temperature_c": 21.5, "humidity_pct": 45},
+        )
+        with self.assertRaises(ValueError):
+            naive_event.validate()
+
+    def test_boolean_schema_version_is_rejected(self):
+        event = HiveEvent(
+            "hive_telemetry", "sensor-01", "2026-11-20T10:00:00Z",
+            {"temperature_c": 21.5, "humidity_pct": 45},
+            schema_version=True,
+        )
+        with self.assertRaises(ValueError):
+            event.validate()
+
+    def test_capacity_fails_closed_and_keeps_existing_events_and_duplicate_detection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = SQLiteEventStore(
+                os.path.join(directory, "events.sqlite3"),
+                retention_days=90,
+                max_rows=100,
+            )
+            first = None
+            for index in range(100):
+                event = HiveEvent(
+                    "hive_telemetry",
+                    f"sensor_{index:03d}",
+                    "2026-11-20T10:00:00Z",
+                    {"temperature_c": 20.0, "humidity_pct": 45},
+                )
+                store(event)
+                if index == 0:
+                    first = event
+            self.assertEqual(store.count(), 100)
+            self.assertFalse(store(first))
+            overflow = HiveEvent(
+                "hive_telemetry", "sensor_overflow", "2026-11-20T10:00:00Z",
+                {"temperature_c": 20.0, "humidity_pct": 45},
+            )
+            with self.assertRaises(RuntimeError):
+                store(overflow)
+            self.assertEqual(store.count(), 100)
+            self.assertEqual(
+                store.list_events(500)[-1]["event"]["device_id"],
+                "sensor_000",
+            )
+
+    def test_duplicate_authorization_headers_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = SQLiteEventStore(os.path.join(directory, "events.sqlite3"))
+            server = make_server(TOKEN, store, port=0)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                raw = (
+                    b"GET /api/v1/events HTTP/1.1\\r\\n"
+                    b"Host: localhost\\r\\n"
+                    b"Authorization: Bearer " + TOKEN.encode("ascii") + b"\\r\\n"
+                    b"Authorization: Bearer another-token-value-123456789\\r\\n"
+                    b"Connection: close\\r\\n\\r\\n"
+                )
+                with socket.create_connection(("127.0.0.1", server.server_port), timeout=3) as client:
+                    client.sendall(raw)
+                    response = client.recv(4096)
+                self.assertIn(b" 401 ", response.split(b"\\r\\n", 1)[0])
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=3)
+
+    def test_non_ascii_bearer_secret_is_rejected(self):
+        with self.assertRaises(ValueError):
+            make_handler("ä" * 24, lambda _: None)
+
+
+
 if __name__ == "__main__":
     unittest.main()
