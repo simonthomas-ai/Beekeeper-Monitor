@@ -39,7 +39,7 @@ jobs:
               message = "3D metadata discovery did not produce a status file."
               print(f"::error::{message}")
               with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
-                  summary.write(f"## CC0 3D inventory\\n\\n**Status:** missing\\n\\n{message}\\n")
+                  summary.write(f"## CC0 3D inventory\n\n**Status:** missing\n\n{message}\n")
               raise SystemExit(1)
 
           status = json.loads(path.read_text(encoding="utf-8"))
@@ -59,7 +59,7 @@ jobs:
               )
               print(f"::warning::{message}")
           with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
-              summary.write(f"## CC0 3D inventory\\n\\n**Status:** {state}\\n\\n{message}\\n")
+              summary.write(f"## CC0 3D inventory\n\n**Status:** {state}\n\n{message}\n")
           PY
       - name: Upload review-only inventory and status
         if: always()
