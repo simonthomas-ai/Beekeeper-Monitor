@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -21,7 +21,7 @@ jobs:
         run: python training/audit_european_taxa.py
       - name: Upload audit for review
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: european-apiary-taxon-audit
           path: training/european-apiary-taxonomy-audit.csv
