@@ -1,6 +1,6 @@
 # Local event ingestion and storage
 
-This service accepts **validated metadata only** from trusted local components. It does not accept or store photographs, audio, video, model files, GPS coordinates, API keys or arbitrary attachments.
+This service serves the local station PWA and accepts **validated metadata only** from trusted local components. It does not accept or store photographs, audio, video, model files, GPS coordinates, API keys or arbitrary attachments. Camera events may additionally carry only a bounded source event ID, the literal `verification_status="unverified"`, and a boolean `prey_detected` flag.
 
 ## Run locally
 
@@ -28,17 +28,17 @@ python -m integrations.local_ingest
 
 Then open `http://127.0.0.1:8765/` in the same browser. This local endpoint serves the static PWA and its authenticated station-event panel on the same origin as the API. The panel asks for the token each time; it is kept only in JavaScript memory and cleared on page exit. The public GitHub Pages copy does not connect to the local receiver.
 
-Keep the token in a local secret manager or protected environment file. Never commit it. The service binds to `127.0.0.1:8765` and must not be directly exposed to the public internet. The default rate limit is 60 requests per client IP per 60 seconds; maximum active request workers are 16 and request body size is capped at 32 KiB. Static serving is allowlisted; Python source, hidden files and private data directories are not served.
+Keep the token in a local secret manager or protected environment file. Never commit it. The service binds to `127.0.0.1:8765` and must not be directly exposed to the public internet. The default rate limit is 60 requests per client IP per 60 seconds; maximum active request workers are 16, the accept queue is bounded, socket reads time out after five seconds, request bodies have a ten-second total deadline, and the request body size is capped at 32 KiB. Per-IP state for the 60/60-second rate limit is itself bounded. Static serving is allowlisted; Python source, hidden files and private data directories are not served.
 
 ## API
 
 All endpoints require `Authorization: Bearer <token>`.
 
 - `POST /api/v1/events` — validate and durably insert an event. Returns 202 once the SQLite transaction commits. Repeating the exact same canonical event is idempotent.
-- `GET /api/v1/events?limit=100` — list up to 500 most recent metadata events.
+- `GET /api/v1/events?limit=100` — list up to 500 most recent metadata events and return both `events` and `count`.
 - `DELETE /api/v1/events/{event_id}` — explicitly delete one event by its 64-character SHA-256 identifier.
 
-Events are validated against `integrations/event_contracts.py`. The database has a maximum-row bound and expires records older than the configured retention period on writes. Configure backup and deletion policies appropriate to the deployment.
+Events are validated against `integrations/event_contracts.py`. Only the required fields for each event type and the three documented camera metadata extensions are accepted. The receiver rejects unknown fields, coordinates, media, duplicate JSON keys, non-finite numbers and any verification status other than `unverified`. A source adapter cannot assert expert confirmation. The database has a maximum-row bound and expires records older than the configured retention period on writes. Configure backup and deletion policies appropriate to the deployment.
 
 ## Storage and privacy limits
 
