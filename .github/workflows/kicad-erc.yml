@@ -1,0 +1,40 @@
+name: KiCad Schaltplan-ERC
+on:
+  push:
+    branches:
+      - hardware/sensoradapter-erc-20261120
+      - main
+    paths:
+      - 'hardware/sensoradapter-v01/**'
+      - '.github/workflows/kicad-erc.yml'
+  pull_request:
+    paths:
+      - 'hardware/sensoradapter-v01/**'
+      - '.github/workflows/kicad-erc.yml'
+  workflow_dispatch:
+jobs:
+  kicad-erc:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: KiCad 9 installieren
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository -y ppa:kicad/kicad-9.0-releases
+          sudo apt-get update
+          sudo apt-get install -y kicad
+          kicad-cli sch erc --help
+      - name: ERC ausfuehren
+        run: |
+          mkdir -p build/kicad
+          kicad-cli sch erc --exit-code-violations --output build/kicad/erc-report.txt hardware/sensoradapter-v01/sensoradapter-v01.kicad_sch
+      - name: ERC-Bericht speichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sensoradapter-kicad-erc
+          path: build/kicad/erc-report.txt
+          if-no-files-found: warn
