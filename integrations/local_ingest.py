@@ -278,6 +278,20 @@ def make_server(token, sink, host="127.0.0.1", port=8765, max_workers=MAX_WORKER
     )
 
 
+def retention_maintenance(store, stop_event, interval_seconds=3600):
+    """Periodically purge expired metadata without logging event content."""
+    if not 300 <= interval_seconds <= 86400:
+        raise ValueError("retention interval must be between 300 and 86400 seconds")
+    while not stop_event.wait(interval_seconds):
+        try:
+            removed = store.purge_expired()
+            if removed:
+                print(f"Retention maintenance removed {removed} expired event(s).", flush=True)
+        except Exception:
+            # Keep the service alive; never log event payloads or identifiers.
+            print("Retention maintenance failed; inspect local service diagnostics.", flush=True)
+
+
 def run():
     token = os.environ.get("VESPAGUARD_INGEST_TOKEN", "")
     db_path = os.environ.get(
@@ -286,14 +300,30 @@ def run():
     )
     retention_days = int(os.environ.get("VESPAGUARD_RETENTION_DAYS", "90"))
     max_rows = int(os.environ.get("VESPAGUARD_MAX_EVENTS", "100000"))
+    retention_interval = int(os.environ.get("VESPAGUARD_RETENTION_INTERVAL_SECONDS", "3600"))
+    if not 300 <= retention_interval <= 86400:
+        raise ValueError("VESPAGUARD_RETENTION_INTERVAL_SECONDS must be between 300 and 86400")
     store = SQLiteEventStore(db_path, retention_days=retention_days, max_rows=max_rows)
+    removed = store.purge_expired()
+    if removed:
+        print(f"Startup retention removed {removed} expired event(s).", flush=True)
     server = make_server(token, store)
+    stop_event = threading.Event()
+    maintenance = threading.Thread(
+        target=retention_maintenance,
+        args=(store, stop_event, retention_interval),
+        name="beekeeper-retention",
+        daemon=True,
+    )
+    maintenance.start()
     print("BeeKeeper local PWA and ingestion API: http://127.0.0.1:8765/ (localhost only)", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        stop_event.set()
+        maintenance.join(timeout=5)
         server.shutdown()
         server.server_close()
 
