@@ -5,6 +5,7 @@ on:
       - hardware/kicad-cli-drc-20261120
       - hardware/kicad-sensoradapter-v01-20261120
       - hardware/kicad-drc-rebuild-20261120
+      - hardware/kicad-drc-finalize-20261120
     paths:
       - 'hardware/sensoradapter-v01/**'
       - '.github/workflows/kicad-drc.yml'
@@ -57,6 +58,8 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/build/kicad"
           cd hardware/sensoradapter-v01
           test -f fp-lib-table
+          echo 'Verwendete Projekt-Footprintbibliothek:'
+          cat fp-lib-table
           kicad-cli pcb drc \
             --output "$GITHUB_WORKSPACE/build/kicad/drc-report.txt" \
             --exit-code-violations \
