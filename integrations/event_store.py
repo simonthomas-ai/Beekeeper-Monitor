@@ -97,6 +97,19 @@ class SQLiteEventStore:
             for row in rows
         ]
 
+    def delete(self, event_id: str) -> bool:
+        if not isinstance(event_id, str) or len(event_id) != 64:
+            raise ValueError("Invalid event ID")
+        with self._db() as db:
+            cursor = db.execute("DELETE FROM events WHERE event_id = ?", (event_id,))
+            return cursor.rowcount == 1
+
+    def purge_expired(self) -> int:
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=self.retention_days)).isoformat()
+        with self._db() as db:
+            cursor = db.execute("DELETE FROM events WHERE received_at < ?", (cutoff,))
+            return cursor.rowcount
+
     def count(self) -> int:
         with self._db() as db:
             return int(db.execute("SELECT COUNT(*) FROM events").fetchone()[0])
