@@ -29,7 +29,7 @@ report = [
 ]
 report += [f"| {split} | {images} | {labels} |" for split, images, labels in rows]
 report += [f"| Provenienzmanifest | {provenance_rows} Bilddatensätze | " + ("vorhanden" if provenance_path.is_file() else "fehlt") + " |"]
-report += ["", "Die Trainingsfreigabe verlangt training/beekeeper/provenance.jsonl, einen Lizenz- und SHA-256-Nachweis pro Bild, menschlich geprüfte Art-/Boxlabels und split-sichere Beobachtungs-/Fotografen-/Standortgruppen.",
+report += ["", "Die Trainingsfreigabe verlangt datasets/beekeeper/provenance.jsonl, einen Lizenz- und SHA-256-Nachweis pro Bild, menschlich geprüfte Art-/Boxlabels und split-sichere Beobachtungs-/Fotografen-/Standortgruppen.",
            "Diese Inventur belegt weder korrekte Annotationen noch Modellgewichte,",
            "Erkennungsgenauigkeit, SMS-Zustellung oder reale Hardwaretests.",
            "Die Modellfreigabe bleibt bis zu unabhängiger Validierung offen."]
