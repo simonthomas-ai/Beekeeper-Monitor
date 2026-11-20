@@ -71,6 +71,8 @@ def main():
     parser.add_argument('--device',default='cpu')
     parser.add_argument('--validate-only',action='store_true')
     parser.add_argument('--accept-agpl',action='store_true', help='Explicitly accept AGPL-3.0 obligations for the current Ultralytics training path')
+    parser.add_argument('--pretrained-model',default='yolo11n.pt')
+    parser.add_argument('--confidence-threshold',type=float,default=0.5)
     args=parser.parse_args()
     root=Path(__file__).resolve().parents[1]
     report=validate(root)
@@ -79,7 +81,10 @@ def main():
         return
     if not args.accept_agpl:
         parser.error('The configured Ultralytics trainer has AGPL-3.0 obligations; pass --accept-agpl only after license review, or use a separately reviewed trainer.')
+    if not 0.0 <= args.confidence_threshold <= 1.0:
+        parser.error('--confidence-threshold must be in 0..1; do not interpret this as a validated operating threshold')
     from ultralytics import YOLO
+    import hashlib
     # A single multi-class detector; it is NOT six independent validated models.
     from tempfile import TemporaryDirectory
     with TemporaryDirectory() as temp:
@@ -87,10 +92,52 @@ def main():
         cfg['path']=str((root/cfg['path']).resolve())
         resolved=Path(temp)/'data.yaml'
         resolved.write_text(yaml.safe_dump(cfg),encoding='utf-8')
-        model=YOLO('yolo11n.pt')
-        model.train(data=str(resolved),epochs=args.epochs,imgsz=args.imgsz,device=args.device,project=str(root/'runs'),name='six-class-detector',exist_ok=False)
-        model.val(data=str(resolved),split='test')
-    print('Training completed. Evaluate per-class precision/recall before deployment.')
+        model=YOLO(args.pretrained_model)
+        results=model.train(data=str(resolved),epochs=args.epochs,imgsz=args.imgsz,device=args.device,project=str(root/'runs'),name='six-class-detector',exist_ok=False)
+        run_dir=Path(results.save_dir)
+        best_weights=run_dir/'weights'/'best.pt'
+        if not best_weights.is_file():
+            raise FileNotFoundError('Training finished without a best.pt checkpoint; refusing to export a missing model')
+        best=YOLO(str(best_weights))
+        validation=best.val(data=str(resolved),split='test',plots=True)
+        exported=Path(best.export(format='onnx',imgsz=args.imgsz,nms=True,dynamic=False))
+        digest=hashlib.sha256(exported.read_bytes()).hexdigest()
+        model_dir=run_dir/'deployment'
+        model_dir.mkdir(parents=True,exist_ok=False)
+        model_target=model_dir/'detector.onnx'
+        exported.replace(model_target)
+        model_classes=[]
+        for class_id,name in enumerate(CLASSES):
+            model_classes.append({
+                'id': class_id, 'label': name, 'threshold': args.confidence_threshold,
+                'prey_detected': False,
+            })
+        manifest={
+            'manifest_version': 1,
+            'model_file': 'detector.onnx',
+            'model_sha256': digest,
+            'model_version': f'{args.pretrained_model};ultralytics-{__import__("ultralytics").__version__};best-checkpoint',
+            'model_source_url': 'https://github.com/ultralytics/ultralytics',
+            'model_license': 'AGPL-3.0-only',
+            'license_review_status': 'approved',
+            'inference_status': 'experimental',
+            'input': {
+                'name': 'images', 'width': args.imgsz, 'height': args.imgsz,
+                'color': 'RGB', 'layout': 'NCHW', 'scale': '0..1',
+                'resize_mode': 'letterbox',
+            },
+            'outputs': {
+                'detections': 'output0',
+                'box_format': 'xyxy_pixels_nms_matrix6',
+            },
+            'classes': model_classes,
+        }
+        manifest_path=model_dir/'model-manifest.json'
+        manifest_path.write_text(json.dumps(manifest,indent=2)+'\\n',encoding='utf-8')
+    print('Training and ONNX export completed. Model remains EXPERIMENTAL and all detections remain unverified.')
+    print(f'Model artifact: {model_target}')
+    print(f'Manifest: {manifest_path}')
+    print('Do not enable field deployment until independent per-class evaluation and thresholds have been reviewed.')
 
 if __name__=='__main__':
     main()
