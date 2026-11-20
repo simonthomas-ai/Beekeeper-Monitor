@@ -3,6 +3,7 @@
 import argparse
 import csv
 import json
+from collections import Counter
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -50,6 +51,7 @@ def discover(fetch=None, diagnostics=None):
     records, errors, seen = [], [], set()
     counters = {'raw_results': 0, 'accepted': 0, 'rejected': 0}
     per_query = []
+    rejection_reasons = Counter()
     for term in TERMS:
         url = API + "?" + urllib.parse.urlencode({
             "type": "models", "q": term, "downloadable": "true", "count": MAX_RESULTS_PER_TERM})
@@ -61,6 +63,25 @@ def discover(fetch=None, diagnostics=None):
             counters["raw_results"] += len(results)
             per_query.append({"query": term, "raw_results": len(results)})
             for item in results:
+                if not isinstance(item, dict):
+                    reason = "invalid_item"
+                else:
+                    uid = item.get("uid")
+                    license_value = item.get("license")
+                    if isinstance(license_value, dict):
+                        license_value = license_value.get("slug", "")
+                    slug = license_value.strip().lower() if isinstance(license_value, str) else ""
+                    if not isinstance(uid, str) or not (8 <= len(uid) <= 64 and uid.isalnum()):
+                        reason = "invalid_uid"
+                    elif slug not in ALLOWED:
+                        reason = "missing_or_disallowed_license"
+                    elif item.get("isDownloadable") is not True:
+                        reason = "missing_or_false_download_flag"
+                    elif uid in seen:
+                        reason = "duplicate"
+                    else:
+                        reason = "accepted"
+                rejection_reasons[reason] += 1
                 row = normalize(item, term)
                 if row and row["model_uid"] not in seen:
                     seen.add(row["model_uid"])
@@ -71,7 +92,7 @@ def discover(fetch=None, diagnostics=None):
         except (ValueError, OSError, TimeoutError, json.JSONDecodeError) as exc:
             errors.append({"query": term, "error_type": type(exc).__name__})
     if diagnostics is not None:
-        diagnostics.update({"counts": counters, "per_query": per_query,
+        diagnostics.update({"counts": counters, "reasons": dict(rejection_reasons), "per_query": per_query,
                             "note": "Only first page per query scanned; rejection reasons need further review."})
     return records, errors
 
