@@ -67,6 +67,7 @@ jobs:
           mkdir -p "$HOME/.config/kicad/9.0"
           cp fp-lib-table "$HOME/.config/kicad/9.0/fp-lib-table"
           echo "Footprintbibliothek: $KICAD9_FOOTPRINT_DIR"
+          echo "DRC-Pruefung fuer Git-Commit: $(git rev-parse --short HEAD)"
           kicad-cli pcb drc \
             --output "$GITHUB_WORKSPACE/build/kicad/drc-report.txt" \
             --exit-code-violations \
