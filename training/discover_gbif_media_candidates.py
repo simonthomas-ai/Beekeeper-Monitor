@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import time
 import urllib.parse
@@ -102,7 +103,7 @@ def media_candidate(media, occurrence, species):
     media_id = image_url.strip()
     dataset_key = occurrence.get("datasetKey") or ""
     return {
-        "source_id": "gbif-media-" + str(occurrence_id) + "-" + str(abs(hash(media_id))),
+        "source_id": "gbif-media-" + str(occurrence_id) + "-" + hashlib.sha256(media_id.encode("utf-8")).hexdigest()[:16],
         "source_url": "https://www.gbif.org/occurrence/" + str(occurrence_id),
         "image_url": image_url,
         "media_license": license_data[0],
