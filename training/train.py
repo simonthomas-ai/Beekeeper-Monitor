@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Train six independent YOLO detectors on real, verified labeled datasets.
-Fails closed if data or label metadata is absent. No fake model output.
+"""Train one experimental six-class YOLO baseline on licensed, verified images.
+Fails closed if per-image provenance, splits, annotations or rights metadata are absent.
 """
 import argparse
 import hashlib
