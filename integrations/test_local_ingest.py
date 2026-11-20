@@ -400,6 +400,14 @@ class AdditionalContractSecurityTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             naive_event.validate()
 
+    def test_extreme_numeric_overflow_is_rejected_as_invalid_input(self):
+        event = HiveEvent(
+            "camera_detection", "cam_overflow", "2026-11-20T10:00:00Z",
+            {"label": "vespa_velutina", "confidence": 10 ** 1000},
+        )
+        with self.assertRaises(ValueError):
+            event.validate()
+
     def test_boolean_schema_version_is_rejected(self):
         event = HiveEvent(
             "hive_telemetry", "sensor-01", "2026-11-20T10:00:00Z",
