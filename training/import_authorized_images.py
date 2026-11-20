@@ -168,14 +168,17 @@ def import_candidates(input_path: str | Path, output_root: str | Path, *, limit:
                 raise FileExistsError("candidate destination already exists; refusing to overwrite")
             try:
                 with destination.open("xb") as target:
+                    created_paths.append(destination)
                     target.write(clean_bytes)
                     target.flush()
                     os.fsync(target.fileno())
             except Exception:
-                try: destination.unlink()
-                except FileNotFoundError: pass
+                # Never remove a pre-existing file when exclusive creation fails.
+                if destination in created_paths:
+                    try: destination.unlink()
+                    except FileNotFoundError: pass
+                    created_paths.remove(destination)
                 raise
-            created_paths.append(destination)
             try: os.chmod(destination, 0o600)
             except OSError: pass
             accepted.append({
