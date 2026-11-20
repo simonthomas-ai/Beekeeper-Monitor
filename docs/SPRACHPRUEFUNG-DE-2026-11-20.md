@@ -34,3 +34,18 @@
 
 ## Nächste Umsetzung
 Die drei oben nachgewiesenen englischen Fachtexte übersetzen, anschließend die restlichen Markdown-Dateien beider Repositories und die sichtbaren Oberflächentexte systematisch durchgehen. Diese Bestandsaufnahme ist eine Arbeitsliste und **kein Abschlussnachweis für 100 % Deutsch**.
+
+
+## Nachprüfung der sichtbaren Web- und PWA-Texte (20.11.2026)
+
+Gezielt auf dem aktuellen Hauptbranch eingesehen:
+- Monitor: `index.html`, `app.js`, `alert-ui.js`, `integrations-ui.js`, `live-media.js`, `manifest.webmanifest`, `review/all.html`, `review/apis.html`, `review/velutina.html`.
+- BeeKeeper3000: `mobile-pwa/index.html`, `mobile-pwa/app.mjs`, `mobile-pwa/manifest.webmanifest`.
+
+**Ergebnis der Stichprobe:** Formularbeschriftungen, Speicher-/Exportmeldungen, Warnhinweise, Browserberechtigungen und Galeriebedienung sind überwiegend bereits deutsch. Die Bildprüfseiten tragen `lang="de"`; die mobile Meldestelle ebenfalls. Wissenschaftliche Artnamen, JSON-Schlüssel, Browser-API-Bezeichner und Produktnamen bleiben absichtlich unverändert. Die Einträge `Service Worker` und `Bluetooth LE` der mobilen Funktionsliste werden in einem separaten Pull Request sprachlich angepasst.
+
+**Noch zu prüfen:** Die vier weiteren einzelnen Bildprüfseiten (`review/crabro.html`, `review/bombus.html`, `review/vespula.html`, `review/photos.html`), sämtliche nicht durch diese Stichprobe abgedeckten JavaScript-Zweige, die offline zwischengespeicherte PWA nach einem Service-Worker-Update und die tatsächlich auf GitHub Pages veröffentlichte Fassung. Die PWA muss nach Veröffentlichung auf iPhone, Android und Desktop im Browser getestet werden. Ein statischer Quelltextcheck belegt keine erfolgreiche Installation, keine funktionierende Offline-Nutzung und keine korrekte Laufzeitdarstellung.
+
+**Befund zu technischen Fehlermeldungen:** Einige Browserfehler können den vom Browser gelieferten englischen Fehlernamen (`err.name`) anhängen. Das ist ein Diagnosewert und kein bewusst übersetzter Bedienhinweis. Eine spätere benutzerfreundliche Fehlerzuordnung darf keine wichtigen Fehlerdetails verschlucken.
+
+**Nicht verwechseln:** Deutschsprachige Bedienoberfläche, funktionierende Kamera-/KI-Erkennung und DSGVO-Konformität sind voneinander unabhängige Abnahmekriterien. Diese Sprachprüfung bestätigt ausschließlich eingesehene Texte.
