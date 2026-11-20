@@ -72,6 +72,7 @@ def main():
     parser.add_argument('--validate-only',action='store_true')
     parser.add_argument('--accept-agpl',action='store_true', help='Explicitly accept AGPL-3.0 obligations for the current Ultralytics training path')
     parser.add_argument('--pretrained-model',default='yolo11n.pt')
+    parser.add_argument('--pretrained-model-source-url',default='https://github.com/ultralytics/assets/releases')
     parser.add_argument('--confidence-threshold',type=float,default=0.5)
     args=parser.parse_args()
     root=Path(__file__).resolve().parents[1]
@@ -83,6 +84,10 @@ def main():
         parser.error('The configured Ultralytics trainer has AGPL-3.0 obligations; pass --accept-agpl only after license review, or use a separately reviewed trainer.')
     if not 0.0 <= args.confidence_threshold <= 1.0:
         parser.error('--confidence-threshold must be in 0..1; do not interpret this as a validated operating threshold')
+    from urllib.parse import urlparse
+    source_url=urlparse(args.pretrained_model_source_url)
+    if source_url.scheme != 'https' or not source_url.netloc:
+        parser.error('--pretrained-model-source-url must be an HTTPS provenance URL')
     from ultralytics import YOLO
     import hashlib
     # A single multi-class detector; it is NOT six independent validated models.
@@ -94,7 +99,7 @@ def main():
         resolved.write_text(yaml.safe_dump(cfg),encoding='utf-8')
         model=YOLO(args.pretrained_model)
         results=model.train(data=str(resolved),epochs=args.epochs,imgsz=args.imgsz,device=args.device,project=str(root/'runs'),name='six-class-detector',exist_ok=False)
-        run_dir=Path(results.save_dir)
+        run_dir=Path(model.trainer.save_dir)
         best_weights=run_dir/'weights'/'best.pt'
         if not best_weights.is_file():
             raise FileNotFoundError('Training finished without a best.pt checkpoint; refusing to export a missing model')
@@ -117,7 +122,7 @@ def main():
             'model_file': 'detector.onnx',
             'model_sha256': digest,
             'model_version': f'{args.pretrained_model};ultralytics-{__import__("ultralytics").__version__};best-checkpoint',
-            'model_source_url': 'https://github.com/ultralytics/ultralytics',
+            'model_source_url': args.pretrained_model_source_url,
             'model_license': 'AGPL-3.0-only',
             'license_review_status': 'approved',
             'inference_status': 'experimental',
@@ -134,6 +139,17 @@ def main():
         }
         manifest_path=model_dir/'model-manifest.json'
         manifest_path.write_text(json.dumps(manifest,indent=2)+'\\n',encoding='utf-8')
+        metrics_dict=getattr(validation,'results_dict',{}) or {}
+        evidence={
+            'status':'internal_test_split_only_not_independent_field_validation',
+            'dataset_validation':report,
+            'test_metrics':{str(key):float(value) for key,value in metrics_dict.items()},
+            'onnx_sha256':digest,
+            'model_license':'AGPL-3.0-only',
+            'model_license_review':'operator_explicitly_acknowledged_via_accept_agpl_flag',
+            'confidence_thresholds':'experimental_not_calibrated',
+        }
+        (model_dir/'training-evidence.json').write_text(json.dumps(evidence,indent=2)+'\\n',encoding='utf-8')
     print('Training and ONNX export completed. Model remains EXPERIMENTAL and all detections remain unverified.')
     print(f'Model artifact: {model_target}')
     print(f'Manifest: {manifest_path}')
