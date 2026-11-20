@@ -62,7 +62,13 @@ jobs:
           echo 'Verwendete Projekt-Footprintbibliothek:'
           cat fp-lib-table
           test -f Connector_PinHeader_2.54mm.pretty/PinHeader_1x04_P2.54mm_Vertical.kicad_mod
-          echo "KiCad nutzt projektlokale Footprintbibliothek (KIPRJMOD)."
+          # Headless KiCad CLI laedt bei diesem Board ohne .kicad_pro
+          # die projektlokale Tabelle nicht automatisch. Wir registrieren
+          # dieselbe eingecheckte Bibliothek mit absolutem Pfad global.
+          mkdir -p "$HOME/.config/kicad/9.0"
+          printf '(fp_lib_table\n  (version 7)\n  (lib (name "Connector_PinHeader_2.54mm")(type "KiCad")(uri "%s/Connector_PinHeader_2.54mm.pretty")(options "")(descr "VespaGuard project footprint"))\n)\n' "$PWD" > "$HOME/.config/kicad/9.0/fp-lib-table"
+          cat "$HOME/.config/kicad/9.0/fp-lib-table"
+          echo "KiCad nutzt die projektlokale Footprintbibliothek mit absolutem CI-Pfad."
           echo "DRC-Pruefung fuer Git-Commit: $(git rev-parse --short HEAD)"
           kicad-cli pcb drc \
             --output "$GITHUB_WORKSPACE/build/kicad/drc-report.txt" \
