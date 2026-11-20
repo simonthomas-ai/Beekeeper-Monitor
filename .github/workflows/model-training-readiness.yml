@@ -28,6 +28,6 @@ jobs:
             python training/train.py --validate-only
           else
             echo '## Model training blocked' >> "$GITHUB_STEP_SUMMARY"
-            echo 'No complete six-class, licensed, annotated train/val/test dataset is available. This is a reported readiness blocker, not a CI infrastructure failure. No weights or accuracy are claimed.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'No complete seven-class train/val/test dataset with verified per-image provenance, permitted media licenses and human-reviewed species and bounding-box annotations is available. This is a reported readiness blocker, not a CI infrastructure failure. No weights or accuracy are claimed.' >> "$GITHUB_STEP_SUMMARY"
             echo '::warning::Model training is blocked until real, reviewed labels exist.'
           fi
