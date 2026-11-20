@@ -25,7 +25,10 @@ assert "noch nicht validiert" in html
 assert 'id="import"' in html
 assert "validObservation" in app
 assert "async function remove(id)" in app
-assert "beekeeper-shell-v8" in sw
+assert re.search(r"beekeeper-shell-v\\d+", sw)
+assert "./wissen/wissenschaft-hornissen-bienen.html" in sw
+assert (root/"wissen/wissenschaft-hornissen-bienen.html").is_file()
+assert 'href="./wissen/wissenschaft-hornissen-bienen.html"' in html
 assert "./integrations-ui.js" in sw
 assert 'id="station-events-form"' in html
 assert 'src="./integrations-ui.js"' in html
@@ -34,6 +37,7 @@ assert "SHELL.has(url.href)" in sw
 pages=(root/".github/workflows/pages.yml").read_text()
 assert "path: _site" in pages
 assert "cp index.html style.css app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/" in pages
+assert "cp wissen/wissenschaft-hornissen-bienen.html _site/wissen/" in pages
 assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
 print("Static PWA and research catalog checks passed; real-device and AI tests remain outstanding.")
 for asset in ("alert-rules.js","alert-ui.js"):
