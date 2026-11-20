@@ -13,7 +13,7 @@ A model is **not integrated** until all gates pass:
 9. Privacy and permissions reviewed.
 10. Results presented with model version, confidence, and uncertainty.
 
-No six-model claim and no 99% accuracy claim before these gates pass.
+The current target is **one experimental seven-class insect detector**, not six independently validated models. No 99% accuracy claim before all gates pass.
 
 ## Known blockers
 - VespAI access/non-commercial licensing requires review.
@@ -24,4 +24,4 @@ No six-model claim and no 99% accuracy claim before these gates pass.
 - Free cloud compute is quota-limited, not guaranteed 24/7.
 
 ## Current status
-All six model acceptance gates: **not passed**.
+The ten acceptance criteria above are **not yet satisfied as a complete set**. The project has no approved detector weights or independently validated field accuracy. Passing software CI does not constitute model acceptance.
