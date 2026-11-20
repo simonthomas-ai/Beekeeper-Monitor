@@ -1,7 +1,6 @@
 import http.client
 import json
 import os
-import sqlite3
 import stat
 import tempfile
 import threading
@@ -128,6 +127,16 @@ class SQLiteEventStoreTests(unittest.TestCase):
             file_mode = stat.S_IMODE(os.stat(store.path).st_mode)
             self.assertEqual(directory_mode, 0o700)
             self.assertEqual(file_mode, 0o600)
+
+    def test_refuses_shared_directory_without_changing_its_permissions(self):
+        if os.name != "posix":
+            self.skipTest("POSIX directory mode check")
+        shared_dir = os.path.join(self.tmp.name, "shared")
+        os.mkdir(shared_dir, 0o755)
+        os.chmod(shared_dir, 0o755)
+        with self.assertRaises(PermissionError):
+            SQLiteEventStore(os.path.join(shared_dir, "events.sqlite3"))
+        self.assertEqual(stat.S_IMODE(os.stat(shared_dir).st_mode), 0o755)
 
     def test_delete_is_explicit_and_idempotent(self):
         event = self.event()
