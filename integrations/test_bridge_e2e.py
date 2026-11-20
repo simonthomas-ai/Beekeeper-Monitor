@@ -1,4 +1,4 @@
-"""Real HTTP end-to-end tests for the source API -> Node bridge -> Monitor receiver."""
+"""Real HTTP end-to-end tests for the camera outbox -> source API -> bridge -> Monitor."""
 import json
 import os
 import shutil
@@ -105,14 +105,14 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
 
         from network.source_api import BoundedSourceHTTPServer, make_handler as make_source_handler
         from network.source_event_store import SQLiteSourceEventStore
-        from camera.contracts import Detection, make_source_event
+        from camera.contracts import Detection
+        from camera.outbox import SQLiteOutbox
+        from camera.runtime import LocalCameraRuntime
         from camera.source_client import SourceApiClient
-        from datetime import datetime, timezone
 
         cls.Detection = Detection
-        cls.make_source_event = make_source_event
-        cls.datetime = datetime
-        cls.timezone = timezone
+        cls.SQLiteOutbox = SQLiteOutbox
+        cls.LocalCameraRuntime = LocalCameraRuntime
         cls.BoundedSourceHTTPServer = BoundedSourceHTTPServer
         cls.SQLiteSourceEventStore = SQLiteSourceEventStore
         cls.make_source_handler = make_source_handler
@@ -120,13 +120,12 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
         cls.tmp = tempfile.TemporaryDirectory()
         cls.monitor_db = os.path.join(cls.tmp.name, "monitor-events.sqlite3")
         cls.source_db = os.path.join(cls.tmp.name, "source-events.sqlite3")
+        cls.camera_outbox_db = os.path.join(cls.tmp.name, "camera-outbox.sqlite3")
         cls.monitor_store = SQLiteEventStore(cls.monitor_db)
         cls.source_store = SQLiteSourceEventStore(
             cls.source_db, retention_days=30, max_rows=1000
         )
 
-        # Relax only this isolated test server's per-IP request count so the
-        # fixture can insert 205 events through the actual HTTP source API.
         handler = cls.make_source_handler(
             SOURCE_KEY, CURSOR_SECRET, cls.source_store, rate_limit=1000
         )
@@ -137,14 +136,29 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
             target=cls.source_server.serve_forever, daemon=True
         )
         cls.source_thread.start()
-        cls.camera_client = SourceApiClient(
+        camera_client = SourceApiClient(
             f"http://127.0.0.1:{cls.source_server.server_port}", SOURCE_KEY
         )
+        cls.camera_outbox = cls.SQLiteOutbox(cls.camera_outbox_db, max_rows=1000)
 
-        # The integration fixture intentionally sends 410 POST requests
-        # (205 initial deliveries + 205 replay deliveries); raise only this
-        # isolated loopback server's limit to avoid testing the production
-        # per-IP throttle instead of the durable hand-off contract.
+        class SyntheticDetector:
+            """Deterministic test detector. This is not a species classifier."""
+            def detect(self, frame_index):
+                index = int(frame_index)
+                return [cls.Detection(
+                    "Vespa velutina", 0.87, prey_detected=(index % 2 == 0)
+                )]
+
+        cls.camera_runtime = cls.LocalCameraRuntime(
+            detector=SyntheticDetector(),
+            outbox=cls.camera_outbox,
+            client=camera_client,
+            station_id="integration-station-north",
+            source="synthetic-frame-fixture",
+            max_fps=5,
+            cooldown_seconds=0,
+        )
+
         monitor_handler = make_monitor_handler(
             TOKEN, cls.monitor_store, rate_limit=1000
         )
@@ -172,26 +186,6 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
 
     def _run_node(self, script, extra_env=None):
         env = os.environ.copy()
-        env["BEEKEEPER_BRIDGE_ENTRY"] = str(Path(os.environ["BEEKEEPER_BRIDGE_ENTRY"]).resolve())
-        env["BEEKEEPER_MONITOR_INGEST_URL"] = (
-            f"http://127.0.0.1:{self.monitor_server.server_port}/api/v1/events"
-        )
-        env["BEEKEEPER_MONITOR_INGEST_TOKEN"] = TOKEN
-        env["BRIDGE_STATE_FILE"] = os.path.join(self.tmp.name, "bridge-state.json")
-        if extra_env:
-            env.update(extra_env)
-        result = subprocess.run(
-            ["node", "--input-type=module", "-e", script],
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=60,
-            check=False,
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + "\\n" + result.stderr)
-        return result.stdout
-    def _run_node(self, script, extra_env=None):
-        env = os.environ.copy()
         env["BEEKEEPER_BRIDGE_ENTRY"] = str(
             Path(os.environ["BEEKEEPER_BRIDGE_ENTRY"]).resolve()
         )
@@ -215,21 +209,18 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + "\n" + result.stderr)
         return result.stdout
 
-    def _post_source_event(self, index):
-        # Use the actual BeeKeeper local camera contract and authenticated API client.
-        observed_at = self.datetime(2026, 11, 20, 8, 0, tzinfo=self.timezone.utc)
-        event = self.__class__.make_source_event(
-            station_id="integration-station-north",
-            detection=self.Detection(
-                "Vespa velutina", 0.87, prey_detected=(index % 2 == 0)
-            ),
-            observed_at=observed_at,
-        )
-        self.assertTrue(self.camera_client.send_event(event))
+    def _process_synthetic_camera_frame(self, index):
+        # Exercise the actual local camera runtime and persistent outbox. Only
+        # the detector is synthetic; no species performance is claimed.
+        queued = self.camera_runtime.process_frame(index, now_epoch=float(index))
+        self.assertEqual(queued, 1)
+        self.assertEqual(self.camera_outbox.count(), 1)
+        self.assertEqual(self.camera_runtime.drain_outbox(), 1)
+        self.assertEqual(self.camera_outbox.count(), 0)
 
-    def test_205_events_cross_real_source_api_bridge_and_monitor_http(self):
+    def test_205_camera_outbox_events_cross_source_api_bridge_and_monitor(self):
         for index in range(1, 206):
-            self._post_source_event(index)
+            self._process_synthetic_camera_frame(index)
         self.assertEqual(self.source_store.count(), 205)
 
         state_path = os.path.join(self.tmp.name, "full-bridge-state.json")
@@ -256,10 +247,6 @@ console.log('first=' + first);
 const persisted = await readState(stateFile);
 const afterRestart = await pollOnce(persisted, options);
 console.log('afterRestart=' + afterRestart);
-
-// Replay the source journal from its explicit start sentinel with a fresh
-// bridge checkpoint. The Monitor's durable unique event IDs must deduplicate
-// this intentional at-least-once redelivery.
 const replayState = new Set();
 replayState.cursor = null;
 const replay = await pollOnce(replayState, { ...options, saveState: async () => {} });
@@ -274,7 +261,6 @@ console.log('replay=' + replay);
         self.assertIn("afterRestart=0", output)
         self.assertIn("replay=205", output)
 
-        # Verify durable monitor persistence, event identity and privacy boundary.
         self.assertEqual(self.monitor_store.count(), 205)
         rows = self.monitor_store.list_events(500)
         self.assertEqual(len(rows), 205)
