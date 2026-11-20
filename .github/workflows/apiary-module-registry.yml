@@ -1,0 +1,21 @@
+name: Apiary AI registry safety checks
+on:
+  push:
+    paths:
+      - 'scripts/apiary_module_registry.py'
+      - 'tests/test_apiary_module_registry.py'
+      - '.github/workflows/apiary-module-registry.yml'
+  pull_request:
+    paths:
+      - 'scripts/apiary_module_registry.py'
+      - 'tests/test_apiary_module_registry.py'
+      - '.github/workflows/apiary-module-registry.yml'
+permissions:
+  contents: read
+jobs:
+  registry:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate fail-closed registry with synthetic fixtures only
+        run: python3 -m unittest discover -s tests -p test_apiary_module_registry.py -v
