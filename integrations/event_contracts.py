@@ -29,8 +29,10 @@ class HiveEvent:
     schema_version: int = 1
 
     def validate(self) -> None:
-        if self.kind not in ALLOWED or self.schema_version != 1:
-            raise ValueError("Unsupported event kind/version")
+        if not isinstance(self.kind, str) or self.kind not in ALLOWED:
+            raise ValueError("Unsupported event kind")
+        if type(self.schema_version) is not int or self.schema_version != 1:
+            raise ValueError("Unsupported event schema version")
         if not isinstance(self.device_id, str) or not IDENTIFIER.fullmatch(self.device_id):
             raise ValueError("device_id must be a pseudonymous identifier")
         if not isinstance(self.source, str) or not IDENTIFIER.fullmatch(self.source):
@@ -102,7 +104,22 @@ class HiveEvent:
     def from_json(cls, raw: str) -> "HiveEvent":
         if not isinstance(raw, str) or len(raw.encode("utf-8")) > 32768:
             raise ValueError("Event too large")
-        data = json.loads(raw)
+        def reject_duplicate_keys(pairs):
+            result = {}
+            for key, value in pairs:
+                if key in result:
+                    raise ValueError("Duplicate JSON object key")
+                result[key] = value
+            return result
+
+        def reject_nonstandard_constant(value):
+            raise ValueError("Non-standard JSON numeric constant")
+
+        data = json.loads(
+            raw,
+            object_pairs_hook=reject_duplicate_keys,
+            parse_constant=reject_nonstandard_constant,
+        )
         if not isinstance(data, dict) or set(data) != {
             "kind", "device_id", "timestamp", "payload", "source", "schema_version"
         }:
