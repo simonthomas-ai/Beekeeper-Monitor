@@ -11,7 +11,7 @@ class BlobVerificationTests(unittest.TestCase):
             p = Path(d) / "model.pt"
             p.write_bytes(b"test-weights")
             content = p.read_bytes()
-            manifest = {"bytes": len(content), "git_blob_sha1": hashlib.sha1(b"blob " + str(len(content)).encode() + b"\\0" + content).hexdigest()}
+            manifest = {"bytes": len(content), "git_blob_sha1": hashlib.sha1(b"blob " + str(len(content)).encode() + bytes([0]) + content).hexdigest()}
             result = verify(p, manifest)
             self.assertEqual(result["local_sha256"], hashlib.sha256(content).hexdigest())
             self.assertFalse(result["model_validated"])
@@ -21,7 +21,7 @@ class BlobVerificationTests(unittest.TestCase):
             p = Path(d) / "model.pt"
             p.write_bytes(b"other-weights")
             content = b"test--weights"
-            manifest = {"bytes": len(content), "git_blob_sha1": hashlib.sha1(b"blob " + str(len(content)).encode() + b"\\0" + content).hexdigest()}
+            manifest = {"bytes": len(content), "git_blob_sha1": hashlib.sha1(b"blob " + str(len(content)).encode() + bytes([0]) + content).hexdigest()}
             with self.assertRaises(ValueError):
                 verify(p, manifest)
 
