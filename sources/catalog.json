@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "reviewed_at": "2026-11-20",
-  "policy": "Only documented real sources; no model considered integrated until weights, license, inference, and independent evaluation pass",
+  "policy": "Only documented real sources; no model considered integrated until weights, license, inference, and independent evaluation pass; taxonomy, occurrence and weather context sources are separate from per-image training data",
   "sources": [
     {
       "id": "vespai",
@@ -330,6 +330,28 @@
       "license": "per-media; default CC BY-NC; discovery script requests CC0 and CC BY candidates only; CC BY version requires review",
       "status": "metadata-candidate-discovery",
       "notes": "No images downloaded; per-photo rights and uploader attribution must be checked; default CC BY-NC is excluded from automatic training"
+    },
+    {
+      "id": "easin-eu-taxonomy-occurrence",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://easin.jrc.ec.europa.eu/apixg",
+      "kind": "official-eu-species-catalogue-and-occurrence-web-services",
+      "license": "Source/partner record terms vary; verify conditions before redistribution; not a blanket media licence",
+      "status": "metadata-reference-only",
+      "notes": "European Commission JRC EASIN Catalogue and Geospatial Web Services; use for taxon names, alien-species catalogue context and broad occurrence context only. Not camera evidence, verified nest locations or image rights. Preserve record source and retrieval date; suppress exact private apiary coordinates."
+    },
+    {
+      "id": "open-meteo-weather-context",
+      "modules": [
+        "hornet"
+      ],
+      "url": "https://open-meteo.com/",
+      "kind": "meteorological-context-api",
+      "license": "Free hosted API for non-commercial use only under fair-use/rate limits; weather data CC BY 4.0 attribution required; server code AGPL-3.0",
+      "status": "documented-optional-not-integrated",
+      "notes": "Optional weather covariates (temperature, wind, precipitation, humidity) for event-context and sensor-quality analysis; never a species classifier or nest locator. Any integration must be local opt-in, cache and rate-limit requests, disclose weather attribution, and use coarse or user-approved coordinates rather than silently uploading exact private apiary positions. Recheck terms before use."
     }
   ]
 }
