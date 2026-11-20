@@ -31,7 +31,7 @@ def candidates(rows):
             continue
         fields = ("title", "package_title", "scientific_name", "tax_order", "object_type")
         description = " ".join(str(r.get(k, "")) for k in fields).lower()
-        if not any(re.search(r"\\b" + re.escape(term) + r"\\b", description) for term in TERMS):
+        if not any(re.search(r"\b" + re.escape(term) + r"\b", description) for term in TERMS):
             continue
         found.append({
             "package_id": str(r.get("package_id", "")),
