@@ -42,7 +42,11 @@ python -m integrations.local_ingest
 Windows PowerShell (run in a persistent service environment, not only a temporary shell):
 
 ```powershell
-$env:VESPAGUARD_INGEST_TOKEN = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+$tokenBytes = New-Object byte[] 32
+$rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($tokenBytes)
+$env:VESPAGUARD_INGEST_TOKEN = [Convert]::ToBase64String($tokenBytes)
+$rng.Dispose()
 $env:VESPAGUARD_INGEST_DB = "$env:LOCALAPPDATA\BeeKeeper-Monitor\events.sqlite3"
 New-Item -ItemType Directory -Force (Split-Path $env:VESPAGUARD_INGEST_DB) | Out-Null
 python -m integrations.local_ingest
@@ -68,8 +72,14 @@ python -m network.source_api
 Windows PowerShell:
 
 ```powershell
-$env:HORNET3000_API_KEY = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
-$env:HORNET3000_CURSOR_SECRET = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+$apiBytes = New-Object byte[] 32
+$cursorBytes = New-Object byte[] 32
+$rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+$rng.GetBytes($apiBytes)
+$rng.GetBytes($cursorBytes)
+$env:HORNET3000_API_KEY = [Convert]::ToBase64String($apiBytes)
+$env:HORNET3000_CURSOR_SECRET = [Convert]::ToBase64String($cursorBytes)
+$rng.Dispose()
 $env:HORNET3000_EVENT_DB = "$env:LOCALAPPDATA\BeeKeeper3000\source-events.sqlite3"
 New-Item -ItemType Directory -Force (Split-Path $env:HORNET3000_EVENT_DB) | Out-Null
 python -m network.source_api
