@@ -50,7 +50,7 @@ jobs:
               message = f"Invalid inventory status JSON: {exc.msg} at line {exc.lineno}, column {exc.colno}."
               print(f"::error::{message}")
               with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
-                  summary.write(f"## CC0 3D inventory\\n\\n**Status:** invalid JSON\\n\\n{message}\\n")
+                  summary.write(f"## CC0 3D inventory\n\n**Status:** invalid JSON\n\n{message}\n")
               raise SystemExit(1)
           if not isinstance(status, dict) or status.get("status") not in ("complete", "upstream_unavailable"):
               print("::error::Inventory status must be one JSON object with a recognized status.")
