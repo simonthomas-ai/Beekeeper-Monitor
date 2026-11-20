@@ -3,6 +3,8 @@
 import argparse
 import hashlib
 import json
+import time
+from urllib.error import HTTPError
 from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -19,8 +21,19 @@ CATEGORIES = {
 FALLBACK_CATEGORIES = {"velutina": ["Category:Vespa_velutina"], "crabro": [], "apis": [], "bombus": [], "vespula": []}
 def get_json(params):
     url = API + "?" + urlencode(params)
-    with urlopen(Request(url, headers={"User-Agent": "VespaGuardResearchImporter/0.1 (noncommercial research; github.com/simonthomas-ai/Beekeeper-Monitor)"}), timeout=30) as response:
-        return json.load(response)
+    for attempt in range(4):
+        try:
+            with urlopen(Request(url, headers={"User-Agent": "VespaGuardResearchImporter/0.1 (noncommercial research; github.com/simonthomas-ai/Beekeeper-Monitor)"}), timeout=30) as response:
+                return json.load(response)
+        except HTTPError as exc:
+            if exc.code not in (429, 503) or attempt == 3:
+                raise
+            retry_after = exc.headers.get("Retry-After", "") if exc.headers else ""
+            delay = min(30, max(2, 2 ** (attempt + 1)))
+            if retry_after.isdigit():
+                delay = min(30, max(delay, int(retry_after)))
+            print(f"Commons API HTTP {exc.code}; retry {attempt + 1}/3 after {delay}s", flush=True)
+            time.sleep(delay)
 def norm(value):
     return " ".join(str(value or "").lower().replace("-", " ").split())
 def allowed(license_name):
