@@ -212,3 +212,36 @@ Potential use for BeeKeeper: compare broad regional occurrence trends and source
 **Privacy boundary:** the provider's privacy notice describes optional GPS reports, uploaded photos, route recordings and reviewer accounts. These are personal or sensitive operational records under the provider's own system. Do not copy them into BeeKeeper. For any eventual occurrence-only use, fetch and retain only the underlying public records allowed by their individual source terms, preserve attribution and original record links, and avoid redistributing precise private apiary/nest coordinates.
 
 This source is also an example of a useful community-facing detection workflow, but its model, verification policy, storage and infrastructure are separate works and are not imported or adopted here.
+
+
+## Additional reference services — review 2026-11-20
+
+### EASIN (European Commission Joint Research Centre)
+
+- Web Services: https://easin.jrc.ec.europa.eu/apixg
+- Catalogue service: https://easin.jrc.ec.europa.eu/apixg/catxg
+- Catalogue species search and paged results are documented by EASIN; the geospatial service returns occurrence context separately.
+- EASIN makes EU invasive-alien-species taxonomy and broad distribution context discoverable to the public. Source records may originate from partner datasets and do not carry one blanket licence for every underlying record.
+
+**Permitted project role:** reference accepted scientific names, synonyms, Union-concern catalogue metadata and broad European occurrence context after preserving the source/provider and retrieval date. A record is not a camera image, an independently verified current nest, or a licence to train on a photograph. Do not turn coarse distribution records into nest alerts or publish private apiary coordinates.
+
+Official service documentation: https://easin.jrc.ec.europa.eu/apixg
+
+### Open-Meteo — optional weather context only
+
+- API / project: https://open-meteo.com/
+- Terms: https://open-meteo.com/en/terms
+- Source code: https://github.com/open-meteo/open-meteo
+- The hosted API is free for non-commercial use within its published fair-use limits. Its weather data is CC BY 4.0 and requires attribution. The hosted API's source code is AGPL-3.0; data rights and software rights must remain separate.
+- The provider states a limit below 10,000 API calls/day, 5,000/hour and 600/minute for the non-commercial free API; verify current terms before a deployment or scale-up.
+
+**Potential project role:** optional, explanatory covariates such as temperature, wind, precipitation and humidity for reviewing station performance or correlating activity. Weather cannot confirm Vespa velutina identity, diagnose a nest, or override human review.
+
+**Privacy and deployment boundary:** no automatic API calls are enabled by this catalogue entry. Any future integration must be an explicit local opt-in, cache results, respect rate limits and attribution, and avoid sending exact private apiary coordinates. Prefer a user-selected coarse location or a coarse grid computed locally. Do not call the hosted free API for a commercial deployment or a subscription/ad-supported app without checking the current terms and selecting an appropriate plan.
+
+### Separation rule
+
+- Taxonomy and occurrences: EASIN / GBIF, retained as source-linked reference metadata.
+- Training imagery: per-file rights and human-reviewed biology only; each image must pass the provenance gate.
+- Weather: optional contextual metadata, kept separate from detections, labels and model scores.
+- None of these sources authorises an automated nest intervention or an unverified public alert.
