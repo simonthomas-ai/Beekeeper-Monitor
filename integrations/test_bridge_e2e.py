@@ -10,7 +10,7 @@ import unittest
 import urllib.request
 from pathlib import Path
 
-from integrations.local_ingest import make_server
+from integrations.local_ingest import BoundedThreadingHTTPServer, make_handler as make_monitor_handler, make_server
 from integrations.event_store import SQLiteEventStore
 
 TOKEN = "e2e-only-secret-token-not-for-production-87654321"
@@ -131,8 +131,15 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
         )
         cls.source_thread.start()
 
-        cls.monitor_server = make_server(
-            TOKEN, cls.monitor_store, port=0
+        # The integration fixture intentionally sends 410 POST requests
+        # (205 initial deliveries + 205 replay deliveries); raise only this
+        # isolated loopback server's limit to avoid testing the production
+        # per-IP throttle instead of the durable hand-off contract.
+        monitor_handler = make_monitor_handler(
+            TOKEN, cls.monitor_store, rate_limit=1000
+        )
+        cls.monitor_server = BoundedThreadingHTTPServer(
+            ("127.0.0.1", 0), monitor_handler
         )
         cls.monitor_thread = threading.Thread(
             target=cls.monitor_server.serve_forever, daemon=True
