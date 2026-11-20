@@ -1,0 +1,27 @@
+name: KiCad Leiterplatten-DRC
+on:
+  pull_request:
+    paths:
+      - 'hardware/sensoradapter-v01/**'
+      - '.github/workflows/kicad-drc.yml'
+  workflow_dispatch:
+jobs:
+  kicad-drc:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: KiCad CLI installieren
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y kicad
+      - name: PCB-Designregelprüfung
+        run: |
+          mkdir -p build/kicad
+          kicad-cli pcb drc hardware/sensoradapter-v01/sensoradapter-v01.kicad_pcb --output build/kicad/drc-report.txt --exit-code-violations
+      - name: DRC-Bericht archivieren
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sensoradapter-kicad-drc
+          path: build/kicad/drc-report.txt
+          if-no-files-found: warn
