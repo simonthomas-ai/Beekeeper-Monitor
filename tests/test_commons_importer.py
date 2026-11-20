@@ -57,6 +57,18 @@ class ImporterTests(unittest.TestCase):
         self.assertEqual(len(data["items"]), 1)
         self.assertFalse(data["items"][0]["species_verified"])
 
+    def test_api_error_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(module, "get_json", return_value={"error": {"code": "badrequest"}}), patch.object(sys, "argv", ["import", "--class-name", "velutina", "--output", tmp]):
+            with self.assertRaises(RuntimeError):
+                module.main()
+
+    def test_empty_valid_response_is_not_approved(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(module, "get_json", return_value={"query": {"pages": {}}}), patch.object(sys, "argv", ["import", "--class-name", "velutina", "--output", tmp]):
+            module.main()
+            data = json.loads((Path(tmp) / "velutina" / "manifest.json").read_text())
+            self.assertEqual(data["items"], [])
+            self.assertFalse(data["downloaded"])
+
     def test_metadata_only_no_download(self):
         response = {"query": {"pages": {
             "1": {"title": "File:Velutina.jpg", "imageinfo": [{"url": "https://upload.wikimedia.org/a.jpg", "mime": "image/jpeg", "extmetadata": {"LicenseShortName": {"value": "CC BY 4.0"}, "Artist": {"value": "Author"}}}]},
