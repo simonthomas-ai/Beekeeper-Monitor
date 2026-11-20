@@ -133,7 +133,12 @@ class AuthenticatedStoreApiTests(unittest.TestCase):
         payload = response.read()
         status = response.status
         conn.close()
-        return status, json.loads(payload) if payload else None
+        if not payload:
+            return status, None
+        try:
+            return status, json.loads(payload)
+        except json.JSONDecodeError:
+            return status, payload.decode("utf-8", errors="replace")
 
     def test_authenticated_list_and_delete(self):
         event = HiveEvent("hive_telemetry", "sensor-api", "2026-11-19T19:00:00Z",
@@ -151,6 +156,19 @@ class AuthenticatedStoreApiTests(unittest.TestCase):
     def test_event_api_requires_authentication(self):
         status, _ = self.request("GET", "/api/v1/events", token="wrong")
         self.assertEqual(status, 401)
+
+    def test_local_pwa_is_served_on_same_origin(self):
+        status, body = self.request("GET", "/")
+        self.assertEqual(status, 200)
+        self.assertIn('id="station-events-form"', body)
+        self.assertIn('integrations-ui.js', body)
+
+    def test_private_source_files_are_not_served(self):
+        for path in ("/integrations/local_ingest.py", "/integrations/event_store.py",
+                     "/.gitignore", "/%2e%2e/integrations/local_ingest.py"):
+            with self.subTest(path=path):
+                status, _ = self.request("GET", path)
+                self.assertEqual(status, 404)
 
 
 if __name__ == "__main__":
