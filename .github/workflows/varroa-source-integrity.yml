@@ -1,0 +1,25 @@
+name: Varroa upstream source integrity tests
+on:
+  push:
+    paths:
+      - 'scripts/verify_varroa_source_blob.py'
+      - 'tests/test_verify_varroa_source_blob.py'
+      - 'data/model-sources/varrodetector-best.json'
+      - '.github/workflows/varroa-source-integrity.yml'
+  pull_request:
+    paths:
+      - 'scripts/verify_varroa_source_blob.py'
+      - 'tests/test_verify_varroa_source_blob.py'
+      - 'data/model-sources/varrodetector-best.json'
+      - '.github/workflows/varroa-source-integrity.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Verify offline provenance gate using synthetic bytes only
+        run: python3 -m unittest discover -s tests -p test_verify_varroa_source_blob.py -v
