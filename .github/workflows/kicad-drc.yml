@@ -52,6 +52,8 @@ jobs:
           fi
           kicad-cli pcb drc --help
           echo 'KiCad DRC-Unterbefehl verfuegbar.'
+      - name: Unabhaengige PCB-Strukturpruefung
+        run: python3 scripts/check_sensoradapter_structure.py
       - name: PCB-Designregelpruefung
         shell: bash
         run: |
