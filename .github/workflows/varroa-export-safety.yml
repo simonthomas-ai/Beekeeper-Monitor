@@ -1,0 +1,23 @@
+name: Varroa model export safety tests
+on:
+  push:
+    paths:
+      - 'scripts/export_varroa_onnx.py'
+      - 'tests/test_export_varroa_onnx.py'
+      - '.github/workflows/varroa-export-safety.yml'
+  pull_request:
+    paths:
+      - 'scripts/export_varroa_onnx.py'
+      - 'tests/test_export_varroa_onnx.py'
+      - '.github/workflows/varroa-export-safety.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  guard-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test hash and review gates without executing third-party models
+        run: python3 -m unittest discover -s tests -p test_export_varroa_onnx.py -v
