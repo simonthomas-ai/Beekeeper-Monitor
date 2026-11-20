@@ -270,11 +270,16 @@ class AuthenticatedStoreApiTests(unittest.TestCase):
                           {"temperature_c": 22.0, "humidity_pct": 44})
         self.store(event)
         event_id = self.store.list_events()[0]["event_id"]
-        status, payload = self.request("DELETE", "/api/v1/events/" + event_id, token="wrong")
-        self.assertEqual(status, 401)
-        self.assertEqual(payload, {"error": "unauthorized"})
-        self.assertEqual(self.store.count(), 1)
-        self.assertEqual(self.store.list_events()[0]["event_id"], event_id)
+        try:
+            status, payload = self.request("DELETE", "/api/v1/events/" + event_id, token="wrong")
+            self.assertEqual(status, 401)
+            self.assertEqual(payload, {"error": "unauthorized"})
+            self.assertEqual(self.store.count(), 1)
+            self.assertEqual(self.store.list_events()[0]["event_id"], event_id)
+        finally:
+            # AuthenticatedStoreApiTests deliberately shares one DB across tests.
+            # Do not leak this fixture row into the independent export test.
+            self.store.delete(event_id)
 
     def test_event_api_requires_authentication(self):
         status, _ = self.request("GET", "/api/v1/events", token="wrong")
