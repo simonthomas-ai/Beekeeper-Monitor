@@ -67,8 +67,9 @@ console.log('replay=' + await send());
             capture_output=True,
             text=True,
             timeout=15,
-            check=True,
+            check=False,
         )
+        self.assertEqual(result.returncode, 0, result.stdout + "\\n" + result.stderr)
         self.assertIn("first=1", result.stdout)
         self.assertIn("replay=1", result.stdout)
         self.assertEqual(self.store.count(), 1)
