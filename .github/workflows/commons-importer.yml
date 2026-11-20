@@ -1,0 +1,32 @@
+name: Commons Bildimporter pruefen
+on:
+  pull_request:
+    paths:
+      - 'scripts/import_commons_candidates.py'
+      - 'tests/test_commons_importer.py'
+      - '.github/workflows/commons-importer.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '43 5 * * 2'
+permissions:
+  contents: read
+jobs:
+  importer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Offline Lizenz- und Sicherheitspruefungen
+        run: python -m unittest discover -s tests -p test_commons_importer.py -v
+      - name: Echten Commons API Metadatenabruf testen (kein Bilddownload)
+        run: |
+          python scripts/import_commons_candidates.py --class-name velutina --limit 5 --output /tmp/vespaguard-commons-check
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("/tmp/vespaguard-commons-check/velutina/manifest.json")
+          data = json.loads(path.read_text())
+          assert data["downloaded"] is False
+          assert all(not item["human_approved_for_training"] for item in data["items"])
+          print("Commons API reachable; accepted candidate count:", len(data["items"]))
+          PY
