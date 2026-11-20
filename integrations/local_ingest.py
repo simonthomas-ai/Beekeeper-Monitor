@@ -11,6 +11,7 @@ import time
 from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
+from urllib.parse import parse_qs, urlsplit
 
 from integrations.event_contracts import HiveEvent
 from integrations.event_store import SQLiteEventStore
@@ -163,13 +164,51 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
             self._json(202, {"accepted": True})
 
         def do_GET(self):
-            self._json(404, {"error": "not_found"})
+            parsed = urlsplit(self.path)
+            if parsed.path != "/api/v1/events":
+                self._json(404, {"error": "not_found"})
+                return
+            if not self._authorized():
+                self._json(401, {"error": "unauthorized"})
+                return
+            if not self._rate_allowed():
+                self._json(429, {"error": "rate_limited"})
+                return
+            try:
+                query = parse_qs(parsed.query, strict_parsing=False)
+                if set(query) - {"limit"} or any(len(values) != 1 for values in query.values()):
+                    raise ValueError("invalid query")
+                limit = int(query.get("limit", ["100"])[0])
+                events = sink.list_events(limit)
+                self._json(200, {"events": events, "count": len(events)})
+            except (ValueError, AttributeError):
+                self._json(400, {"error": "invalid_query_or_read_unavailable"})
+            except Exception:
+                self._json(503, {"error": "storage_unavailable"})
 
         def do_PUT(self):
             self._json(405, {"error": "method_not_allowed"})
 
         def do_DELETE(self):
-            self._json(405, {"error": "method_not_allowed"})
+            parsed = urlsplit(self.path)
+            prefix = "/api/v1/events/"
+            event_id = parsed.path[len(prefix):] if parsed.path.startswith(prefix) else ""
+            if not event_id or "/" in event_id or parsed.query:
+                self._json(404, {"error": "not_found"})
+                return
+            if not self._authorized():
+                self._json(401, {"error": "unauthorized"})
+                return
+            if not self._rate_allowed():
+                self._json(429, {"error": "rate_limited"})
+                return
+            try:
+                deleted = sink.delete(event_id)
+                self._json(200 if deleted else 404, {"deleted": deleted})
+            except (ValueError, AttributeError):
+                self._json(400, {"error": "invalid_event_id"})
+            except Exception:
+                self._json(503, {"error": "storage_unavailable"})
 
     return Handler
 
