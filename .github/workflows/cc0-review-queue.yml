@@ -20,6 +20,16 @@ jobs:
           python-version: '3.12'
       - name: Discover CC0 metadata, not training labels
         run: python training/discover_cc0_candidates.py --per-species 50 --max-pages 10 --output training/inaturalist-review-queue.csv
+      - name: Audit candidate metadata integrity (fail closed)
+        run: python training/audit_cc0_candidates.py --input training/inaturalist-review-queue.csv --output training/cc0-audit.json
+      - name: Preserve audit report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cc0-metadata-integrity-audit
+          path: training/cc0-audit.json
+          if-no-files-found: warn
+          retention-days: 30
       - name: Review queue summary
         if: always()
         shell: bash
