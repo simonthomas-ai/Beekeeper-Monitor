@@ -11,8 +11,10 @@ import yaml
 from provenance import validate_provenance
 try:
     from .class_schema import CLASS_NAMES
+    from .evaluation import validate_per_class_summary
 except ImportError:  # Supports direct execution: python training/train.py
     from class_schema import CLASS_NAMES
+    from evaluation import validate_per_class_summary
 
 CLASSES = list(CLASS_NAMES)
 SPLITS=('train','val','test')
@@ -134,6 +136,7 @@ def main():
             raise FileNotFoundError('Training finished without a best.pt checkpoint; refusing to export a missing model')
         best=YOLO(str(best_weights))
         validation=best.val(data=str(resolved),split='test',plots=True)
+        per_class_metrics = validate_per_class_summary(validation.summary(), CLASSES)
         exported=Path(best.export(format='onnx',imgsz=args.imgsz,nms=True,dynamic=False))
         digest=hashlib.sha256(exported.read_bytes()).hexdigest()
         model_dir=run_dir/'deployment'
@@ -173,6 +176,8 @@ def main():
             'status':'internal_test_split_only_not_independent_field_validation',
             'dataset_validation':report,
             'test_metrics':{str(key):float(value) for key,value in metrics_dict.items()},
+            'test_metrics_by_class':per_class_metrics,
+            'test_metrics_scope':'untouched_internal_test_split_only; no field validation or confidence intervals',
             'onnx_sha256':digest,
             'pretrained_checkpoint_sha256':pretrained_digest,
             'pretrained_checkpoint_source_url':args.pretrained_model_source_url,
