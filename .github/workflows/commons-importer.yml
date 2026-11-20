@@ -31,3 +31,25 @@ jobs:
           assert all(not item["human_approved_for_training"] for item in data["items"])
           print("Commons API reachable; accepted candidate count:", len(data["items"]))
           PY
+
+      - name: Mehrklassen-Metadaten sammeln
+        run: |
+          for klasse in velutina crabro apis bombus vespula; do
+            python scripts/import_commons_candidates.py --class-name "$klasse" --limit 50 --output /tmp/vespaguard-multiclass
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for name in ("velutina", "crabro", "apis", "bombus", "vespula"):
+              data = json.loads((Path("/tmp/vespaguard-multiclass") / name / "manifest.json").read_text())
+              assert data["downloaded"] is False
+              assert all(not i["human_approved_for_training"] and not i["species_verified"] for i in data["items"])
+              print(name, "ungepruefte Kandidaten:", len(data["items"]))
+          PY
+      - name: Metadaten-Manifeste 7 Tage bereitstellen
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: commons-multiclass-metadata
+          path: /tmp/vespaguard-multiclass/*/manifest.json
+          retention-days: 7
+          if-no-files-found: error
