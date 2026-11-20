@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Independent, conservative structure checks; NOT a replacement for KiCad DRC."""
 from pathlib import Path
-import re
-import sys
 
 root = Path(__file__).resolve().parents[1] / "hardware" / "sensoradapter-v01"
 pcb = (root / "sensoradapter-v01.kicad_pcb").read_text()
@@ -17,9 +15,9 @@ assert "${KIPRJMOD}/Connector_PinHeader_2.54mm.pretty" in table, "Library path i
 assert f'(footprint "{part}"' in library, "Footprint definition mismatch"
 assert pcb.count(f'(footprint "{nickname}:{part}"') == 2, "Expected exactly two matching connector footprints"
 for pad in range(1, 5):
-    pattern = rf'\\(pad "{pad}" thru_hole '
-    assert len(re.findall(pattern, library)) == 1, f"Library pad {pad} missing or duplicated"
-    assert len(re.findall(pattern, pcb)) == 2, f"PCB pad {pad} missing or duplicated"
+    marker = f'(pad "{pad}" thru_hole '
+    assert library.count(marker) == 1, f"Library pad {pad} missing or duplicated"
+    assert pcb.count(marker) == 2, f"PCB pad {pad} missing or duplicated"
 for number, name in enumerate(("3V3", "GND", "SDA", "SCL"), 1):
     assert f'(net {number} "{name}")' in pcb, f"Missing net {name}"
     assert pcb.count(f'(net {number} ') >= 3, f"Net {name} lacks expected pad/track references"
