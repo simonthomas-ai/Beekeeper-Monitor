@@ -120,11 +120,12 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
         def end_headers(self):
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "no-referrer")
+            script_policy = "'self' 'unsafe-inline'" if urlsplit(self.path).path.startswith("/review/") else "'self'"
             self.send_header("Content-Security-Policy",
-                             "default-src 'self'; script-src 'self'; object-src 'none'; "
+                             "default-src 'self'; script-src " + script_policy + "; object-src 'none'; "
                              "base-uri 'self'; frame-ancestors 'none'; "
                              "img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; "
-                             "connect-src 'self'; media-src 'self' blob:; "
+                             "connect-src 'self' https:; media-src 'self' blob:; "
                              "form-action 'self'")
             self.send_header("Permissions-Policy",
                              "camera=(self), microphone=(self), geolocation=(self)")
@@ -286,7 +287,7 @@ def run():
     max_rows = int(os.environ.get("VESPAGUARD_MAX_EVENTS", "100000"))
     store = SQLiteEventStore(db_path, retention_days=retention_days, max_rows=max_rows)
     server = make_server(token, store)
-    print("BeeKeeper ingestion listening on 127.0.0.1:8765 (localhost only)", flush=True)
+    print("BeeKeeper local PWA and ingestion API: http://127.0.0.1:8765/ (localhost only)", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
