@@ -6,6 +6,7 @@ import json
 import re
 from collections import Counter
 import urllib.parse
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -20,7 +21,7 @@ LICENSE_API = "https://api.sketchfab.com/v3/licences/"
 LICENSE_UID_RE = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 
 
-def verified_license_slug(item, fetch=None, cache=None):
+def verified_license_slug(item, fetch=None, cache=None, outcomes=None):
     """Fail closed: never infer a license from a human-readable label."""
     if not isinstance(item, dict):
         return ""
@@ -40,10 +41,25 @@ def verified_license_slug(item, fetch=None, cache=None):
         try:
             detail = fetch(LICENSE_API + urllib.parse.quote(uid, safe=""))
             if not isinstance(detail, dict):
+                if outcomes is not None:
+                    outcomes["non_object_response"] += 1
                 detail = {}
+            else:
+                if outcomes is not None:
+                    for key in ("slug", "uid", "label", "name", "url"):
+                        if key in detail:
+                            outcomes["field_" + key + "_" + type(detail[key]).__name__] += 1
             detail_slug = detail.get("slug", detail.get("uid", ""))
             cache[uid] = detail_slug.strip().lower() if isinstance(detail_slug, str) and detail_slug.strip().lower() in ALLOWED else ""
-        except (ValueError, OSError, TimeoutError, json.JSONDecodeError):
+            if outcomes is not None:
+                outcomes["verified_allowed" if cache[uid] else "unverified_detail"] += 1
+        except urllib.error.HTTPError as exc:
+            if outcomes is not None:
+                outcomes["http_" + str(exc.code) if exc.code in (400, 401, 403, 404, 429, 500, 502, 503) else "http_other"] += 1
+            cache[uid] = ""
+        except (ValueError, OSError, TimeoutError, json.JSONDecodeError) as exc:
+            if outcomes is not None:
+                outcomes["error_" + type(exc).__name__] += 1
             cache[uid] = ""
     return cache[uid]
 
@@ -84,6 +100,7 @@ def discover(fetch=None, diagnostics=None):
     license_field_types = Counter()
     license_cache = {}
     resolved_license_counts = Counter()
+    license_lookup_outcomes = Counter()
     for term in TERMS:
         url = API + "?" + urllib.parse.urlencode({
             "type": "models", "q": term, "downloadable": "true", "count": MAX_RESULTS_PER_TERM})
@@ -115,7 +132,7 @@ def discover(fetch=None, diagnostics=None):
                     reason = "invalid_item"
                 else:
                     uid = item.get("uid")
-                    slug = verified_license_slug(item, fetch, license_cache)
+                    slug = verified_license_slug(item, fetch, license_cache, license_lookup_outcomes)
                     resolved_license_counts[slug or "unverified"] += 1
                     if not isinstance(uid, str) or not (8 <= len(uid) <= 64 and uid.isalnum()):
                         reason = "invalid_uid"
@@ -138,7 +155,7 @@ def discover(fetch=None, diagnostics=None):
         except (ValueError, OSError, TimeoutError, json.JSONDecodeError) as exc:
             errors.append({"query": term, "error_type": type(exc).__name__})
     if diagnostics is not None:
-        diagnostics.update({"counts": counters, "reasons": dict(rejection_reasons), "license_shapes": dict(license_shapes), "license_values": dict(license_values), "license_object_keys": dict(license_object_keys), "license_field_types": dict(license_field_types), "resolved_licenses": dict(resolved_license_counts), "license_detail_requests": len(license_cache), "per_query": per_query,
+        diagnostics.update({"counts": counters, "reasons": dict(rejection_reasons), "license_shapes": dict(license_shapes), "license_values": dict(license_values), "license_object_keys": dict(license_object_keys), "license_field_types": dict(license_field_types), "resolved_licenses": dict(resolved_license_counts), "license_detail_requests": len(license_cache), "license_lookup_outcomes": dict(license_lookup_outcomes), "per_query": per_query,
                             "note": "Only first page per query scanned; rejection reasons need further review."})
     return records, errors
 
