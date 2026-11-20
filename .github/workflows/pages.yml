@@ -80,3 +80,22 @@ jobs:
         run: sleep 45
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+      - name: Oeffentliche Wissenschaftsseite nach Deployment kontrollieren
+        run: |
+          python - <<'PY'
+          import time
+          from urllib.request import Request, urlopen
+          url = "https://simonthomas-ai.github.io/Beekeeper-Monitor/wissen/wissenschaft-hornissen-bienen.html"
+          for attempt in range(12):
+              try:
+                  with urlopen(Request(url, headers={"User-Agent": "VespaGuard-Deployment-Check/1.0"}), timeout=20) as response:
+                      body = response.read().decode("utf-8")
+                      if response.status == 200 and "Forschung und Fachquellen aus Asien" in body:
+                          print("Published science page is reachable and contains the Asian research section.")
+                          break
+              except Exception as exc:
+                  print(f"Attempt {attempt+1}/12: {exc}", flush=True)
+              time.sleep(10)
+          else:
+              raise SystemExit("Science page could not be verified after deployment.")
+          PY
