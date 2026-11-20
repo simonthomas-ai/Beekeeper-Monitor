@@ -94,7 +94,7 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
 
         def translate_path(self, path):
             raw = unquote(urlsplit(path).path)
-            if "\\\\" in raw or "\x00" in raw:
+            if chr(92) in raw or chr(0) in raw:
                 return str(public_root / "__not_found__")
             parts = raw.split("/")
             if any(part in (".", "..") or part.startswith(".") for part in parts if part):
