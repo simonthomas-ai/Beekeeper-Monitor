@@ -180,6 +180,31 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stdout + "\\n" + result.stderr)
         return result.stdout
+    def _run_node(self, script, extra_env=None):
+        env = os.environ.copy()
+        env["BEEKEEPER_BRIDGE_ENTRY"] = str(
+            Path(os.environ["BEEKEEPER_BRIDGE_ENTRY"]).resolve()
+        )
+        env["BEEKEEPER_MONITOR_INGEST_URL"] = (
+            f"http://127.0.0.1:{self.monitor_server.server_port}/api/v1/events"
+        )
+        env["BEEKEEPER_MONITOR_INGEST_TOKEN"] = TOKEN
+        env["BRIDGE_STATE_FILE"] = os.path.join(
+            self.tmp.name, "full-source-bridge-state.json"
+        )
+        if extra_env:
+            env.update(extra_env)
+        result = subprocess.run(
+            ["node", "--input-type=module", "-e", script],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=90,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + "\n" + result.stderr)
+        return result.stdout
+
     def _post_source_event(self, index):
         event = {
             "id": f"station-event-{index:04d}",
