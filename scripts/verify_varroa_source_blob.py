@@ -15,7 +15,7 @@ def verify(path: Path, manifest: dict) -> dict:
     if not isinstance(expected_blob, str) or len(expected_blob) != 40 or any(c not in "0123456789abcdef" for c in expected_blob):
         raise ValueError("Invalid upstream Git blob SHA-1")
     sha1 = hashlib.sha1()
-    sha1.update(f"blob {expected_size}\\0".replace("\\\\0", "\\0").encode())
+    sha1.update(b"blob " + str(expected_size).encode() + bytes([0]))
     sha256 = hashlib.sha256()
     with path.open("rb") as source:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
