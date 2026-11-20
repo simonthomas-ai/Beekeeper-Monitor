@@ -16,6 +16,10 @@ from urllib.parse import urlparse
 REQUIRED = ("photo_id", "species", "license", "license_verified",
             "species_verified", "image_quality_verified", "reviewer", "source_url", "boxes")
 SUPPORTED_LICENSES = {"CC0-1.0", "CC-BY-4.0"}
+try:
+    from .class_schema import CLASS_NAMES
+except ImportError:  # Supports direct execution: python training/validate_reviewed_annotations.py
+    from class_schema import CLASS_NAMES
 
 def check(path):
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -48,7 +52,7 @@ def check(path):
             if not isinstance(box, dict) or set(box) != {"class_id", "x", "y", "width", "height"}:
                 raise ValueError(f"Record {index}: invalid box schema")
             cls = box["class_id"]
-            if type(cls) is not int or not 0 <= cls < 6:
+            if type(cls) is not int or not 0 <= cls < len(CLASS_NAMES):
                 raise ValueError(f"Record {index}: invalid class_id")
             values = [box[k] for k in ("x", "y", "width", "height")]
             if any(type(v) not in (int, float) or not math.isfinite(v) for v in values):
