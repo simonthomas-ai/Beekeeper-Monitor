@@ -1,6 +1,8 @@
 import http.client
 import json
 import os
+import socket
+import sqlite3
 import stat
 import tempfile
 import threading
@@ -67,6 +69,67 @@ class LocalIngestTests(unittest.TestCase):
 
     def test_non_json_content_type_rejected(self):
         self.assertEqual(self.send(content_type="text/plain"), 415)
+
+    def _raw_status(self, raw_request):
+        with socket.create_connection(("127.0.0.1", self.server.server_port), timeout=3) as client:
+            client.settimeout(3)
+            client.sendall(raw_request)
+            response = client.recv(4096)
+        return response.split(b"\r\n", 1)[0]
+
+    def test_duplicate_negative_and_oversized_content_lengths_rejected(self):
+        prefix = (
+            b"POST /api/v1/events HTTP/1.1\r\n"
+            b"Host: localhost\r\n"
+            b"Authorization: Bearer " + TOKEN.encode("ascii") + b"\r\n"
+            b"Content-Type: application/json\r\n"
+        )
+        duplicate = prefix + b"Content-Length: 2\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}"
+        negative = prefix + b"Content-Length: -1\r\nConnection: close\r\n\r\n"
+        too_large = prefix + b"Content-Length: 999999999999999999999999999999\r\nConnection: close\r\n\r\n"
+        self.assertIn(b" 400 ", self._raw_status(duplicate))
+        self.assertIn(b" 400 ", self._raw_status(negative))
+        self.assertIn(b" 413 ", self._raw_status(too_large))
+
+    def test_invalid_utf8_rejected(self):
+        self.assertEqual(self.send(data=b"\xff", content_type="application/json"), 400)
+
+    def test_slow_incomplete_body_returns_408(self):
+        with socket.create_connection(("127.0.0.1", self.server.server_port), timeout=3) as client:
+            client.settimeout(8)
+            client.sendall(
+                b"POST /api/v1/events HTTP/1.1\r\n"
+                b"Host: localhost\r\n"
+                b"Authorization: Bearer " + TOKEN.encode("ascii") + b"\r\n"
+                b"Content-Type: application/json\r\n"
+                b"Content-Length: 10\r\nConnection: close\r\n\r\nx"
+            )
+            response = client.recv(4096)
+        self.assertIn(b" 408 ", response.split(b"\r\n", 1)[0])
+
+    def test_worker_limit_rejects_extra_slow_connection(self):
+        server = make_server(TOKEN, lambda _: None, port=0, max_workers=1)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        slow = socket.create_connection(("127.0.0.1", server.server_port), timeout=3)
+        try:
+            slow.sendall(
+                b"POST /api/v1/events HTTP/1.1\r\n"
+                b"Host: localhost\r\n"
+                b"Authorization: Bearer " + TOKEN.encode("ascii") + b"\r\n"
+                b"Content-Type: application/json\r\n"
+                b"Content-Length: 10\r\nConnection: close\r\n\r\n"
+            )
+            with socket.create_connection(("127.0.0.1", server.server_port), timeout=3) as extra:
+                extra.settimeout(3)
+                extra.sendall(b"GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+                response = extra.recv(4096)
+            self.assertIn(b" 503 ", response.split(b"\r\n", 1)[0])
+        finally:
+            slow.close()
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=3)
 
     def test_short_token_rejected(self):
         with self.assertRaises(ValueError):
@@ -137,6 +200,15 @@ class SQLiteEventStoreTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             SQLiteEventStore(os.path.join(shared_dir, "events.sqlite3"))
         self.assertEqual(stat.S_IMODE(os.stat(shared_dir).st_mode), 0o755)
+
+    def test_corrupted_database_fails_closed_without_reinitializing(self):
+        corrupt_path = os.path.join(self.tmp.name, "corrupt.sqlite3")
+        with open(corrupt_path, "wb") as handle:
+            handle.write(b"NOT A SQLITE DATABASE")
+        with self.assertRaises(sqlite3.DatabaseError):
+            SQLiteEventStore(corrupt_path)
+        with open(corrupt_path, "rb") as handle:
+            self.assertEqual(handle.read(), b"NOT A SQLITE DATABASE")
 
     def test_delete_is_explicit_and_idempotent(self):
         event = self.event()
@@ -209,6 +281,41 @@ class AuthenticatedStoreApiTests(unittest.TestCase):
             with self.subTest(path=path):
                 status, _ = self.request("GET", path)
                 self.assertEqual(status, 404)
+
+
+
+
+
+class StorageFailureTests(unittest.TestCase):
+    def test_full_or_unavailable_store_never_returns_accepted(self):
+        def failing_sink(_event):
+            raise sqlite3.OperationalError("database or disk is full")
+
+        server = make_server(TOKEN, failing_sink, port=0)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            event = HiveEvent(
+                "hive_telemetry", "storage-failure-station", "2026-11-19T19:00:00Z",
+                {"temperature_c": 21.0, "humidity_pct": 45},
+            )
+            conn = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=3)
+            conn.request(
+                "POST", "/api/v1/events", body=event.to_json(),
+                headers={
+                    "Authorization": "Bearer " + TOKEN,
+                    "Content-Type": "application/json",
+                },
+            )
+            response = conn.getresponse()
+            body = json.loads(response.read())
+            conn.close()
+            self.assertEqual(response.status, 503)
+            self.assertEqual(body, {"error": "storage_unavailable"})
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=3)
 
 
 if __name__ == "__main__":

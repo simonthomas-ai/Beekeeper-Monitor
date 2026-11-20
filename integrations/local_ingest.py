@@ -121,7 +121,8 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
         def end_headers(self):
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "no-referrer")
-            script_policy = "'self' 'unsafe-inline'" if urlsplit(self.path).path.startswith("/review/") else "'self'"
+            request_path = urlsplit(getattr(self, "path", "")).path
+            script_policy = "'self' 'unsafe-inline'" if request_path.startswith("/review/") else "'self'"
             self.send_header("Content-Security-Policy",
                              "default-src 'self'; script-src " + script_policy + "; object-src 'none'; "
                              "base-uri 'self'; frame-ancestors 'none'; "
@@ -191,10 +192,18 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
                 self._json(400, {"error": "unsupported_transfer_or_content_encoding"})
                 return
             lengths = self.headers.get_all("Content-Length", [])
-            if len(lengths) != 1 or not lengths[0].isdigit():
+            if len(lengths) != 1:
                 self._json(400, {"error": "invalid_content_length"})
                 return
-            length = int(lengths[0])
+            raw_length = lengths[0]
+            if not raw_length.isascii() or not raw_length.isdigit():
+                self._json(400, {"error": "invalid_content_length"})
+                return
+            # Reject absurd decimal headers before int() to avoid conversion exceptions.
+            if len(raw_length) > len(str(MAX_BODY)):
+                self._json(413, {"error": "body_too_large"})
+                return
+            length = int(raw_length)
             if not 0 < length <= MAX_BODY:
                 self._json(413, {"error": "body_too_large_or_empty"})
                 return
@@ -215,7 +224,10 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
             except (ValueError, UnicodeError, json.JSONDecodeError):
                 self._json(400, {"error": "invalid_event"})
                 return
-            except (TimeoutError, OSError):
+            except TimeoutError:
+                self._json(408, {"error": "request_body_timeout"})
+                return
+            except OSError:
                 self.close_connection = True
                 return
             except Exception:
