@@ -99,6 +99,14 @@ class ProvenanceTests(unittest.TestCase):
             with self.assertRaises(DatasetProvenanceError):
                 validate_provenance(root)
 
+    def test_rejects_image_missing_from_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, rows = self._dataset(tmp)
+            extra = root / "images" / "train" / "not-in-manifest.jpg"
+            extra.write_bytes(b"orphan image")
+            with self.assertRaises(DatasetProvenanceError):
+                validate_provenance(root)
+
     def test_rejects_unverified_labels_and_path_traversal(self):
         with tempfile.TemporaryDirectory() as tmp:
             root, rows = self._dataset(tmp)
