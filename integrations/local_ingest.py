@@ -280,8 +280,11 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
                 query = parse_qs(parsed.query, strict_parsing=False)
                 if set(query) - {"limit"} or any(len(values) != 1 for values in query.values()):
                     raise ValueError("invalid query")
-                default_limit = "500" if parsed.path.endswith("/export") else "100"
+                is_export = parsed.path.endswith("/export")
+                default_limit = "500" if is_export else "100"
                 limit = int(query.get("limit", [default_limit])[0])
+                if not 1 <= limit <= (500 if is_export else 100):
+                    raise ValueError("requested page size is outside the endpoint limit")
                 events = sink.list_events(limit)
                 if parsed.path.endswith("/export"):
                     document = {
