@@ -28,6 +28,8 @@ FIELDS = [
     "dataset_key", "scientific_name", "review_status",
 ]
 LICENSES = {
+    "cc0-1.0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
+    "cc-by-4.0": ("CC-BY-4.0", "https://creativecommons.org/licenses/by/4.0/"),
     "cc0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
     "http://creativecommons.org/publicdomain/zero/1.0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
     "http://creativecommons.org/publicdomain/zero/1.0/": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
