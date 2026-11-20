@@ -269,10 +269,33 @@ class AuthenticatedStoreApiTests(unittest.TestCase):
         status, _ = self.request("GET", "/api/v1/events", token="wrong")
         self.assertEqual(status, 401)
 
+    def test_station_event_export_is_authenticated_and_versioned(self):
+        event = HiveEvent("hive_telemetry", "sensor-export", "2026-11-19T19:00:00Z",
+                          {"temperature_c": 22.5, "humidity_pct": 43})
+        self.store(event)
+        status, payload = self.request("GET", "/api/v1/events/export?limit=10")
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["export_version"], 1)
+        self.assertEqual(payload["count"], 1)
+        self.assertEqual(payload["events"][0]["event"]["device_id"], "sensor-export")
+
+        conn = http.client.HTTPConnection("127.0.0.1", self.server.server_port, timeout=3)
+        conn.request("GET", "/api/v1/events/export?limit=10",
+                     headers={"Authorization": "Bearer " + TOKEN})
+        response = conn.getresponse()
+        self.assertIn("attachment;", response.getheader("Content-Disposition", ""))
+        response.read()
+        conn.close()
+
+    def test_station_event_export_requires_authentication(self):
+        status, _ = self.request("GET", "/api/v1/events/export", token="wrong")
+        self.assertEqual(status, 401)
+
     def test_local_pwa_is_served_on_same_origin(self):
         status, body = self.request("GET", "/")
         self.assertEqual(status, 200)
         self.assertIn('id="station-events-form"', body)
+        self.assertIn('id="station-events-export"', body)
         self.assertIn('integrations-ui.js', body)
 
     def test_private_source_files_are_not_served(self):

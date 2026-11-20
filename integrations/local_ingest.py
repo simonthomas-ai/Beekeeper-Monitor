@@ -9,6 +9,7 @@ import os
 import re
 import threading
 import time
+from datetime import datetime, timezone
 from collections import defaultdict, deque
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
@@ -19,6 +20,7 @@ from integrations.event_store import SQLiteEventStore
 from pathlib import Path
 
 MAX_BODY = 32768
+MAX_EXPORT_BYTES = 8 * 1024 * 1024
 READ_TIMEOUT_SECONDS = 5
 MAX_WORKERS = 16
 RATE_LIMIT_REQUESTS = 60
@@ -237,7 +239,7 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
 
         def do_GET(self):
             parsed = urlsplit(self.path)
-            if parsed.path != "/api/v1/events":
+            if parsed.path not in {"/api/v1/events", "/api/v1/events/export"}:
                 return super().do_GET()
             if not self._authorized():
                 self._json(401, {"error": "unauthorized"})
@@ -249,8 +251,33 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
                 query = parse_qs(parsed.query, strict_parsing=False)
                 if set(query) - {"limit"} or any(len(values) != 1 for values in query.values()):
                     raise ValueError("invalid query")
-                limit = int(query.get("limit", ["100"])[0])
+                default_limit = "500" if parsed.path.endswith("/export") else "100"
+                limit = int(query.get("limit", [default_limit])[0])
                 events = sink.list_events(limit)
+                if parsed.path.endswith("/export"):
+                    document = {
+                        "export_version": 1,
+                        "exported_at": datetime.now(timezone.utc).isoformat(),
+                        "count": len(events),
+                        "events": events,
+                    }
+                    raw = json.dumps(document, ensure_ascii=False, allow_nan=False).encode("utf-8")
+                    if len(raw) > MAX_EXPORT_BYTES:
+                        self._json(413, {"error": "export_too_large", "max_bytes": MAX_EXPORT_BYTES})
+                        return
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("Content-Disposition", 'attachment; filename="beekeeper-station-events.json"')
+                    self.send_header("Cache-Control", "no-store")
+                    self.send_header("Content-Length", str(len(raw)))
+                    self.send_header("Connection", "close")
+                    self.end_headers()
+                    try:
+                        self.wfile.write(raw)
+                    except (BrokenPipeError, ConnectionResetError, OSError):
+                        pass
+                    self.close_connection = True
+                    return
                 self._json(200, {"events": events, "count": len(events)})
             except (ValueError, AttributeError):
                 self._json(400, {"error": "invalid_query_or_read_unavailable"})
