@@ -26,7 +26,9 @@ export VESPAGUARD_MAX_EVENTS=100000
 python -m integrations.local_ingest
 ```
 
-Keep the token in a local secret manager or protected environment file. Never commit it. The service binds to `127.0.0.1:8765` and must not be directly exposed to the public internet. The default rate limit is 60 requests per client IP per 60 seconds; maximum active request workers are 16 and request body size is capped at 32 KiB.
+Then open `http://127.0.0.1:8765/` in the same browser. This local endpoint serves the static PWA and its authenticated station-event panel on the same origin as the API. The panel asks for the token each time; it is kept only in JavaScript memory and cleared on page exit. The public GitHub Pages copy does not connect to the local receiver.
+
+Keep the token in a local secret manager or protected environment file. Never commit it. The service binds to `127.0.0.1:8765` and must not be directly exposed to the public internet. The default rate limit is 60 requests per client IP per 60 seconds; maximum active request workers are 16 and request body size is capped at 32 KiB. Static serving is allowlisted; Python source, hidden files and private data directories are not served.
 
 ## API
 
