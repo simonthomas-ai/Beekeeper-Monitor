@@ -1,7 +1,7 @@
-"""Bounded, authenticated local HTTP ingestion for validated metadata events.
+"""Bounded local PWA server and authenticated metadata event receiver.
 
-Default binding is loopback. For remote use, put this behind an authenticated
-TLS VPN/reverse proxy; never expose the plain-HTTP listener to the public net.
+The service binds to loopback by default. Remote access requires an authenticated
+VPN or reviewed TLS reverse proxy; never expose this HTTP listener publicly.
 """
 import hmac
 import json
@@ -9,15 +9,18 @@ import os
 import re
 import threading
 import time
+from datetime import datetime, timezone
 from collections import defaultdict, deque
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import SimpleHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
+from pathlib import Path
 
 from integrations.event_contracts import HiveEvent
 from integrations.event_store import SQLiteEventStore
 
 MAX_BODY = 32768
+MAX_EXPORT_BYTES = 8 * 1024 * 1024
 READ_TIMEOUT_SECONDS = 5
 BODY_DEADLINE_SECONDS = 10
 MAX_WORKERS = 16
@@ -41,8 +44,8 @@ class BoundedThreadingHTTPServer(ThreadingMixIn, HTTPServer):
         if not self._slots.acquire(timeout=0.25):
             try:
                 request.sendall(
-                    b"HTTP/1.1 503 Service Unavailable\\r\\n"
-                    b"Connection: close\\r\\nContent-Length: 0\\r\\n\\r\\n"
+                    b"HTTP/1.1 503 Service Unavailable\r\n"
+                    b"Connection: close\r\nContent-Length: 0\r\n\r\n"
                 )
             except OSError:
                 pass
@@ -66,7 +69,13 @@ class BoundedThreadingHTTPServer(ThreadingMixIn, HTTPServer):
         return request, address
 
 
-def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_LIMIT_WINDOW_SECONDS):
+def make_handler(
+    token,
+    sink,
+    rate_limit=RATE_LIMIT_REQUESTS,
+    rate_window=RATE_LIMIT_WINDOW_SECONDS,
+    web_root=None,
+):
     if not token or len(token) < 24:
         raise ValueError("Set a random ingestion token of at least 24 characters")
     if not callable(sink) or rate_limit < 1 or rate_window < 1:
@@ -74,20 +83,81 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
 
     requests = defaultdict(deque)
     requests_lock = threading.Lock()
+    public_root = Path(web_root or Path(__file__).resolve().parents[1]).resolve()
+    public_files = {
+        "index.html", "app.js", "integrations-ui.js", "live-media.js",
+        "style.css", "manifest.webmanifest", "icon.svg", "sw.js",
+    }
+    public_dirs = {"review", "sources"}
+    public_extensions = {
+        ".html", ".js", ".css", ".json", ".csv", ".svg",
+        ".png", ".jpg", ".jpeg", ".webp", ".avif", ".ico",
+    }
 
-    class Handler(BaseHTTPRequestHandler):
+    class Handler(SimpleHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
         server_version = "BeeKeeperIngest"
         sys_version = ""
 
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=str(public_root), **kwargs)
+
+        def translate_path(self, path):
+            raw = unquote(urlsplit(path).path)
+            if chr(92) in raw or chr(0) in raw:
+                return str(public_root / "__not_found__")
+            parts = raw.split("/")
+            if any(part in (".", "..") or part.startswith(".") for part in parts if part):
+                return str(public_root / "__not_found__")
+            parts = [part for part in parts if part]
+            if not parts:
+                return str(public_root / "index.html")
+            if len(parts) == 1 and parts[0] in public_files:
+                candidate = public_root / parts[0]
+                return str(candidate) if candidate.is_file() else str(public_root / "__not_found__")
+            if parts[0] not in public_dirs:
+                return str(public_root / "__not_found__")
+            candidate = public_root.joinpath(*parts)
+            try:
+                resolved = candidate.resolve()
+                allowed_base = (public_root / parts[0]).resolve()
+                resolved.relative_to(allowed_base)
+            except (OSError, ValueError):
+                return str(public_root / "__not_found__")
+            if resolved.suffix.lower() not in public_extensions or not resolved.is_file():
+                return str(public_root / "__not_found__")
+            return str(resolved)
+
+        def list_directory(self, path):
+            self.send_error(404)
+            return None
+
+        def end_headers(self):
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Referrer-Policy", "no-referrer")
+            request_path = urlsplit(getattr(self, "path", "")).path
+            script_policy = "'self' 'unsafe-inline'" if request_path.startswith("/review/") else "'self'"
+            self.send_header(
+                "Content-Security-Policy",
+                "default-src 'self'; script-src " + script_policy + "; object-src 'none'; "
+                "base-uri 'self'; frame-ancestors 'none'; "
+                "img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; "
+                "connect-src 'self' https:; media-src 'self' blob:; form-action 'self'",
+            )
+            self.send_header(
+                "Permissions-Policy",
+                "camera=(self), microphone=(self), geolocation=(self)",
+            )
+            super().end_headers()
+
         def log_message(self, fmt, *args):
-            # Avoid writing client-controlled strings, payloads or headers to logs.
+            # Never log request headers, tokens, client-controlled paths or payloads.
             return
 
         def _json(self, status, body):
-            raw = json.dumps(body, separators=(",", ":")).encode("utf-8")
+            raw = json.dumps(body, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
             self.send_response(status)
-            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Content-Length", str(len(raw)))
@@ -111,7 +181,9 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
                 if q is None:
                     if len(requests) >= 1024:
                         for old_key, old_queue in list(requests.items()):
-                            if not old_queue or now - old_queue[-1] > rate_window:
+                            while old_queue and now - old_queue[0] > rate_window:
+                                old_queue.popleft()
+                            if not old_queue:
                                 requests.pop(old_key, None)
                             if len(requests) < 1024:
                                 break
@@ -136,14 +208,24 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
             if not self._rate_allowed():
                 self._json(429, {"error": "rate_limited"})
                 return
-            if self.headers.get("Transfer-Encoding") is not None:
-                self._json(400, {"error": "transfer_encoding_not_supported"})
+            if (
+                self.headers.get("Transfer-Encoding") is not None
+                or self.headers.get("Content-Encoding") is not None
+            ):
+                self._json(400, {"error": "unsupported_transfer_or_content_encoding"})
                 return
             lengths = self.headers.get_all("Content-Length", [])
-            if len(lengths) != 1 or not lengths[0].isdigit():
+            if len(lengths) != 1:
                 self._json(400, {"error": "invalid_content_length"})
                 return
-            length = int(lengths[0])
+            raw_length = lengths[0]
+            if not raw_length.isascii() or not raw_length.isdigit():
+                self._json(400, {"error": "invalid_content_length"})
+                return
+            if len(raw_length) > len(str(MAX_BODY)):
+                self._json(413, {"error": "body_too_large"})
+                return
+            length = int(raw_length)
             if not 0 < length <= MAX_BODY:
                 self._json(413, {"error": "body_too_large_or_empty"})
                 return
@@ -169,7 +251,10 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
             except (ValueError, UnicodeError, json.JSONDecodeError):
                 self._json(400, {"error": "invalid_event"})
                 return
-            except (TimeoutError, OSError):
+            except TimeoutError:
+                self._json(408, {"error": "request_body_timeout"})
+                return
+            except OSError:
                 self.close_connection = True
                 return
             except Exception:
@@ -179,9 +264,8 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
 
         def do_GET(self):
             parsed = urlsplit(self.path)
-            if parsed.path != "/api/v1/events":
-                self._json(404, {"error": "not_found"})
-                return
+            if parsed.path not in {"/api/v1/events", "/api/v1/events/export"}:
+                return super().do_GET()
             if not self._authorized():
                 self._json(401, {"error": "unauthorized"})
                 return
@@ -189,60 +273,96 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
                 self._json(429, {"error": "rate_limited"})
                 return
             try:
-                params = parse_qs(parsed.query, keep_blank_values=True, strict_parsing=True)
-            except ValueError:
-                self._json(400, {"error": "invalid_query"})
-                return
-            if set(params) - {"limit"} or any(len(values) != 1 for values in params.values()):
-                self._json(400, {"error": "invalid_query"})
-                return
-            try:
-                limit = int(params.get("limit", ["100"])[0])
-                if not 1 <= limit <= 500:
-                    raise ValueError
-                if not hasattr(sink, "list_events"):
-                    self._json(501, {"error": "read_api_not_configured"})
-                    return
+                query = parse_qs(parsed.query, keep_blank_values=True, strict_parsing=True)
+                if set(query) - {"limit"} or any(len(values) != 1 for values in query.values()):
+                    raise ValueError("invalid query")
+                default_limit = "500" if parsed.path.endswith("/export") else "100"
+                limit = int(query.get("limit", [default_limit])[0])
                 events = sink.list_events(limit)
-            except (ValueError, TypeError):
-                self._json(400, {"error": "invalid_limit"})
+                if parsed.path.endswith("/export"):
+                    document = {
+                        "export_version": 1,
+                        "exported_at": datetime.now(timezone.utc).isoformat(),
+                        "count": len(events),
+                        "events": events,
+                    }
+                    raw = json.dumps(document, ensure_ascii=False, allow_nan=False).encode("utf-8")
+                    if len(raw) > MAX_EXPORT_BYTES:
+                        self._json(413, {"error": "export_too_large", "max_bytes": MAX_EXPORT_BYTES})
+                        return
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header(
+                        "Content-Disposition",
+                        'attachment; filename="beekeeper-station-events.json"',
+                    )
+                    self.send_header("Cache-Control", "no-store")
+                    self.send_header("Content-Length", str(len(raw)))
+                    self.send_header("Connection", "close")
+                    self.end_headers()
+                    try:
+                        self.wfile.write(raw)
+                    except (BrokenPipeError, ConnectionResetError, OSError):
+                        pass
+                    self.close_connection = True
+                    return
+                self._json(200, {"events": events, "count": len(events)})
+            except (ValueError, AttributeError):
+                self._json(400, {"error": "invalid_query_or_read_unavailable"})
                 return
             except Exception:
                 self._json(503, {"error": "storage_unavailable"})
                 return
-            self._json(200, {"events": events})
-
-        def do_DELETE(self):
-            match = re.fullmatch(r"/api/v1/events/([a-f0-9]{64})", urlsplit(self.path).path)
-            if not match:
-                self._json(404, {"error": "not_found"})
-                return
-            if not self._authorized():
-                self._json(401, {"error": "unauthorized"})
-                return
-            if not self._rate_allowed():
-                self._json(429, {"error": "rate_limited"})
-                return
-            if not hasattr(sink, "delete"):
-                self._json(501, {"error": "delete_api_not_configured"})
-                return
-            try:
-                deleted = sink.delete(match.group(1))
-            except Exception:
-                self._json(503, {"error": "storage_unavailable"})
-                return
-            self._json(200 if deleted else 404, {"deleted": deleted})
 
         def do_PUT(self):
             self._json(405, {"error": "method_not_allowed"})
 
+        def do_DELETE(self):
+            parsed = urlsplit(self.path)
+            prefix = "/api/v1/events/"
+            event_id = parsed.path[len(prefix):] if parsed.path.startswith(prefix) else ""
+            if (
+                parsed.query
+                or not re.fullmatch(r"[a-f0-9]{64}", event_id)
+            ):
+                self._json(404, {"error": "not_found"})
+                return
+            if not self._authorized():
+                self._json(401, {"error": "unauthorized"})
+                return
+            if not self._rate_allowed():
+                self._json(429, {"error": "rate_limited"})
+                return
+            try:
+                deleted = sink.delete(event_id)
+                self._json(200 if deleted else 404, {"deleted": deleted})
+            except (ValueError, AttributeError):
+                self._json(400, {"error": "invalid_event_id"})
+            except Exception:
+                self._json(503, {"error": "storage_unavailable"})
+
     return Handler
 
 
-def make_server(token, sink, host="127.0.0.1", port=8765, max_workers=MAX_WORKERS):
+def make_server(token, sink, host="127.0.0.1", port=8765, max_workers=MAX_WORKERS, web_root=None):
     return BoundedThreadingHTTPServer(
-        (host, port), make_handler(token, sink), max_workers=max_workers
+        (host, port),
+        make_handler(token, sink, web_root=web_root),
+        max_workers=max_workers,
     )
+
+
+def retention_maintenance(store, stop_event, interval_seconds=3600):
+    """Periodically purge expired metadata without logging event content."""
+    if not 300 <= interval_seconds <= 86400:
+        raise ValueError("retention interval must be between 300 and 86400 seconds")
+    while not stop_event.wait(interval_seconds):
+        try:
+            removed = store.purge_expired()
+            if removed:
+                print(f"Retention maintenance removed {removed} expired event(s).", flush=True)
+        except Exception:
+            print("Retention maintenance failed; inspect local service diagnostics.", flush=True)
 
 
 def run():
@@ -253,14 +373,30 @@ def run():
     )
     retention_days = int(os.environ.get("VESPAGUARD_RETENTION_DAYS", "90"))
     max_rows = int(os.environ.get("VESPAGUARD_MAX_EVENTS", "100000"))
+    retention_interval = int(os.environ.get("VESPAGUARD_RETENTION_INTERVAL_SECONDS", "3600"))
+    if not 300 <= retention_interval <= 86400:
+        raise ValueError("VESPAGUARD_RETENTION_INTERVAL_SECONDS must be between 300 and 86400")
     store = SQLiteEventStore(db_path, retention_days=retention_days, max_rows=max_rows)
+    removed = store.purge_expired()
+    if removed:
+        print(f"Startup retention removed {removed} expired event(s).", flush=True)
     server = make_server(token, store)
-    print("BeeKeeper ingestion listening on 127.0.0.1:8765 (localhost only)", flush=True)
+    stop_event = threading.Event()
+    maintenance = threading.Thread(
+        target=retention_maintenance,
+        args=(store, stop_event, retention_interval),
+        name="beekeeper-retention",
+        daemon=True,
+    )
+    maintenance.start()
+    print("BeeKeeper local PWA and ingestion API: http://127.0.0.1:8765/ (localhost only)", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        stop_event.set()
+        maintenance.join(timeout=5)
         server.shutdown()
         server.server_close()
 
