@@ -1,13 +1,34 @@
-"""VespaGuard vendor-neutral event contracts. No external code or training data."""
+"""Strict, vendor-neutral event contracts for metadata-only station events."""
 from __future__ import annotations
+
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Literal
 import json
 import math
+import re
 
 Kind = Literal["camera_detection", "acoustic_event", "hive_telemetry", "varroa_count"]
 ALLOWED = {"camera_detection", "acoustic_event", "hive_telemetry", "varroa_count"}
+IDENTIFIER = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9._:-]{0,79}$")
+LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
+SOURCE_EVENT_ID = re.compile(r"^[\x21-\x7E]{1,128}$")
+
+REQUIRED_FIELDS = {
+    "camera_detection": {"label", "confidence"},
+    "acoustic_event": {"label", "confidence"},
+    "hive_telemetry": {"temperature_c", "humidity_pct"},
+    "varroa_count": {"mites", "bees_examined"},
+}
+OPTIONAL_FIELDS = {
+    # Exact compatibility fields sent by the BeeKeeper3000 bridge. They are
+    # limited machine metadata; no media, coordinates or arbitrary text.
+    "camera_detection": {"origin_event_id", "verification_status", "prey_detected"},
+    "acoustic_event": set(),
+    "hive_telemetry": set(),
+    "varroa_count": set(),
+}
+
 
 @dataclass(frozen=True)
 class HiveEvent:
@@ -19,48 +40,81 @@ class HiveEvent:
     schema_version: int = 1
 
     def validate(self) -> None:
-        if self.kind not in ALLOWED or self.schema_version != 1:
-            raise ValueError("Unsupported event kind/version")
-        if not isinstance(self.device_id, str) or not 1 <= len(self.device_id) <= 128:
-            raise ValueError("Invalid device ID")
-        if not isinstance(self.source, str) or not 1 <= len(self.source) <= 128:
-            raise ValueError("Invalid source")
-        if not isinstance(self.timestamp, str):
+        if not isinstance(self.kind, str) or self.kind not in ALLOWED:
+            raise ValueError("Unsupported event kind")
+        if type(self.schema_version) is not int or self.schema_version != 1:
+            raise ValueError("Unsupported event schema version")
+        if not isinstance(self.device_id, str) or not IDENTIFIER.fullmatch(self.device_id):
+            raise ValueError("device_id must be a short technical identifier")
+        if not isinstance(self.source, str) or not IDENTIFIER.fullmatch(self.source):
+            raise ValueError("source must be a short technical identifier")
+        if not isinstance(self.timestamp, str) or not 1 <= len(self.timestamp) <= 40:
             raise ValueError("Timestamp required")
         try:
             dt = datetime.fromisoformat(self.timestamp.replace("Z", "+00:00"))
         except ValueError as exc:
-            raise ValueError("Invalid timestamp") from exc
+            raise ValueError("Invalid ISO-8601 timestamp") from exc
         if dt.tzinfo is None or dt.utcoffset() is None:
-            raise ValueError("Timestamp must have timezone")
+            raise ValueError("Timestamp must include an explicit timezone")
+
         if not isinstance(self.payload, dict):
             raise ValueError("Payload must be object")
-        required = {
-            "camera_detection": {"label": str, "confidence": float},
-            "acoustic_event": {"label": str, "confidence": float},
-            "hive_telemetry": {"temperature_c": float, "humidity_pct": float},
-            "varroa_count": {"mites": int, "bees_examined": int},
-        }[self.kind]
-        for key, typ in required.items():
-            value = self.payload.get(key)
-            if typ is float:
-                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
-                    raise ValueError(f"Invalid {key}")
-            elif type(value) is not typ:
-                raise ValueError(f"Invalid {key}")
+        required = REQUIRED_FIELDS[self.kind]
+        allowed = required | OPTIONAL_FIELDS[self.kind]
+        if not required.issubset(self.payload) or not set(self.payload).issubset(allowed):
+            raise ValueError("Payload does not match the strict metadata contract")
+
         if self.kind in {"camera_detection", "acoustic_event"}:
-            if not self.payload["label"] or not 0 <= self.payload["confidence"] <= 1:
-                raise ValueError("Invalid detection label/confidence")
+            label = self.payload["label"]
+            confidence = self.payload["confidence"]
+            if not isinstance(label, str) or not LABEL.fullmatch(label):
+                raise ValueError("label must be a short, bounded machine label")
+            if (
+                isinstance(confidence, bool)
+                or not isinstance(confidence, (int, float))
+                or not math.isfinite(confidence)
+                or not 0 <= confidence <= 1
+            ):
+                raise ValueError("Invalid confidence")
+            if self.kind == "camera_detection":
+                if "origin_event_id" in self.payload:
+                    origin_id = self.payload["origin_event_id"]
+                    if not isinstance(origin_id, str) or not SOURCE_EVENT_ID.fullmatch(origin_id):
+                        raise ValueError("Invalid origin event ID")
+                if (
+                    "verification_status" in self.payload
+                    and self.payload["verification_status"] != "unverified"
+                ):
+                    raise ValueError("Untrusted events may only remain unverified")
+                if (
+                    "prey_detected" in self.payload
+                    and type(self.payload["prey_detected"]) is not bool
+                ):
+                    raise ValueError("prey_detected must be boolean")
         elif self.kind == "hive_telemetry":
-            if not -60 <= self.payload["temperature_c"] <= 100 or not 0 <= self.payload["humidity_pct"] <= 100:
-                raise ValueError("Telemetry outside plausible range")
+            temperature = self.payload["temperature_c"]
+            humidity = self.payload["humidity_pct"]
+            if (
+                isinstance(temperature, bool)
+                or not isinstance(temperature, (int, float))
+                or not math.isfinite(temperature)
+                or not -60 <= temperature <= 100
+            ):
+                raise ValueError("Telemetry temperature outside plausible range")
+            if (
+                isinstance(humidity, bool)
+                or not isinstance(humidity, (int, float))
+                or not math.isfinite(humidity)
+                or not 0 <= humidity <= 100
+            ):
+                raise ValueError("Telemetry humidity outside plausible range")
         else:
-            if self.payload["mites"] < 0 or self.payload["bees_examined"] < 0:
-                raise ValueError("Negative counts")
-        # Explicitly disallow model assertions or human approval through untrusted events.
-        for field in ("training_approved", "species_verified", "license_verified"):
-            if field in self.payload:
-                raise ValueError(f"Untrusted approval field: {field}")
+            mites = self.payload["mites"]
+            examined = self.payload["bees_examined"]
+            if type(mites) is not int or type(examined) is not int:
+                raise ValueError("Varroa counts must be integers")
+            if not 0 <= mites <= 1_000_000 or not 0 <= examined <= 100_000_000:
+                raise ValueError("Varroa counts outside plausible range")
 
     def to_json(self) -> str:
         self.validate()
@@ -68,10 +122,28 @@ class HiveEvent:
 
     @classmethod
     def from_json(cls, raw: str) -> "HiveEvent":
-        if len(raw) > 32768:
+        if not isinstance(raw, str) or len(raw.encode("utf-8")) > 32768:
             raise ValueError("Event too large")
-        data = json.loads(raw)
-        if not isinstance(data, dict) or set(data) != {"kind", "device_id", "timestamp", "payload", "source", "schema_version"}:
+
+        def reject_duplicate_keys(pairs):
+            result = {}
+            for key, value in pairs:
+                if key in result:
+                    raise ValueError("Duplicate JSON object key")
+                result[key] = value
+            return result
+
+        def reject_nonstandard_constant(value):
+            raise ValueError("Non-standard JSON numeric constant")
+
+        data = json.loads(
+            raw,
+            object_pairs_hook=reject_duplicate_keys,
+            parse_constant=reject_nonstandard_constant,
+        )
+        if not isinstance(data, dict) or set(data) != {
+            "kind", "device_id", "timestamp", "payload", "source", "schema_version"
+        }:
             raise ValueError("Unexpected event structure")
         event = cls(**data)
         event.validate()
