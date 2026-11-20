@@ -114,13 +114,19 @@ def make_handler(
                 return str(public_root / "index.html")
             if len(parts) == 1 and parts[0] in public_files:
                 candidate = public_root / parts[0]
-                return str(candidate) if candidate.is_file() else str(public_root / "__not_found__")
+                try:
+                    resolved = candidate.resolve()
+                    resolved.relative_to(public_root)
+                except (OSError, ValueError):
+                    return str(public_root / "__not_found__")
+                return str(resolved) if resolved.is_file() else str(public_root / "__not_found__")
             if parts[0] not in public_dirs:
                 return str(public_root / "__not_found__")
             candidate = public_root.joinpath(*parts)
             try:
                 resolved = candidate.resolve()
                 allowed_base = (public_root / parts[0]).resolve()
+                allowed_base.relative_to(public_root)
                 resolved.relative_to(allowed_base)
             except (OSError, ValueError):
                 return str(public_root / "__not_found__")
