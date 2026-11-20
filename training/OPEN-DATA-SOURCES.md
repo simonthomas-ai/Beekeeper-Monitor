@@ -74,3 +74,17 @@ GBIF Backbone and EASIN can help resolve accepted scientific names, synonyms and
 - Keep naturalist/source-user attribution only where needed for license compliance and restrict access to reviewer queues.
 - Treat image/species identification as an uncertain scientific annotation, not an instruction to destroy a nest or harm an insect.
 - No person, author, institution, dataset host or volunteer has been contacted. This register is internal preparation only.
+
+
+### EASIN — European Alien Species Information Network (European Commission JRC)
+
+- Official API documentation: https://easin.jrc.ec.europa.eu/apixg
+- Catalogue API: https://easin.jrc.ec.europa.eu/apixg/catxg
+- Geospatial API: https://easin.jrc.ec.europa.eu/apixg/geoxg
+- EASIN portal: https://easin.jrc.ec.europa.eu/
+
+EASIN is useful for accepted names, invasive-alien-species catalogue information and European occurrence context. Its catalogue endpoint can be queried by taxon term; its geospatial service exposes occurrence context through the documented API. Use the official API documentation to select currently supported query and pagination parameters.
+
+**Data boundary:** EASIN catalogue/occurrence records are not camera photographs, not per-image licenses, not verified nest locations and not ground truth for an individual camera event. They can support taxonomy, synonym handling and regional sampling plans, but do not grant rights to train on third-party media. Preserve source, taxonomic authority and retrieval date; do not convert occurrence points into precise public nest alerts.
+
+EASIN data originates from partner datasets and may have separate source-specific terms. Before redistributing records or combining them with a derived dataset, check record-level/source-provider terms and applicable API conditions. This project currently documents EASIN as a candidate metadata source; no EASIN bulk download or automatic model-training ingestion is enabled.
