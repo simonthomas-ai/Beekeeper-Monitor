@@ -1,6 +1,6 @@
 # Lokaler Ereignisempfänger
 
-Dieser Empfänger speichert ausschließlich validierte Ereignis-Metadaten lokal in SQLite. Bilder, Audiodaten, GPS-/Koordinatenfelder, Freitext-Erweiterungen und personenbezogene Freifelder sind im Ereignisvertrag ausdrücklich nicht zulässig.
+Dieser Empfänger stellt die lokale Stations-PWA und eine authentifizierte Ereignis-API auf demselben Loopback-Origin bereit. Er speichert ausschließlich validierte Metadaten lokal in SQLite. Bilder, Audiodaten, GPS-/Koordinatenfelder und freie Zusatzfelder sind im Vertrag nicht zulässig.
 
 ## Eigenschaften
 
@@ -10,7 +10,8 @@ Dieser Empfänger speichert ausschließlich validierte Ereignis-Metadaten lokal 
 - 60 Requests pro Client-IP und Zeitfenster von 60 Sekunden; begrenzte Rate-Limit-Tabelle.
 - Strikte JSON-Vertragsprüfung, UTC-Zeitstempel mit Zeitzone, keine unbekannten Payload-Felder oder doppelten JSON-Schlüssel.
 - SQLite-WAL, volle Synchronisierung, idempotente SHA-256-Ereignis-IDs, konfigurierbare Aufbewahrung und Obergrenze für Datensätze.
-- Authentifizierter Abruf (maximal 500 Ereignisse) und gezieltes Löschen anhand der Ereignis-ID.
+- Authentifizierter Abruf (maximal 500 Ereignisse), versionierter JSON-Export (maximal 8 MiB) und gezieltes Löschen anhand der Ereignis-ID.
+- Sichere PWA-Auslieferung per Datei-Allowlist, ohne Directory Listing oder Freigabe von Python-Quellcode/privaten Datenverzeichnissen.
 - Keine Ausgabe von Payloads, Tokens oder fremdkontrollierten Headern in Serverlogs.
 
 ## Start unter Windows PowerShell
@@ -52,7 +53,7 @@ $event = @{
 Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:8765/api/v1/events" -Headers $headers -ContentType "application/json" -Body $event
 ```
 
-Ereignisse abrufen (1 bis 500):
+Ereignisse abrufen (1 bis 500; die Antwort enthält `events` und `count`):
 
 ```powershell
 Invoke-RestMethod -Uri "http://127.0.0.1:8765/api/v1/events?limit=100" -Headers $headers
@@ -74,6 +75,8 @@ Invoke-RestMethod -Method Delete -Uri "http://127.0.0.1:8765/api/v1/events/<64-s
 | `varroa_count` | `mites`, `bees_examined` |
 
 `device_id` und `source` sind kurze technische Kennungen, keine Namen, E-Mail-Adressen oder sonstigen Personenkennungen. Die optionale Quellereignis-ID ist eine druckbare ASCII-Kennung mit maximal 128 Zeichen; `verification_status` darf ausschließlich `unverified` sein, damit ein Adapter keine Expertenbestätigung vortäuscht. Stationen, die Peilungen oder Standorte übertragen müssen, benötigen einen separaten, ausdrücklich modellierten und zugriffsbeschränkten Vertrag. Dieses Schema nimmt keine Koordinaten an.
+
+Der authentifizierte Export ist über `GET /api/v1/events/export?limit=500` erreichbar. Die lokale Stations-PWA wird unter `http://127.0.0.1:8765/` ausgeliefert. Die ausführliche Betriebs-, Backup- und Wiederherstellungsanleitung steht in [LOCAL-INGESTION.md](./LOCAL-INGESTION.md).
 
 ## Datenschutz- und Betriebsgrenzen
 
