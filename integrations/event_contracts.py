@@ -51,9 +51,7 @@ class HiveEvent:
         except ValueError as exc:
             raise ValueError("Invalid timestamp") from exc
         if dt.tzinfo is None or dt.utcoffset() is None:
-            raise ValueError("Timestamp must have timezone")
-        if dt.utcoffset().total_seconds() != 0:
-            raise ValueError("Timestamp must be normalized to UTC")
+            raise ValueError("Timestamp must have explicit timezone information")
         if not isinstance(self.payload, dict):
             raise ValueError("Payload must be object")
 
