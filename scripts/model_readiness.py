@@ -5,8 +5,8 @@ import json
 import os
 
 root = Path(__file__).resolve().parents[1]
-classes = ["vespa_velutina", "varroa_destructor", "drone_brood",
-           "pollen_bearing_bee", "bee_swarm", "queen_bee"]
+classes = ["vespa_velutina", "vespa_crabro", "other_vespidae",
+           "apis_mellifera", "bombus_spp", "syrphidae", "other_insect"]
 base = root / "datasets" / "beekeeper"
 splits = ("train", "val", "test")
 rows = []
@@ -29,7 +29,8 @@ report = [
 ]
 report += [f"| {split} | {images} | {labels} |" for split, images, labels in rows]
 report += [f"| Provenienzmanifest | {provenance_rows} Bilddatensätze | " + ("vorhanden" if provenance_path.is_file() else "fehlt") + " |"]
-report += ["", "Die Trainingsfreigabe verlangt datasets/beekeeper/provenance.jsonl, einen Lizenz- und SHA-256-Nachweis pro Bild, menschlich geprüfte Art-/Boxlabels und split-sichere Beobachtungs-/Fotografen-/Standortgruppen.",
+report += ["", "Der Kameradetektor nutzt sieben Klassen: Vespa velutina, Vespa crabro, andere Vespidae, Honigbienen, Hummeln, Schwebfliegen und sonstige Insekten.",
+           "Die Trainingsfreigabe verlangt datasets/beekeeper/provenance.jsonl, einen Lizenz- und SHA-256-Nachweis pro Bild, menschlich geprüfte Art-/Boxlabels und split-sichere Beobachtungs-/Fotografen-/Standortgruppen.",
            "Diese Inventur belegt weder korrekte Annotationen noch Modellgewichte,",
            "Erkennungsgenauigkeit, SMS-Zustellung oder reale Hardwaretests.",
            "Die Modellfreigabe bleibt bis zu unabhängiger Validierung offen."]
