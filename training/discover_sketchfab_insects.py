@@ -103,7 +103,6 @@ def discover(fetch=None, diagnostics=None):
     resolved_license_counts = Counter()
     license_lookup_outcomes = Counter()
     model_detail_outcomes = Counter()
-    probed_license_uids = set()
     verified_model_licenses = {}
     for term in TERMS:
         url = API + "?" + urllib.parse.urlencode({
@@ -155,28 +154,6 @@ def discover(fetch=None, diagnostics=None):
                                 model_detail_outcomes["error_" + type(exc).__name__] += 1
                         slug = verified_model_licenses.get(uid, "")
                     resolved_license_counts[slug or "unverified"] += 1
-                    # At most one model-detail probe per unresolved license UID.
-                    raw_lic = item.get("license")
-                    lic_uid = raw_lic.get("uid") if isinstance(raw_lic, dict) else None
-                    if (False and not slug and isinstance(lic_uid, str) and lic_uid not in probed_license_uids
-                            and len(probed_license_uids) < 8 and isinstance(uid, str)
-                            and 8 <= len(uid) <= 64 and uid.isalnum()):
-                        probed_license_uids.add(lic_uid)
-                        try:
-                            detail = fetch(MODEL_API + urllib.parse.quote(uid, safe=""))
-                            if isinstance(detail, dict):
-                                lic = detail.get("license")
-                                model_detail_outcomes["license_" + type(lic).__name__] += 1
-                                if isinstance(lic, dict):
-                                    for key in ("uid", "slug", "label", "url"):
-                                        if key in lic:
-                                            model_detail_outcomes["field_" + key + "_" + type(lic[key]).__name__] += 1
-                            else:
-                                model_detail_outcomes["non_object_response"] += 1
-                        except urllib.error.HTTPError as exc:
-                            model_detail_outcomes["http_" + str(exc.code) if exc.code in (400, 401, 403, 404, 429, 500, 502, 503) else "http_other"] += 1
-                        except (ValueError, OSError, TimeoutError, json.JSONDecodeError) as exc:
-                            model_detail_outcomes["error_" + type(exc).__name__] += 1
                     if not isinstance(uid, str) or not (8 <= len(uid) <= 64 and uid.isalnum()):
                         reason = "invalid_uid"
                     elif slug not in ALLOWED:
