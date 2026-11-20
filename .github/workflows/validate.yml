@@ -32,6 +32,9 @@ jobs:
           python -m unittest training.test_import_authorized_images -v
           node --check app.js
           node --check integrations-ui.js
+          node --check alert-rules.js
+          node --check alert-ui.js
+          node --test tests/alert-rules.test.cjs
           node --check sw.js
       - name: Test authenticated ingestion, persistence and bridge end-to-end
         env:

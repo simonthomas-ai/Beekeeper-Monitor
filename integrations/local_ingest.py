@@ -78,7 +78,7 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
     requests = defaultdict(deque)
     requests_lock = threading.Lock()
     public_root = Path(web_root or Path(__file__).resolve().parents[1]).resolve()
-    public_files = {"index.html", "app.js", "integrations-ui.js", "live-media.js",
+    public_files = {"index.html", "app.js", "integrations-ui.js", "alert-rules.js", "alert-ui.js", "live-media.js",
                     "style.css", "manifest.webmanifest", "icon.svg", "sw.js"}
     public_dirs = {"review", "sources"}
     public_extensions = {".html", ".js", ".css", ".json", ".csv", ".svg",
