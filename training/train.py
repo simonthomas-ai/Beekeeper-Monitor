@@ -6,7 +6,6 @@ import argparse
 import hashlib
 import json
 import re
-import os
 from pathlib import Path
 import yaml
 from provenance import validate_provenance
@@ -85,10 +84,12 @@ def main():
     parser.add_argument('--validate-only',action='store_true')
     parser.add_argument('--accept-agpl',action='store_true', help='Explicitly accept AGPL-3.0 obligations for the current Ultralytics training path')
     parser.add_argument('--pretrained-model',default='yolo11n.pt')
-    parser.add_argument('--pretrained-model-source-url',default='https://github.com/ultralytics/assets/releases')
+    parser.add_argument('--pretrained-model-source-url',default='https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt')
     parser.add_argument('--pretrained-model-sha256',required=False)
     parser.add_argument('--confidence-threshold',type=float,default=0.5)
     args=parser.parse_args()
+    if not 1 <= args.epochs <= 500 or not 32 <= args.imgsz <= 4096:
+        parser.error('--epochs must be 1..500 and --imgsz must be 32..4096')
     root=Path(__file__).resolve().parents[1]
     report=validate(root)
     print(json.dumps(report,indent=2))
@@ -147,7 +148,7 @@ def main():
             'model_sha256': digest,
             'model_version': f'{pretrained_path.name};base-{pretrained_digest[:12]};ultralytics-{ultralytics.__version__}',
             'model_source_url': args.pretrained_model_source_url,
-            'model_license': 'AGPL-3.0-only',
+            'model_license': 'AGPL-3.0-or-later',
             'license_review_status': 'approved',
             'inference_status': 'experimental',
             'input': {
@@ -171,7 +172,7 @@ def main():
             'onnx_sha256':digest,
             'pretrained_checkpoint_sha256':pretrained_digest,
             'pretrained_checkpoint_source_url':args.pretrained_model_source_url,
-            'model_license':'AGPL-3.0-only',
+            'model_license':'AGPL-3.0-or-later',
             'model_license_review':'operator_explicitly_acknowledged_via_accept_agpl_flag',
             'confidence_thresholds':'experimental_not_calibrated',
         }
