@@ -76,8 +76,8 @@ def make_handler(
     rate_window=RATE_LIMIT_WINDOW_SECONDS,
     web_root=None,
 ):
-    if not token or len(token) < 24:
-        raise ValueError("Set a random ingestion token of at least 24 characters")
+    if not isinstance(token, str) or len(token) < 24 or not token.isascii():
+        raise ValueError("Set an ASCII random ingestion token of at least 24 characters")
     if not callable(sink) or rate_limit < 1 or rate_window < 1:
         raise ValueError("Invalid sink or rate-limit configuration")
 
@@ -176,8 +176,15 @@ def make_handler(
             self.close_connection = True
 
         def _authorized(self):
-            supplied = self.headers.get("Authorization", "")
-            return hmac.compare_digest(supplied, "Bearer " + token)
+            values = self.headers.get_all("Authorization", [])
+            if len(values) != 1:
+                return False
+            try:
+                supplied = values[0].encode("utf-8", errors="strict")
+            except UnicodeError:
+                return False
+            expected = ("Bearer " + token).encode("ascii")
+            return hmac.compare_digest(supplied, expected)
 
         def _rate_allowed(self):
             now = time.monotonic()
