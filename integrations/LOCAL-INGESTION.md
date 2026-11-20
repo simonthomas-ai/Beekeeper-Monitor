@@ -9,7 +9,11 @@ Requirements: Python 3.12 or newer. The receiver uses only the Python standard l
 PowerShell:
 
 ```powershell
-$env:VESPAGUARD_INGEST_TOKEN = [Convert]::ToBase64String((1..32 | ForEach-Object { Get-Random -Maximum 256 } | ForEach-Object { [byte]$_ }))
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$secretBytes = New-Object byte[] 32
+$rng.GetBytes($secretBytes)
+$rng.Dispose()
+$env:VESPAGUARD_INGEST_TOKEN = [Convert]::ToBase64String($secretBytes)
 $env:VESPAGUARD_INGEST_DB = "$env:LOCALAPPDATA\BeeKeeper-Monitor\events.sqlite3"
 $env:VESPAGUARD_RETENTION_DAYS = "90"
 $env:VESPAGUARD_MAX_EVENTS = "100000"
