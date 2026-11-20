@@ -8,7 +8,7 @@ Dieser Empfänger stellt die lokale Stations-PWA und eine authentifizierte Ereig
 - Bearer-Token mit mindestens 24 Zeichen; Vergleich in konstanter Zeit.
 - Höchstens 32 KiB je Request, 16 parallele Worker, begrenzte Queue, 5-Sekunden Socket-Timeout und 10-Sekunden Gesamtdeadline für den Request-Body.
 - 60 Requests pro Client-IP und Zeitfenster von 60 Sekunden; begrenzte Rate-Limit-Tabelle.
-- Strikte JSON-Vertragsprüfung, UTC-Zeitstempel mit Zeitzone, keine unbekannten Payload-Felder oder doppelten JSON-Schlüssel.
+- Strikte JSON-Vertragsprüfung, ISO-8601-Zeitstempel mit expliziter Zeitzone, keine unbekannten Payload-Felder oder doppelten JSON-Schlüssel.
 - SQLite-WAL, volle Synchronisierung, idempotente SHA-256-Ereignis-IDs, konfigurierbare Aufbewahrung und Obergrenze für Datensätze.
 - Authentifizierter Abruf (maximal 500 Ereignisse), versionierter JSON-Export (maximal 8 MiB) und gezieltes Löschen anhand der Ereignis-ID.
 - Sichere PWA-Auslieferung per Datei-Allowlist, ohne Directory Listing oder Freigabe von Python-Quellcode/privaten Datenverzeichnissen.
