@@ -155,3 +155,29 @@ jobs:
           test "$IMPORTTESTS" = success
           test "$TAXONOMY" = success
           test "$SITE" = success
+
+  beekeeper3000-bridge:
+    name: BeeKeeper3000 – Bridge-Integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: BeeKeeper3000 auschecken
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: simonthomas-ai/BeeKeeper3000
+          path: beekeeper3000
+          persist-credentials: false
+      - name: Node.js einrichten
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - name: Bridge-Abhaengigkeiten reproduzierbar installieren
+        run: npm --prefix beekeeper3000/monitor-bridge ci --ignore-scripts --no-audit --no-fund
+      - name: BeeKeeper3000-Bridge-Tests
+        run: npm --prefix beekeeper3000/monitor-bridge test
+      - name: Ergebnis im gemeinsamen Bericht
+        if: always()
+        run: |
+          echo '## BeeKeeper3000 Bridge-Integration' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Die Bridge-Tests laufen als eigener verpflichtender Job dieses Ein-Klick-Gesamttests.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Dies ist kein Nachweis für Kamera-Hardware oder validierte KI-Modelle.' >> "$GITHUB_STEP_SUMMARY"
