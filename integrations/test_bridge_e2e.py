@@ -39,6 +39,9 @@ class BridgeReceiverEndToEndTests(unittest.TestCase):
             f"http://127.0.0.1:{self.server.server_port}/api/v1/events"
         )
         env["BEEKEEPER_INGEST_TOKEN"] = TOKEN
+        env["BEEKEEPER_MONITOR_INGEST_URL"] = env["BEEKEEPER_INGEST_URL"]
+        env["BEEKEEPER_MONITOR_INGEST_TOKEN"] = TOKEN
+        env["BRIDGE_STATE_FILE"] = os.path.join(self.tmp.name, "bridge-state.json")
         script = r"""
 import { pathToFileURL } from 'node:url';
 const { forwardBatch } = await import(pathToFileURL(process.env.BEEKEEPER_BRIDGE_ENTRY).href);
@@ -48,16 +51,12 @@ const event = {
   station_id: 'integration-test-station',
   species: 'vespa_velutina',
   confidence: 0.91,
-  status: 'expert_confirmed',
+  status: 'unverified',
   image_path: '/must/not/be/transmitted.jpg',
   latitude: 51.2,
   longitude: 6.8
 };
-const send = () => forwardBatch([event], new Set(), {
-  endpoint: process.env.BEEKEEPER_INGEST_URL,
-  token: process.env.BEEKEEPER_INGEST_TOKEN,
-  saveState: async () => {}
-});
+const send = () => forwardBatch([event], new Set());
 console.log('first=' + await send());
 console.log('replay=' + await send());
 """
