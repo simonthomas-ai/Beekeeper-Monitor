@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from datetime import datetime
 from collections import Counter, defaultdict
 from pathlib import Path
 from urllib.parse import urlparse
@@ -139,7 +140,15 @@ def validate_provenance(dataset_root: str | Path, *, expected_splits=SPLITS) -> 
         source_url = _https_url(row.get("source_url"), "source_url")
         _required_text(row, "source_dataset", 200)
         _required_text(row, "source_version", 120)
-        _required_text(row, "downloaded_at", 40)
+        downloaded_at = _required_text(row, "downloaded_at", 40)
+        reviewed_at = _required_text(row, "reviewed_at", 40)
+        for stamp in (downloaded_at, reviewed_at):
+            try:
+                parsed = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise DatasetProvenanceError("downloaded_at and reviewed_at must be ISO-8601 timestamps") from exc
+            if parsed.tzinfo is None or parsed.utcoffset() is None:
+                raise DatasetProvenanceError("downloaded_at and reviewed_at must include a timezone")
         image_creator = row.get("creator", "")
         attribution = row.get("attribution_text", "")
         if image_creator is not None and not isinstance(image_creator, str):
@@ -165,7 +174,6 @@ def validate_provenance(dataset_root: str | Path, *, expected_splits=SPLITS) -> 
         if row.get("bbox_review_status") != "verified":
             raise DatasetProvenanceError(f"bbox_review_status must be verified: {image}")
         _required_text(row, "reviewer_id", 160)
-        _required_text(row, "reviewed_at", 40)
         rows.append({
             "image_path": image,
             "split": split,
@@ -179,6 +187,18 @@ def validate_provenance(dataset_root: str | Path, *, expected_splits=SPLITS) -> 
 
     if not rows:
         raise DatasetProvenanceError("no usable provenance records found")
+    actual_images = {
+        path.relative_to(root).as_posix()
+        for path in root.joinpath("images").rglob("*")
+        if path.is_file() and path.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}
+    }
+    if actual_images != paths:
+        missing = sorted(actual_images - paths)
+        stale = sorted(paths - actual_images)
+        raise DatasetProvenanceError(
+            "provenance must cover every image exactly once; missing=%d stale=%d"
+            % (len(missing), len(stale))
+        )
     for key, values in group_splits.items():
         if len(values) > 1:
             raise DatasetProvenanceError(f"data leakage: {key.split(':', 1)[0]} group appears across splits")
