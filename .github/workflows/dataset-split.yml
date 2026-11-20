@@ -1,0 +1,17 @@
+name: Datensatzaufteilung pruefen
+on:
+  pull_request:
+    paths:
+      - 'scripts/split_approved_dataset.py'
+      - 'tests/test_split_approved_dataset.py'
+      - '.github/workflows/dataset-split.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Datensatzaufteilung testen
+        run: python -m unittest discover -s tests -p test_split_approved_dataset.py -v
