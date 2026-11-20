@@ -3,6 +3,7 @@
 import argparse
 import csv
 import json
+import re
 from collections import Counter
 import urllib.parse
 import urllib.request
@@ -15,20 +16,45 @@ FIELDS = ("source", "model_uid", "title", "model_url", "creator", "license_slug"
           "geometry_verified", "training_approved")
 ALLOWED = {"cc0", "cc-by", "cc-by-4.0", "cc0-1.0"}
 MAX_RESULTS_PER_TERM = 24
+LICENSE_API = "https://api.sketchfab.com/v3/licences/"
+LICENSE_UID_RE = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 
 
-def normalize(item, term):
+def verified_license_slug(item, fetch=None, cache=None):
+    """Fail closed: never infer a license from a human-readable label."""
+    if not isinstance(item, dict):
+        return ""
+    value = item.get("license")
+    if isinstance(value, str):
+        return value.strip().lower() if value.strip().lower() in ALLOWED else ""
+    if not isinstance(value, dict):
+        return ""
+    slug = value.get("slug")
+    if isinstance(slug, str) and slug.strip().lower() in ALLOWED:
+        return slug.strip().lower()
+    uid = value.get("uid")
+    if not fetch or not isinstance(uid, str) or not LICENSE_UID_RE.fullmatch(uid):
+        return ""
+    cache = cache if cache is not None else {}
+    if uid not in cache:
+        try:
+            detail = fetch(LICENSE_API + urllib.parse.quote(uid, safe=""))
+            if not isinstance(detail, dict):
+                detail = {}
+            detail_slug = detail.get("slug", detail.get("uid", ""))
+            cache[uid] = detail_slug.strip().lower() if isinstance(detail_slug, str) and detail_slug.strip().lower() in ALLOWED else ""
+        except (ValueError, OSError, TimeoutError, json.JSONDecodeError):
+            cache[uid] = ""
+    return cache[uid]
+
+
+def normalize(item, term, license_slug=None):
     if not isinstance(item, dict):
         return None
     uid = item.get("uid")
     if not isinstance(uid, str) or not (8 <= len(uid) <= 64 and uid.isalnum()):
         return None
-    license_value = item.get("license")
-    if isinstance(license_value, dict):
-        license_value = license_value.get("slug", "")
-    if not isinstance(license_value, str):
-        license_value = ""
-    slug = license_value.lower().strip()
+    slug = license_slug if license_slug is not None else verified_license_slug(item)
     if slug not in ALLOWED or item.get("isDownloadable") is not True:
         return None
     user = item.get("user")
@@ -56,6 +82,8 @@ def discover(fetch=None, diagnostics=None):
     license_values = Counter()
     license_object_keys = Counter()
     license_field_types = Counter()
+    license_cache = {}
+    resolved_license_counts = Counter()
     for term in TERMS:
         url = API + "?" + urllib.parse.urlencode({
             "type": "models", "q": term, "downloadable": "true", "count": MAX_RESULTS_PER_TERM})
@@ -87,10 +115,8 @@ def discover(fetch=None, diagnostics=None):
                     reason = "invalid_item"
                 else:
                     uid = item.get("uid")
-                    license_value = item.get("license")
-                    if isinstance(license_value, dict):
-                        license_value = license_value.get("slug", "")
-                    slug = license_value.strip().lower() if isinstance(license_value, str) else ""
+                    slug = verified_license_slug(item, fetch, license_cache)
+                    resolved_license_counts[slug or "unverified"] += 1
                     if not isinstance(uid, str) or not (8 <= len(uid) <= 64 and uid.isalnum()):
                         reason = "invalid_uid"
                     elif slug not in ALLOWED:
@@ -102,7 +128,7 @@ def discover(fetch=None, diagnostics=None):
                     else:
                         reason = "accepted"
                 rejection_reasons[reason] += 1
-                row = normalize(item, term)
+                row = normalize(item, term, license_slug=slug if isinstance(item, dict) else "")
                 if row and row["model_uid"] not in seen:
                     seen.add(row["model_uid"])
                     records.append(row)
@@ -112,7 +138,7 @@ def discover(fetch=None, diagnostics=None):
         except (ValueError, OSError, TimeoutError, json.JSONDecodeError) as exc:
             errors.append({"query": term, "error_type": type(exc).__name__})
     if diagnostics is not None:
-        diagnostics.update({"counts": counters, "reasons": dict(rejection_reasons), "license_shapes": dict(license_shapes), "license_values": dict(license_values), "license_object_keys": dict(license_object_keys), "license_field_types": dict(license_field_types), "per_query": per_query,
+        diagnostics.update({"counts": counters, "reasons": dict(rejection_reasons), "license_shapes": dict(license_shapes), "license_values": dict(license_values), "license_object_keys": dict(license_object_keys), "license_field_types": dict(license_field_types), "resolved_licenses": dict(resolved_license_counts), "license_detail_requests": len(license_cache), "per_query": per_query,
                             "note": "Only first page per query scanned; rejection reasons need further review."})
     return records, errors
 

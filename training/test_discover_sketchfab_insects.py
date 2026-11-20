@@ -1,5 +1,5 @@
 import unittest
-from training.discover_sketchfab_insects import discover, normalize, TERMS
+from training.discover_sketchfab_insects import discover, normalize, verified_license_slug, TERMS
 
 
 class SketchfabDiscoveryTests(unittest.TestCase):
@@ -30,6 +30,46 @@ class SketchfabDiscoveryTests(unittest.TestCase):
         rows, errors = discover(fetch)
         self.assertEqual(len(rows), 1)
         self.assertEqual(len(calls), len(TERMS))
+        self.assertEqual(errors, [])
+
+    def test_uid_license_details_are_resolved_and_cached(self):
+        item = {"uid": "abcdef1234567890", "license": {"uid": "cc-by", "label": "Attribution"},
+                "isDownloadable": True}
+        urls = []
+        def fetch(url):
+            urls.append(url)
+            if "/v3/licences/" in url:
+                return {"uid": "cc-by", "label": "Attribution"}
+            return {"results": [item, item]}
+        diagnostics = {}
+        rows, errors = discover(fetch, diagnostics)
+        self.assertEqual(errors, [])
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["license_slug"], "cc-by")
+        self.assertEqual(diagnostics["license_detail_requests"], 1)
+        self.assertEqual(len([url for url in urls if "/v3/licences/" in url]), 1)
+        self.assertEqual(rows[0]["training_approved"], "NO")
+
+    def test_unverified_or_disallowed_license_uid_fails_closed(self):
+        item = {"uid": "abcdef1234567890", "license": {"uid": "custom", "label": "CC0"},
+                "isDownloadable": True}
+        def fetch(url):
+            if "/v3/licences/" in url:
+                return {"uid": "cc-by-nc", "label": "Noncommercial"}
+            return {"results": [item]}
+        rows, errors = discover(fetch)
+        self.assertEqual(rows, [])
+        self.assertEqual(errors, [])
+        self.assertEqual(verified_license_slug(item, lambda url: {}), "")
+
+    def test_license_lookup_failure_does_not_approve(self):
+        item = {"uid": "abcdef1234567890", "license": {"uid": "cc0"}, "isDownloadable": True}
+        def fetch(url):
+            if "/v3/licences/" in url:
+                raise OSError("offline")
+            return {"results": [item]}
+        rows, errors = discover(fetch)
+        self.assertEqual(rows, [])
         self.assertEqual(errors, [])
 
     def test_upstream_failure_is_not_zero_candidates_claim(self):
