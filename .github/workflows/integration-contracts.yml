@@ -5,6 +5,10 @@ on:
     paths:
       - 'integrations/**'
       - '.github/workflows/integration-contracts.yml'
+  pull_request:
+    paths:
+      - 'integrations/**'
+      - '.github/workflows/integration-contracts.yml'
 permissions:
   contents: read
 jobs:
