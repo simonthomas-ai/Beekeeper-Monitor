@@ -10,6 +10,10 @@ classes = ["vespa_velutina", "varroa_destructor", "drone_brood",
 base = root / "datasets" / "beekeeper"
 splits = ("train", "val", "test")
 rows = []
+provenance_path = base / "provenance.jsonl"
+provenance_rows = 0
+if provenance_path.is_file():
+    provenance_rows = sum(1 for line in provenance_path.read_text(encoding="utf-8").splitlines() if line.strip())
 for split in splits:
     image_dir = base / "images" / split
     label_dir = base / "labels" / split
@@ -24,7 +28,9 @@ report = [
     "|---|---:|---:|",
 ]
 report += [f"| {split} | {images} | {labels} |" for split, images, labels in rows]
-report += ["", "Diese Inventur belegt weder korrekte Annotationen noch Modellgewichte,",
+report += [f"| Provenienzmanifest | {provenance_rows} Bilddatensätze | " + ("vorhanden" if provenance_path.is_file() else "fehlt") + " |"]
+report += ["", "Die Trainingsfreigabe verlangt training/beekeeper/provenance.jsonl, einen Lizenz- und SHA-256-Nachweis pro Bild, menschlich geprüfte Art-/Boxlabels und split-sichere Beobachtungs-/Fotografen-/Standortgruppen.",
+           "Diese Inventur belegt weder korrekte Annotationen noch Modellgewichte,",
            "Erkennungsgenauigkeit, SMS-Zustellung oder reale Hardwaretests.",
            "Die Modellfreigabe bleibt bis zu unabhängiger Validierung offen."]
 output = "\n".join(report) + "\n"
