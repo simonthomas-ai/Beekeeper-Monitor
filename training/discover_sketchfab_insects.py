@@ -54,6 +54,8 @@ def discover(fetch=None, diagnostics=None):
     rejection_reasons = Counter()
     license_shapes = Counter()
     license_values = Counter()
+    license_object_keys = Counter()
+    license_field_types = Counter()
     for term in TERMS:
         url = API + "?" + urllib.parse.urlencode({
             "type": "models", "q": term, "downloadable": "true", "count": MAX_RESULTS_PER_TERM})
@@ -69,6 +71,10 @@ def discover(fetch=None, diagnostics=None):
                     raw_license = item.get("license")
                     if isinstance(raw_license, dict):
                         license_shapes["object"] += 1
+                        for key, value in raw_license.items():
+                            if isinstance(key, str) and key in ("slug", "uid", "label", "url", "name", "id"):
+                                license_object_keys[key] += 1
+                                license_field_types[key + ":" + type(value).__name__] += 1
                         license_values[str(raw_license.get("slug", ""))[:80]] += 1
                     elif isinstance(raw_license, str):
                         license_shapes["string"] += 1
@@ -106,7 +112,7 @@ def discover(fetch=None, diagnostics=None):
         except (ValueError, OSError, TimeoutError, json.JSONDecodeError) as exc:
             errors.append({"query": term, "error_type": type(exc).__name__})
     if diagnostics is not None:
-        diagnostics.update({"counts": counters, "reasons": dict(rejection_reasons), "license_shapes": dict(license_shapes), "license_values": dict(license_values), "per_query": per_query,
+        diagnostics.update({"counts": counters, "reasons": dict(rejection_reasons), "license_shapes": dict(license_shapes), "license_values": dict(license_values), "license_object_keys": dict(license_object_keys), "license_field_types": dict(license_field_types), "per_query": per_query,
                             "note": "Only first page per query scanned; rejection reasons need further review."})
     return records, errors
 
