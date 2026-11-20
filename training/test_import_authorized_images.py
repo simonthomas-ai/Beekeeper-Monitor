@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Offline safety tests for authorized image importer. No network or training data."""
 import csv
+from email.message import Message
 import hashlib
 import importlib.util
 import io
@@ -138,7 +139,9 @@ class ImportSafetyTests(unittest.TestCase):
             existing.write_bytes(b"pre-existing protected content")
 
             class FakeResponse:
-                headers = {"Content-Type": "image/jpeg"}
+                def __init__(self):
+                    self.headers = Message()
+                    self.headers["Content-Type"] = "image/jpeg"
                 def __enter__(self): return self
                 def __exit__(self, *args): return False
                 def read(self, _limit): return source
