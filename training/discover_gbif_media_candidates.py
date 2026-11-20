@@ -24,9 +24,12 @@ SPECIES = (
 FIELDS = [
     "source_id", "source_url", "image_url", "media_license", "media_license_url",
     "media_creator", "rights_holder", "publisher", "format", "occurrence_id",
-    "occurrence_license", "dataset_key", "scientific_name", "review_status",
+    "occurrence_license", "occurrence_license_url", "occurrence_rights_holder",
+    "dataset_key", "scientific_name", "review_status",
 ]
 LICENSES = {
+    "cc0-1.0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
+    "cc-by-4.0": ("CC-BY-4.0", "https://creativecommons.org/licenses/by/4.0/"),
     "cc0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
     "http://creativecommons.org/publicdomain/zero/1.0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
     "http://creativecommons.org/publicdomain/zero/1.0/": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
@@ -91,7 +94,8 @@ def media_candidate(media, occurrence, species):
     if str(media.get("type", "")).lower() not in {"stillimage", "image"}:
         return None
     license_data = normalize_license(media.get("license"))
-    if not license_data:
+    occurrence_license_data = normalize_license(occurrence.get("license"))
+    if not license_data or not occurrence_license_data:
         return None
     image_url = media.get("identifier")
     if not isinstance(image_url, str) or not image_url.startswith("https://"):
@@ -100,6 +104,9 @@ def media_candidate(media, occurrence, species):
     rights_holder = (media.get("rightsHolder") or "").strip()
     publisher = (media.get("publisher") or "").strip()
     if license_data[0] == "CC-BY-4.0" and not (media_creator or rights_holder):
+        return None
+    occurrence_rights_holder = (occurrence.get("rightsHolder") or "").strip()
+    if occurrence_license_data[0] == "CC-BY-4.0" and not occurrence_rights_holder:
         return None
     occurrence_id = occurrence.get("key")
     if type(occurrence_id) is not int:
@@ -117,7 +124,9 @@ def media_candidate(media, occurrence, species):
         "publisher": publisher,
         "format": (media.get("format") or "").strip(),
         "occurrence_id": occurrence_id,
-        "occurrence_license": occurrence.get("license") or "",
+        "occurrence_license": occurrence_license_data[0],
+        "occurrence_license_url": occurrence_license_data[1],
+        "occurrence_rights_holder": occurrence_rights_holder,
         "dataset_key": dataset_key,
         "scientific_name": species,
         "review_status": "UNREVIEWED_MEDIA_RIGHTS_AND_IMAGE",

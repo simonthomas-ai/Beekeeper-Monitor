@@ -21,8 +21,22 @@ class GBIFMediaCandidateTests(unittest.TestCase):
                     "creator":"Photographer", "format":"image/jpeg"}
         row = media_candidate(accepted, occurrence, "Vespa velutina")
         self.assertEqual(row["media_license"], "CC-BY-4.0")
-        self.assertEqual(row["occurrence_license"], "CC0_1_0")
+        self.assertEqual(row["occurrence_license"], "CC0-1.0")
         self.assertEqual(row["review_status"], "UNREVIEWED_MEDIA_RIGHTS_AND_IMAGE")
+
+    def test_rejects_unknown_or_noncommercial_occurrence_license_even_when_media_is_cc0(self):
+        media = {"type":"StillImage", "identifier":"https://images.example/10.jpg", "license":"CC0-1.0"}
+        for license_value in ("CC-BY-NC-4.0", "", None, "all rights reserved"):
+            occurrence = {"key": 10, "license": license_value}
+            with self.subTest(license=license_value):
+                self.assertIsNone(media_candidate(media, occurrence, "Vespa velutina"))
+
+    def test_cc_by_occurrence_requires_rights_holder_attribution(self):
+        occurrence = {"key": 11, "license":"CC BY 4.0"}
+        media = {"type":"StillImage", "identifier":"https://images.example/11.jpg", "license":"CC0-1.0"}
+        self.assertIsNone(media_candidate(media, occurrence, "Vespa velutina"))
+        occurrence["rightsHolder"] = "Dataset rights holder"
+        self.assertEqual(media_candidate(media, occurrence, "Vespa velutina")["occurrence_license"], "CC-BY-4.0")
 
     def test_cc_by_requires_attribution_identity(self):
         media = {"type":"StillImage", "identifier":"https://images.example/3.jpg",

@@ -6,7 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 
-ALLOWED = {"CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0"}
+ALLOWED = {"CC0-1.0", "CC-BY-4.0"}
 REQUIRED = {"source_id", "source_url", "image_path", "creator", "license", "license_url", "sha256", "attribution"}
 def main():
     parser = argparse.ArgumentParser()

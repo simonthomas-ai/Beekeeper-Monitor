@@ -16,6 +16,14 @@ class ImportSafetyTests(unittest.TestCase):
         self.assertEqual(mod.ALLOWED, {"CC0-1.0", "CC-BY-4.0"})
         self.assertNotIn("CC-BY-VERSION-UNVERIFIED", mod.ALLOWED)
 
+    def test_audit_import_and_annotation_license_allowlists_are_identical(self):
+        audit_path = pathlib.Path(__file__).with_name("audit_image_licenses.py")
+        audit_spec = importlib.util.spec_from_file_location("image_license_audit", audit_path)
+        audit = importlib.util.module_from_spec(audit_spec)
+        audit_spec.loader.exec_module(audit)
+        self.assertEqual(audit.ALLOWED, mod.ALLOWED)
+        self.assertEqual(audit.ALLOWED, {"CC0-1.0", "CC-BY-4.0"})
+
     def test_canonical_license_references(self):
         self.assertEqual(mod.LICENSE_URLS['CC0-1.0'], 'https://creativecommons.org/publicdomain/zero/1.0/')
         self.assertEqual(mod.LICENSE_URLS['CC-BY-4.0'], 'https://creativecommons.org/licenses/by/4.0/')
