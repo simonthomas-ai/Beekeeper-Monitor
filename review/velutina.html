@@ -55,10 +55,37 @@ $("species-filter").onchange=refreshFilter;
 $("decision").onchange=()=>{const v=current();v.decision=$("decision").value;persist(v);render()};
 $("prev").onclick=()=>{index=(index-1+visible.length)%visible.length;render()};
 $("next").onclick=()=>{index=(index+1)%visible.length;render()};
-$("clear").onclick=()=>{const v=current();v.boxes=[];persist(v);render()};
-function pos(e){const r=$("viewer").getBoundingClientRect();return{x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))}}
-$("viewer").onpointerdown=e=>{if(e.pointerType==="mouse"&&e.button!==0)return;start=pos(e);$("viewer").setPointerCapture(e.pointerId)};
-$("viewer").onpointerup=e=>{if(!start)return;const end=pos(e),x=Math.min(start.x,end.x),y=Math.min(start.y,end.y),w=Math.abs(end.x-start.x),h=Math.abs(end.y-start.y);start=null;if(w<.015||h<.015)return;const v=current();v.boxes.push({x:x+w/2,y:y+h/2,width:w,height:h});persist(v);render()};
+$("clear").onclick=()=>{
+  start=null;
+  const item=selected();
+  const v=current();
+  const cleared={decision:v.decision,boxes:[]};
+  saved[item.photo_id]=cleared;
+  try{localStorage.setItem(key,JSON.stringify(saved))}
+  catch(e){$("state").textContent="Speichern nicht möglich – bitte JSON exportieren."}
+  $("overlay").replaceChildren();
+  render();
+};
+function pos(e){
+  const r=$("viewer").getBoundingClientRect();
+  return {x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),
+          y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))};
+}
+$("viewer").onpointerdown=e=>{
+  if(e.pointerType==="mouse"&&e.button!==0)return;
+  start=pos(e);
+};
+window.addEventListener("pointerup",e=>{
+  if(!start)return;
+  const end=pos(e),x=Math.min(start.x,end.x),y=Math.min(start.y,end.y);
+  const w=Math.abs(end.x-start.x),h=Math.abs(end.y-start.y);
+  start=null;
+  if(w<.015||h<.015)return;
+  const v=current();
+  v.boxes.push({x:x+w/2,y:y+h/2,width:w,height:h});
+  persist(v);
+  render();
+});
 $("viewer").onpointercancel=()=>{start=null};
 $("export").onclick=()=>{const records=items.map(item=>({...item,review:saved[item.photo_id]||{decision:"PENDING",boxes:[]},training_eligible:false}));const blob=new Blob([JSON.stringify({format:"vespaguard-unverified-mobile-review-v1",species:"Vespa velutina",records},null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="vespaguard-review-"+"vespa-velutina"+".json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 // Restore is deliberately limited to the currently displayed, known photo IDs.
