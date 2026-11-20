@@ -104,6 +104,7 @@ def discover(fetch=None, diagnostics=None):
     license_lookup_outcomes = Counter()
     model_detail_outcomes = Counter()
     probed_license_uids = set()
+    verified_model_licenses = {}
     for term in TERMS:
         url = API + "?" + urllib.parse.urlencode({
             "type": "models", "q": term, "downloadable": "true", "count": MAX_RESULTS_PER_TERM})
@@ -136,11 +137,28 @@ def discover(fetch=None, diagnostics=None):
                 else:
                     uid = item.get("uid")
                     slug = verified_license_slug(item, fetch, license_cache, license_lookup_outcomes)
+                    # Resolve unknown search licenses from this exact model's public details.
+                    # A human-readable label never grants rights.
+                    if not slug and isinstance(uid, str) and 8 <= len(uid) <= 64 and uid.isalnum():
+                        if uid not in verified_model_licenses and len(verified_model_licenses) < 80:
+                            try:
+                                model_detail = fetch(MODEL_API + urllib.parse.quote(uid, safe=""))
+                                detail_license = model_detail.get("license") if isinstance(model_detail, dict) else None
+                                detail_slug = detail_license.get("slug") if isinstance(detail_license, dict) else None
+                                verified_model_licenses[uid] = (detail_slug.strip().lower() if isinstance(detail_slug, str) and detail_slug.strip().lower() in ALLOWED else "")
+                                model_detail_outcomes["verified_allowed" if verified_model_licenses[uid] else "unverified_detail"] += 1
+                            except urllib.error.HTTPError as exc:
+                                verified_model_licenses[uid] = ""
+                                model_detail_outcomes["http_" + str(exc.code) if exc.code in (400, 401, 403, 404, 429, 500, 502, 503) else "http_other"] += 1
+                            except (ValueError, OSError, TimeoutError, json.JSONDecodeError) as exc:
+                                verified_model_licenses[uid] = ""
+                                model_detail_outcomes["error_" + type(exc).__name__] += 1
+                        slug = verified_model_licenses.get(uid, "")
                     resolved_license_counts[slug or "unverified"] += 1
                     # At most one model-detail probe per unresolved license UID.
                     raw_lic = item.get("license")
                     lic_uid = raw_lic.get("uid") if isinstance(raw_lic, dict) else None
-                    if (not slug and isinstance(lic_uid, str) and lic_uid not in probed_license_uids
+                    if (False and not slug and isinstance(lic_uid, str) and lic_uid not in probed_license_uids
                             and len(probed_license_uids) < 8 and isinstance(uid, str)
                             and 8 <= len(uid) <= 64 and uid.isalnum()):
                         probed_license_uids.add(lic_uid)
@@ -180,7 +198,7 @@ def discover(fetch=None, diagnostics=None):
         except (ValueError, OSError, TimeoutError, json.JSONDecodeError) as exc:
             errors.append({"query": term, "error_type": type(exc).__name__})
     if diagnostics is not None:
-        diagnostics.update({"counts": counters, "reasons": dict(rejection_reasons), "license_shapes": dict(license_shapes), "license_values": dict(license_values), "license_object_keys": dict(license_object_keys), "license_field_types": dict(license_field_types), "resolved_licenses": dict(resolved_license_counts), "license_detail_requests": len(license_cache), "license_lookup_outcomes": dict(license_lookup_outcomes), "model_detail_outcomes": dict(model_detail_outcomes), "per_query": per_query,
+        diagnostics.update({"counts": counters, "reasons": dict(rejection_reasons), "license_shapes": dict(license_shapes), "license_values": dict(license_values), "license_object_keys": dict(license_object_keys), "license_field_types": dict(license_field_types), "resolved_licenses": dict(resolved_license_counts), "license_detail_requests": len(license_cache), "license_lookup_outcomes": dict(license_lookup_outcomes), "model_detail_outcomes": dict(model_detail_outcomes), "model_details_checked": len(verified_model_licenses), "per_query": per_query,
                             "note": "Only first page per query scanned; rejection reasons need further review."})
     return records, errors
 
