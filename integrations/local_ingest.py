@@ -6,6 +6,7 @@ TLS VPN/reverse proxy; never expose the plain-HTTP listener to the public net.
 import hmac
 import json
 import os
+import re
 import threading
 import time
 from collections import defaultdict, deque
@@ -105,16 +106,22 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
             now = time.monotonic()
             key = self.client_address[0]
             with requests_lock:
-                q = requests[key]
+                q = requests.get(key)
+                if q is None:
+                    if len(requests) >= 1024:
+                        for old_key, old_queue in list(requests.items()):
+                            while old_queue and now - old_queue[0] > rate_window:
+                                old_queue.popleft()
+                            if not old_queue:
+                                requests.pop(old_key, None)
+                    if len(requests) >= 1024:
+                        return False
+                    q = requests.setdefault(key, deque())
                 while q and now - q[0] > rate_window:
                     q.popleft()
                 if len(q) >= rate_limit:
                     return False
                 q.append(now)
-                if len(requests) > 1024:
-                    for old_key in list(requests)[:256]:
-                        if old_key != key and not requests[old_key]:
-                            requests.pop(old_key, None)
                 return True
 
         def do_POST(self):
@@ -127,8 +134,8 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
             if not self._rate_allowed():
                 self._json(429, {"error": "rate_limited"})
                 return
-            if self.headers.get("Transfer-Encoding") is not None:
-                self._json(400, {"error": "transfer_encoding_not_supported"})
+            if self.headers.get("Transfer-Encoding") is not None or self.headers.get("Content-Encoding") is not None:
+                self._json(400, {"error": "unsupported_transfer_or_content_encoding"})
                 return
             lengths = self.headers.get_all("Content-Length", [])
             if len(lengths) != 1 or not lengths[0].isdigit():
@@ -193,7 +200,7 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
             parsed = urlsplit(self.path)
             prefix = "/api/v1/events/"
             event_id = parsed.path[len(prefix):] if parsed.path.startswith(prefix) else ""
-            if not event_id or "/" in event_id or parsed.query:
+            if not re.fullmatch(r"[a-f0-9]{64}", event_id) or parsed.query:
                 self._json(404, {"error": "not_found"})
                 return
             if not self._authorized():
