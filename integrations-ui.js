@@ -4,7 +4,8 @@
   const tokenInput = document.getElementById('station-events-token');
   const status = document.getElementById('station-events-status');
   const list = document.getElementById('station-events-list');
-  if (!form || !tokenInput || !status || !list) return;
+  const exportButton = document.getElementById('station-events-export');
+  if (!form || !tokenInput || !status || !list || !exportButton) return;
 
   const isLocalGateway =
     location.protocol === 'http:' &&
@@ -37,6 +38,7 @@
     });
     if (response.status === 401) {
       activeToken = '';
+      exportButton.disabled = true;
       throw new Error('Schlüssel abgewiesen. Bitte erneut verbinden.');
     }
     if (!response.ok) throw new Error('Lokaler Server meldet HTTP ' + response.status);
@@ -98,9 +100,50 @@
     setStatus(data.count + ' lokale Stationsereignisse geladen. Unbestätigte Kandidaten sind keine Artbestimmung.');
   }
 
+  async function exportEvents() {
+    if (!isLocalGateway || !activeToken) {
+      setStatus('Zum Export zuerst den lokalen Empfangsschlüssel eingeben.');
+      return;
+    }
+    exportButton.disabled = true;
+    try {
+      const response = await fetch('/api/v1/events/export?limit=500', {
+        mode: 'same-origin',
+        credentials: 'omit',
+        cache: 'no-store',
+        redirect: 'error',
+        headers: { Authorization: 'Bearer ' + activeToken }
+      });
+      if (response.status === 401) {
+        activeToken = '';
+        throw new Error('Schlüssel abgewiesen. Bitte erneut verbinden.');
+      }
+      if (!response.ok) throw new Error('Export fehlgeschlagen (HTTP ' + response.status + ').');
+      const blob = await response.blob();
+      if (blob.size > 8 * 1024 * 1024) throw new Error('Export überschreitet das lokale Größenlimit.');
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = 'beekeeper-station-events.json';
+      link.hidden = true;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      setStatus('Lokaler JSON-Export erstellt. Die Datei enthält Stationsmetadaten und muss entsprechend geschützt werden.');
+    } catch (error) {
+      setStatus('Export fehlgeschlagen: ' + error.message);
+    } finally {
+      exportButton.disabled = !activeToken;
+    }
+  }
+
+  exportButton.addEventListener('click', exportEvents);
+
   if (!isLocalGateway) {
     tokenInput.disabled = true;
     form.querySelector('button[type="submit"]').disabled = true;
+    exportButton.disabled = true;
     setStatus('Nicht verbunden: Öffne die lokale Installation über http://127.0.0.1:8765/. Die öffentliche GitHub-Pages-Seite greift nicht auf lokale Stationsdaten zu.');
     return;
   }
@@ -116,10 +159,12 @@
     activeToken = candidate;
     const button = form.querySelector('button[type="submit"]');
     button.disabled = true;
+    exportButton.disabled = false;
     try {
       await refresh();
     } catch (error) {
       activeToken = '';
+      exportButton.disabled = true;
       clearList();
       setStatus('Verbindung fehlgeschlagen: ' + error.message);
     } finally {
@@ -127,5 +172,8 @@
     }
   });
 
-  window.addEventListener('pagehide', () => { activeToken = ''; });
+  window.addEventListener('pagehide', () => {
+    activeToken = '';
+    exportButton.disabled = true;
+  });
 })();
