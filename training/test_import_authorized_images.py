@@ -113,6 +113,45 @@ class ImportSafetyTests(unittest.TestCase):
                 mod.import_candidates("unused.csv", root)
             self.assertEqual(manifest.read_text(encoding="utf-8"), "do-not-overwrite\n")
 
+    def test_existing_candidate_file_is_not_deleted(self):
+        source = self._jpeg_with_exif()
+        sanitized, suffix, _ = mod.sanitize_image(source, "image/jpeg")
+        digest = hashlib.sha256(sanitized).hexdigest()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            queue = root / "queue.csv"
+            with queue.open("w", newline="", encoding="utf-8") as stream:
+                writer = csv.DictWriter(stream, fieldnames=mod.FIELDS)
+                writer.writeheader()
+                writer.writerow({
+                    "source_id": "photo-1",
+                    "source_url": "https://source.example/photo-1",
+                    "image_url": "https://image.example/photo-1.jpg",
+                    "creator": "Creator",
+                    "license": "CC0-1.0",
+                    "license_url": mod.LICENSE_URLS["CC0-1.0"],
+                    "attribution": "Creator / source",
+                })
+            existing_dir = root / "dataset" / "unreviewed"
+            existing_dir.mkdir(parents=True)
+            existing = existing_dir / (digest + suffix)
+            existing.write_bytes(b"pre-existing protected content")
+
+            class FakeResponse:
+                headers = {"Content-Type": "image/jpeg"}
+                def __enter__(self): return self
+                def __exit__(self, *args): return False
+                def read(self, _limit): return source
+
+            class FakeOpener:
+                def open(self, *_args, **_kwargs): return FakeResponse()
+
+            with patch.object(mod, "public_https", side_effect=lambda url: url), \
+                 patch.object(mod.urllib.request, "build_opener", return_value=FakeOpener()):
+                with self.assertRaises(FileExistsError):
+                    mod.import_candidates(queue, root / "dataset")
+            self.assertEqual(existing.read_bytes(), b"pre-existing protected content")
+
 
 if __name__ == "__main__":
     unittest.main()
