@@ -107,16 +107,23 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
             now = time.monotonic()
             key = self.client_address[0]
             with requests_lock:
-                q = requests[key]
+                q = requests.get(key)
+                if q is None:
+                    if len(requests) >= 1024:
+                        for old_key, old_queue in list(requests.items()):
+                            if not old_queue or now - old_queue[-1] > rate_window:
+                                requests.pop(old_key, None)
+                            if len(requests) < 1024:
+                                break
+                    if len(requests) >= 1024:
+                        return False
+                    q = deque()
+                    requests[key] = q
                 while q and now - q[0] > rate_window:
                     q.popleft()
                 if len(q) >= rate_limit:
                     return False
                 q.append(now)
-                if len(requests) > 1024:
-                    for old_key in list(requests)[:256]:
-                        if old_key != key and not requests[old_key]:
-                            requests.pop(old_key, None)
                 return True
 
         def do_POST(self):
