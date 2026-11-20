@@ -82,6 +82,50 @@ def main():
                         "mime": mime, "sha256": sha, "local_file": file_name,
                         "suggested_class": args.class_name, "species_verified": False,
                         "human_approved_for_training": False})
+    # A category can contain files but none with an allowed license or MIME type.
+    # In that case query the broader category too, rather than stopping at nonempty pages.
+    if not entries and FALLBACK_CATEGORIES[args.class_name]:
+        for category in FALLBACK_CATEGORIES[args.class_name]:
+            if category == query["gcmtitle"]:
+                continue
+            fallback = get_json({**query, "gcmtitle": category})
+            if "error" in fallback or "query" not in fallback:
+                raise RuntimeError("Commons fallback API error")
+            for page in fallback.get("query", {}).get("pages", {}).values():
+                info = (page.get("imageinfo") or [{}])[0]
+                meta = info.get("extmetadata") or {}
+                lic = meta.get("LicenseShortName", {}).get("value", "")
+                media_url = info.get("url", "")
+                mime = info.get("mime", "")
+                if not allowed(lic) or mime not in ("image/jpeg", "image/png", "image/webp") or not media_url.startswith("https://"):
+                    continue
+                # Download mode must not bypass byte hashing or size checks.
+                if args.download:
+                    req = Request(media_url, headers={"User-Agent": "VespaGuardResearchImporter/0.1"})
+                    with urlopen(req, timeout=40) as resp:
+                        body = resp.read(12_000_001)
+                    if len(body) > 12_000_000:
+                        continue
+                    sha = hashlib.sha256(body).hexdigest()
+                    if sha in seen:
+                        continue
+                    seen.add(sha)
+                    ext = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}[mime]
+                    file_name = sha + ext
+                    (output / file_name).write_bytes(body)
+                else:
+                    sha, file_name = None, None
+                entries.append({"title": page.get("title"),
+                                "source_page": "https://commons.wikimedia.org/wiki/" + page.get("title", "").replace(" ", "_"),
+                                "source_url": media_url, "license": lic,
+                                "license_url": meta.get("LicenseUrl", {}).get("value", ""),
+                                "artist_html": meta.get("Artist", {}).get("value", ""),
+                                "credit_html": meta.get("Credit", {}).get("value", ""),
+                                "mime": mime, "sha256": sha, "local_file": file_name,
+                                "suggested_class": args.class_name, "species_verified": False,
+                                "human_approved_for_training": False})
+            if entries:
+                break
     manifest = output / "manifest.json"
     manifest.write_text(json.dumps({"source": "Wikimedia Commons API", "category": CATEGORIES[args.class_name],
                                    "downloaded": args.download, "items": entries}, indent=2, ensure_ascii=False), encoding="utf-8")
