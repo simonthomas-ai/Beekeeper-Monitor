@@ -1,16 +1,20 @@
-# Manual VarroDetector ONNX export — blocked until review
+# Manueller ONNX-Export von VarroDetector – bis zur Prüfung gesperrt
 
-Upstream: https://github.com/jodivaso/varrodetector (`model/weights/best.pt`, 9,596,067 bytes reported by GitHub on 2026-11-20). Repository metadata says AGPL-3.0; verify that the model weights, data and dependencies can be used under the intended deployment and redistribution terms.
+Originalquelle: https://github.com/jodivaso/varrodetector (`model/weights/best.pt`, laut GitHub am 20.11.2026 genau 9.596.067 Byte). Die Repository-Angaben nennen AGPL-3.0. **Das belegt noch nicht**, dass Modellgewichte, Trainingsdaten und Abhängigkeiten unter den vorgesehenen Nutzungs- und Weitergabebedingungen verwendet werden dürfen.
 
-**Security warning:** PyTorch `.pt` files may deserialize unsafe pickle content. Do not run this exporter in GitHub Actions, the production server, a beekeeper's phone, or on a trusted workstation. Only use a disposable, network-disabled sandbox after manual provenance and legal review. No automatic upstream downloads.
+## Sicherheitswarnung
+PyTorch-Dateien mit der Endung `.pt` können beim Laden unsichere Pickle-Inhalte ausführen. Dieses Exportprogramm **nicht** in GitHub Actions, auf einem Produktionsserver, einem Imkertelefon oder einem vertrauenswürdigen Arbeitsrechner ausführen. Eine Ausführung kommt ausschließlich in einer kurzlebigen, netzwerkisolierten Umgebung **nach manueller Herkunfts- und Rechtsprüfung** infrage.
 
-After recording the *actual downloaded file* SHA-256, invoke within that isolated environment:
+Der gesonderte GitHub-Workflow darf die Originaldatei als **inaktive Bytes** herunterladen und ihre Integrität prüfen. Das ist **keine** Erlaubnis, die Datei zu deserialisieren oder das Modell auszuführen.
+
+## Vorgehen nach Freigabe
+Den SHA-256-Prüfwert der **tatsächlich heruntergeladenen Datei** dokumentieren. Erst danach innerhalb der isolierten Umgebung folgenden Befehl verwenden:
 
 ```sh
 python3 scripts/export_varroa_onnx.py --weights /reviewed/best.pt \
-  --sha256 <64-character-verified-sha256> \
+  --sha256 <64-stelliger-verifizierter-sha256> \
   --reviewed-source-and-license --imgsz 640 \
   --output-record /reviewed/export-record.json
 ```
 
-The command requires separately installed, pinned Ultralytics/PyTorch dependencies and does **not** constitute approval. The resulting ONNX requires verified output semantics, preprocessing, postprocessing/NMS, independent mite counts and camera field trials. No actual ONNX or `.pt` weights are committed.
+Dafür müssen gesondert geprüfte, versionsgebundene Ultralytics-/PyTorch-Abhängigkeiten installiert sein. Der Export ist **keine Freigabe für den Feldeinsatz**. Das ONNX-Modell benötigt geprüfte Ausgabebedeutung, Bildvorverarbeitung, Nachverarbeitung/NMS, unabhängige Milbenzählungen und Kameratests unter realen Bedingungen. Weder ONNX- noch `.pt`-Gewichte sind im Repository eingecheckt.
