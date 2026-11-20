@@ -1,0 +1,65 @@
+name: GBIF open media candidate discovery
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'training/discover_gbif_media_candidates.py'
+      - 'training/test_discover_gbif_media_candidates.py'
+      - 'training/OPEN-DATA-SOURCES.md'
+      - 'sources/catalog.json'
+      - '.github/workflows/gbif-media-discovery.yml'
+  schedule:
+    - cron: '37 4 * * 2'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gbif-open-media-discovery
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Test license filters and metadata candidate contract
+        run: python -m unittest training.test_discover_gbif_media_candidates -v
+      - name: Query the official GBIF API for licensed image metadata only
+        if: github.event_name != 'pull_request'
+        run: python training/discover_gbif_media_candidates.py --target 500 --max-pages 2 --limit 100 --pause 0.7 --allow-unavailable
+      - name: Summarize candidate status
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("training/gbif-media-discovery-status.json")
+          data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"status":"unavailable","found":0}
+          lines = [
+              "## GBIF image-media discovery",
+              "",
+              f"- Status: **{data.get('status', 'unknown')}**",
+              f"- Metadata candidates: **{data.get('found', 0)}**",
+              "- Images downloaded: **No**",
+              "- Model training performed: **No**",
+              "- Candidate rights and image identification: **Not yet reviewed**",
+          ]
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
+              stream.write("\n".join(lines) + "\n")
+          PY
+      - name: Preserve metadata review queue
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gbif-media-review-queue
+          path: |
+            training/gbif-media-review-queue.csv
+            training/gbif-media-discovery-status.json
+          if-no-files-found: ignore
+          retention-days: 14

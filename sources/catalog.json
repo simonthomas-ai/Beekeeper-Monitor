@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "reviewed_at": "2026-11-19",
+  "reviewed_at": "2026-11-20",
   "policy": "Only documented real sources; no model considered integrated until weights, license, inference, and independent evaluation pass",
   "sources": [
     {
@@ -270,6 +270,66 @@
       "license": "CC-BY-NC-ND listed; derivative training/redistribution rights require legal review",
       "status": "reference-only-license-restricted",
       "notes": "Chinese insect atlas, 1.11 GB; species coverage and annotations for desired classes not verified; do not auto-ingest"
+    },
+    {
+      "id": "gbif-occurrence-media-api",
+      "modules": [
+        "hornet",
+        "pollen"
+      ],
+      "url": "https://techdocs.gbif.org/en/openapi/v1/occurrence",
+      "kind": "image-media-metadata-api",
+      "license": "per-media CC0 or exact CC BY 4.0 only in automated candidate collector; occurrence license is separate",
+      "status": "metadata-discovery-added",
+      "notes": "Metadata-only collector; HTTPS still-image URLs; creator/rights holder captured; all rows UNREVIEWED, no image download or species verification"
+    },
+    {
+      "id": "smithsonian-open-access",
+      "modules": [
+        "hornet",
+        "pollen"
+      ],
+      "url": "https://www.si.edu/openaccess/devtools",
+      "kind": "open-access-collection-api",
+      "license": "CC0 only on individually marked assets; third-party rights and other restrictions may still apply",
+      "status": "candidate-source-documentation-only",
+      "notes": "Potential museum specimens and references; not automatically representative of live apiary camera images; no bulk download or training ingestion"
+    },
+    {
+      "id": "wikimedia-commons-insects",
+      "modules": [
+        "hornet",
+        "pollen"
+      ],
+      "url": "https://commons.wikimedia.org/wiki/Commons:Licensing",
+      "kind": "free-media-library",
+      "license": "per-file CC0, CC BY, CC BY-SA and public-domain tags; check each file",
+      "status": "candidate-source-documentation-only",
+      "notes": "Use MediaWiki ImageInfo extmetadata to inspect individual file license and author; CC BY-SA deferred pending downstream model/dataset review; no automated download"
+    },
+    {
+      "id": "openverse-discovery",
+      "modules": [
+        "hornet",
+        "pollen"
+      ],
+      "url": "https://docs.openverse.org/api/",
+      "kind": "licensed-media-discovery-index",
+      "license": "aggregated license labels are discovery hints only; original source rights must be confirmed",
+      "status": "discovery-only-not-verified",
+      "notes": "Resolve each result to original host, confirm image license, author and adaptation/training conditions before ingestion"
+    },
+    {
+      "id": "inaturalist-media-api",
+      "modules": [
+        "hornet",
+        "pollen"
+      ],
+      "url": "https://api.inaturalist.org/v1/observations",
+      "kind": "citizen-science-media-metadata-api",
+      "license": "per-media; default CC BY-NC; discovery script requests CC0 and CC BY candidates only; CC BY version requires review",
+      "status": "metadata-candidate-discovery",
+      "notes": "No images downloaded; per-photo rights and uploader attribution must be checked; default CC BY-NC is excluded from automatic training"
     }
   ]
 }
