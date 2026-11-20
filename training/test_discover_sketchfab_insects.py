@@ -102,6 +102,24 @@ class SketchfabDiscoveryTests(unittest.TestCase):
         self.assertEqual(diagnostics["license_lookup_outcomes"]["field_uid_str"], 1)
         self.assertEqual(diagnostics["license_lookup_outcomes"]["unverified_detail"], 1)
 
+    def test_model_detail_probe_is_bounded_and_never_approves(self):
+        item = {"uid": "abcdef1234567890", "license": {"uid": "unknown"},
+                "isDownloadable": True}
+        calls = []
+        def fetch(url):
+            calls.append(url)
+            if "/v3/licences/" in url:
+                raise urllib.error.HTTPError(url, 404, "Not Found", None, None)
+            if "/v3/models/" in url:
+                return {"license": {"uid": "cc0", "label": "CC0"}}
+            return {"results": [item, item]}
+        diagnostics = {}
+        rows, errors = discover(fetch, diagnostics)
+        self.assertEqual(rows, [])
+        self.assertEqual(errors, [])
+        self.assertEqual(diagnostics["model_detail_outcomes"]["field_uid_str"], 1)
+        self.assertEqual(len([url for url in calls if "/v3/models/" in url]), 1)
+
     def test_upstream_failure_is_not_zero_candidates_claim(self):
         rows, errors = discover(lambda url: (_ for _ in ()).throw(OSError("offline")))
         self.assertEqual(rows, [])
