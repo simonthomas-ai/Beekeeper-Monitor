@@ -2,6 +2,7 @@ import http.client
 import json
 import os
 import socket
+import sqlite3
 import stat
 import tempfile
 import threading
@@ -200,6 +201,15 @@ class SQLiteEventStoreTests(unittest.TestCase):
             SQLiteEventStore(os.path.join(shared_dir, "events.sqlite3"))
         self.assertEqual(stat.S_IMODE(os.stat(shared_dir).st_mode), 0o755)
 
+    def test_corrupted_database_fails_closed_without_reinitializing(self):
+        corrupt_path = os.path.join(self.tmp.name, "corrupt.sqlite3")
+        with open(corrupt_path, "wb") as handle:
+            handle.write(b"NOT A SQLITE DATABASE")
+        with self.assertRaises(sqlite3.DatabaseError):
+            SQLiteEventStore(corrupt_path)
+        with open(corrupt_path, "rb") as handle:
+            self.assertEqual(handle.read(), b"NOT A SQLITE DATABASE")
+
     def test_delete_is_explicit_and_idempotent(self):
         event = self.event()
         self.store(event)
@@ -271,6 +281,41 @@ class AuthenticatedStoreApiTests(unittest.TestCase):
             with self.subTest(path=path):
                 status, _ = self.request("GET", path)
                 self.assertEqual(status, 404)
+
+
+
+
+
+class StorageFailureTests(unittest.TestCase):
+    def test_full_or_unavailable_store_never_returns_accepted(self):
+        def failing_sink(_event):
+            raise sqlite3.OperationalError("database or disk is full")
+
+        server = make_server(TOKEN, failing_sink, port=0)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            event = HiveEvent(
+                "hive_telemetry", "storage-failure-station", "2026-11-19T19:00:00Z",
+                {"temperature_c": 21.0, "humidity_pct": 45},
+            )
+            conn = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=3)
+            conn.request(
+                "POST", "/api/v1/events", body=event.to_json(),
+                headers={
+                    "Authorization": "Bearer " + TOKEN,
+                    "Content-Type": "application/json",
+                },
+            )
+            response = conn.getresponse()
+            body = json.loads(response.read())
+            conn.close()
+            self.assertEqual(response.status, 503)
+            self.assertEqual(body, {"error": "storage_unavailable"})
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=3)
 
 
 if __name__ == "__main__":
