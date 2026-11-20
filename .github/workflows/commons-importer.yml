@@ -35,7 +35,7 @@ jobs:
       - name: Mehrklassen-Metadaten sammeln
         run: |
           for klasse in velutina crabro apis bombus vespula; do
-            python scripts/import_commons_candidates.py --class-name "$klasse" --limit 50 --output /tmp/vespaguard-multiclass
+            python scripts/import_commons_candidates.py --class-name "$klasse" --limit 50 --max-pages 3 --output /tmp/vespaguard-multiclass
           done
           python - <<'PY'
           import json

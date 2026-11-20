@@ -18,6 +18,17 @@ class ImporterTests(unittest.TestCase):
         self.assertEqual(set(module.CATEGORIES), set(module.FALLBACK_CATEGORIES))
         self.assertTrue({"velutina", "crabro", "apis", "bombus", "vespula"} <= set(module.CATEGORIES))
 
+    def test_pagination_and_duplicate_url(self):
+        candidate = lambda title: {"title": title, "imageinfo": [{"url": "https://upload.wikimedia.org/shared.jpg", "mime": "image/jpeg", "extmetadata": {"LicenseShortName": {"value": "CC0"}}}]}
+        first = {"query": {"pages": {"1": candidate("File:First.jpg")}}, "continue": {"continue": "-||", "gcmcontinue": "next"}}
+        second = {"query": {"pages": {"2": candidate("File:Duplicate.jpg")}}}
+        with tempfile.TemporaryDirectory() as tmp, patch.object(module, "get_json", side_effect=[first, second]) as api, patch.object(sys, "argv", ["import", "--class-name", "apis", "--max-pages", "2", "--output", tmp]):
+            module.main()
+            data = json.loads((Path(tmp) / "apis" / "manifest.json").read_text())
+        self.assertEqual(api.call_count, 2)
+        self.assertEqual(len(data["items"]), 1)
+        self.assertFalse(data["items"][0]["human_approved_for_training"])
+
     def test_licenses(self):
         for license_name in ["CC0", "CC BY 4.0", "CC BY 3.0", "CC BY 2.0", "Public Domain"]:
             self.assertTrue(module.allowed(license_name), license_name)

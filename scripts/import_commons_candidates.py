@@ -30,10 +30,13 @@ def main():
     p.add_argument("--class-name", choices=sorted(CATEGORIES), required=True)
     p.add_argument("--limit", type=int, default=20)
     p.add_argument("--output", default="data/research-candidates")
+    p.add_argument("--max-pages", type=int, default=1)
     p.add_argument("--download", action="store_true", help="Explicit opt-in to downloading image bytes")
     args = p.parse_args()
     if not 1 <= args.limit <= 100:
         p.error("--limit must be 1..100")
+    if not 1 <= args.max_pages <= 20:
+        p.error("--max-pages must be 1..20")
     output = Path(args.output) / args.class_name
     output.mkdir(parents=True, exist_ok=True)
     query = {"action": "query", "generator": "categorymembers", "gcmtitle": CATEGORIES[args.class_name],
@@ -42,26 +45,36 @@ def main():
     payload = get_json(query)
     if 'error' in payload or 'query' not in payload:
         raise RuntimeError('Commons API returned an error or incomplete response')
+    def collect_pages(category, initial=None):
+        pages = []
+        continuation = {}
+        for index in range(args.max_pages):
+            response = initial if index == 0 and initial is not None else get_json({**query, "gcmtitle": category, **continuation})
+            if "error" in response or "query" not in response:
+                raise RuntimeError("Commons API error or incomplete response")
+            pages.extend(response.get("query", {}).get("pages", {}).values())
+            continuation = response.get("continue", {})
+            if not continuation:
+                break
+        return pages
     entries = []
     seen = set()
-    pages = list(payload.get("query", {}).get("pages", {}).values())
+    pages = collect_pages(CATEGORIES[args.class_name], initial=payload)
     if not pages:
         for category in FALLBACK_CATEGORIES[args.class_name]:
-            fallback_query = {**query, "gcmtitle": category}
-            fallback = get_json(fallback_query)
-            if "error" in fallback or "query" not in fallback:
-                raise RuntimeError("Commons fallback API error")
-            pages.extend(fallback.get("query", {}).get("pages", {}).values())
+            pages = collect_pages(category)
             if pages:
                 break
+    seen_urls = set()
     for page in pages:
         info = (page.get("imageinfo") or [{}])[0]
         meta = info.get("extmetadata") or {}
         lic = meta.get("LicenseShortName", {}).get("value", "")
         media_url = info.get("url", "")
         mime = info.get("mime", "")
-        if not allowed(lic) or mime not in ("image/jpeg", "image/png", "image/webp") or not media_url.startswith("https://"):
+        if not allowed(lic) or mime not in ("image/jpeg", "image/png", "image/webp") or not media_url.startswith("https://") or media_url in seen_urls:
             continue
+        seen_urls.add(media_url)
         sha = None
         file_name = None
         if args.download:
@@ -91,17 +104,15 @@ def main():
         for category in FALLBACK_CATEGORIES[args.class_name]:
             if category == query["gcmtitle"]:
                 continue
-            fallback = get_json({**query, "gcmtitle": category})
-            if "error" in fallback or "query" not in fallback:
-                raise RuntimeError("Commons fallback API error")
-            for page in fallback.get("query", {}).get("pages", {}).values():
+            for page in collect_pages(category):
                 info = (page.get("imageinfo") or [{}])[0]
                 meta = info.get("extmetadata") or {}
                 lic = meta.get("LicenseShortName", {}).get("value", "")
                 media_url = info.get("url", "")
                 mime = info.get("mime", "")
-                if not allowed(lic) or mime not in ("image/jpeg", "image/png", "image/webp") or not media_url.startswith("https://"):
+                if not allowed(lic) or mime not in ("image/jpeg", "image/png", "image/webp") or not media_url.startswith("https://") or media_url in seen_urls:
                     continue
+                seen_urls.add(media_url)
                 # Download mode must not bypass byte hashing or size checks.
                 if args.download:
                     req = Request(media_url, headers={"User-Agent": "VespaGuardResearchImporter/0.1"})
