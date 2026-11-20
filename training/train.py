@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Train six independent YOLO detectors on real, verified labeled datasets.
-Fails closed if data or label metadata is absent. No fake model output.
+"""Train one experimental seven-class Vespa-focused YOLO baseline on licensed, verified images.
+Fails closed if per-image provenance, splits, annotations or rights metadata are absent.
 """
 import argparse
+import hashlib
 import json
-import os
+import re
 from pathlib import Path
 import yaml
+from provenance import validate_provenance
 
-CLASSES=['vespa_velutina','varroa_destructor','drone_brood','pollen_bearing_bee','bee_swarm','queen_bee']
+CLASSES=['vespa_velutina','vespa_crabro','other_vespidae','apis_mellifera','bombus_spp','syrphidae','other_insect']
 SPLITS=('train','val','test')
 IMAGE_SUFFIXES={'.jpg','.jpeg','.png','.webp'}
 def validate(root):
@@ -17,9 +19,10 @@ def validate(root):
     base=(root/config['path']).resolve()
     if not base.is_relative_to(root):
         raise ValueError('Dataset path must remain inside repository')
-    if [config['names'][i] for i in range(6)]!=CLASSES:
+    if [config['names'][i] for i in range(len(CLASSES))]!=CLASSES:
         raise ValueError('Class order mismatch')
-    report={}
+    provenance_report = validate_provenance(base)
+    report={'provenance': provenance_report}
     for split in SPLITS:
         image_dir=base/'images'/split
         label_dir=base/'labels'/split
@@ -29,6 +32,16 @@ def validate(root):
         images=sorted(p for p in image_dir.rglob('*') if p.suffix.lower() in IMAGE_SUFFIXES)
         if not images:
             raise ValueError(f'No real images in {image_dir}')
+        expected_labels = {
+            image.relative_to(image_dir).with_suffix('.txt').as_posix()
+            for image in images
+        }
+        actual_labels = {
+            label.relative_to(label_dir).as_posix()
+            for label in label_dir.rglob('*.txt')
+        }
+        if expected_labels != actual_labels:
+            raise ValueError(f'Label files do not match images in {split}: missing={len(expected_labels-actual_labels)} orphan={len(actual_labels-expected_labels)}')
         for img in images:
             relative=img.relative_to(image_dir).with_suffix('.txt')
             label=label_dir/relative
@@ -38,14 +51,26 @@ def validate(root):
                 parts=line.split()
                 if len(parts)!=5:
                     raise ValueError(f'Invalid YOLO annotation in {label}')
-                cls=int(parts[0])
-                coords=list(map(float,parts[1:]))
-                if cls not in range(6) or any(not 0<=v<=1 for v in coords) or coords[2]<=0 or coords[3]<=0:
+                try:
+                    cls=int(parts[0])
+                    coords=list(map(float,parts[1:]))
+                except (ValueError, OverflowError) as exc:
+                    raise ValueError(f'Invalid class/box in {label}') from exc
+                if (
+                    cls not in range(len(CLASSES))
+                    or any(not 0 <= value <= 1 for value in coords)
+                    or coords[2] <= 0 or coords[3] <= 0
+                    or coords[0] - coords[2] / 2 < 0
+                    or coords[1] - coords[3] / 2 < 0
+                    or coords[0] + coords[2] / 2 > 1
+                    or coords[1] + coords[3] / 2 > 1
+                ):
                     raise ValueError(f'Invalid class/box in {label}')
                 counts[CLASSES[cls]]+=1
         report[split]={'images':len(images),'objects':counts}
     # Per-class coverage must be present in each split before claiming all models trained.
-    for split,info in report.items():
+    for split in SPLITS:
+        info = report[split]
         for name,count in info['objects'].items():
             if count<1:
                 raise ValueError(f'No real annotated examples of {name} in {split}')
@@ -57,24 +82,105 @@ def main():
     parser.add_argument('--imgsz',type=int,default=640)
     parser.add_argument('--device',default='cpu')
     parser.add_argument('--validate-only',action='store_true')
+    parser.add_argument('--accept-agpl',action='store_true', help='Explicitly accept AGPL-3.0 obligations for the current Ultralytics training path')
+    parser.add_argument('--pretrained-model',default='yolo11n.pt')
+    parser.add_argument('--pretrained-model-source-url',default='https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt')
+    parser.add_argument('--pretrained-model-sha256',required=False)
+    parser.add_argument('--confidence-threshold',type=float,default=0.5)
     args=parser.parse_args()
+    if not 1 <= args.epochs <= 500 or not 32 <= args.imgsz <= 4096:
+        parser.error('--epochs must be 1..500 and --imgsz must be 32..4096')
     root=Path(__file__).resolve().parents[1]
     report=validate(root)
     print(json.dumps(report,indent=2))
     if args.validate_only:
         return
+    if not args.accept_agpl:
+        parser.error('The configured Ultralytics trainer has AGPL-3.0 obligations; pass --accept-agpl only after license review, or use a separately reviewed trainer.')
+    pretrained_path=Path(args.pretrained_model).expanduser().resolve()
+    if not pretrained_path.is_file():
+        parser.error('--pretrained-model must be a locally verified checkpoint file; automatic network downloads are disabled')
+    if not args.pretrained_model_sha256 or not re.fullmatch(r'[a-f0-9]{64}', args.pretrained_model_sha256):
+        parser.error('--pretrained-model-sha256 must be the lowercase SHA-256 of the local checkpoint')
+    pretrained_digest=hashlib.sha256(pretrained_path.read_bytes()).hexdigest()
+    if pretrained_digest != args.pretrained_model_sha256:
+        parser.error('Pretrained checkpoint SHA-256 mismatch')
+    if not 0.0 <= args.confidence_threshold <= 1.0:
+        parser.error('--confidence-threshold must be in 0..1; do not interpret this as a validated operating threshold')
+    from urllib.parse import urlparse
+    source_url=urlparse(args.pretrained_model_source_url)
+    if source_url.scheme != 'https' or not source_url.netloc:
+        parser.error('--pretrained-model-source-url must be an HTTPS provenance URL')
+    import ultralytics
+    if ultralytics.__version__ != '8.4.215':
+        parser.error('This export path is tested against ultralytics==8.4.215; install the pinned training requirements first.')
     from ultralytics import YOLO
-    # A single multi-class detector; it is NOT six independent validated models.
+    # One Vespa-focused multi-class detector; it is not seven independent validated models.
     from tempfile import TemporaryDirectory
     with TemporaryDirectory() as temp:
         cfg=yaml.safe_load((root/'training/data.yaml').read_text(encoding='utf-8'))
         cfg['path']=str((root/cfg['path']).resolve())
         resolved=Path(temp)/'data.yaml'
         resolved.write_text(yaml.safe_dump(cfg),encoding='utf-8')
-        model=YOLO('yolo11n.pt')
-        model.train(data=str(resolved),epochs=args.epochs,imgsz=args.imgsz,device=args.device,project=str(root/'runs'),name='six-class-detector',exist_ok=False)
-        model.val(data=str(resolved),split='test')
-    print('Training completed. Evaluate per-class precision/recall before deployment.')
+        model=YOLO(str(pretrained_path))
+        results=model.train(data=str(resolved),epochs=args.epochs,imgsz=args.imgsz,device=args.device,project=str(root/'runs'),name='vespa-seven-class-detector',exist_ok=False)
+        run_dir=Path(model.trainer.save_dir)
+        best_weights=run_dir/'weights'/'best.pt'
+        if not best_weights.is_file():
+            raise FileNotFoundError('Training finished without a best.pt checkpoint; refusing to export a missing model')
+        best=YOLO(str(best_weights))
+        validation=best.val(data=str(resolved),split='test',plots=True)
+        exported=Path(best.export(format='onnx',imgsz=args.imgsz,nms=True,dynamic=False))
+        digest=hashlib.sha256(exported.read_bytes()).hexdigest()
+        model_dir=run_dir/'deployment'
+        model_dir.mkdir(parents=True,exist_ok=False)
+        model_target=model_dir/'detector.onnx'
+        exported.replace(model_target)
+        model_classes=[]
+        for class_id,name in enumerate(CLASSES):
+            model_classes.append({
+                'id': class_id, 'label': name, 'threshold': args.confidence_threshold,
+                'prey_detected': False,
+            })
+        manifest={
+            'manifest_version': 1,
+            'model_file': 'detector.onnx',
+            'model_sha256': digest,
+            'model_version': f'{pretrained_path.name};base-{pretrained_digest[:12]};ultralytics-{ultralytics.__version__}',
+            'model_source_url': args.pretrained_model_source_url,
+            'model_license': 'NOASSERTION',
+            'license_review_status': 'not-reviewed',
+            'inference_status': 'experimental',
+            'input': {
+                'name': 'images', 'width': args.imgsz, 'height': args.imgsz,
+                'color': 'RGB', 'layout': 'NCHW', 'scale': '0..1',
+                'resize_mode': 'letterbox',
+            },
+            'outputs': {
+                'detections': 'output0',
+                'box_format': 'xyxy_pixels_nms_matrix6',
+            },
+            'classes': model_classes,
+        }
+        manifest_path=model_dir/'model-manifest.json'
+        manifest_path.write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
+        metrics_dict=getattr(validation,'results_dict',{}) or {}
+        evidence={
+            'status':'internal_test_split_only_not_independent_field_validation',
+            'dataset_validation':report,
+            'test_metrics':{str(key):float(value) for key,value in metrics_dict.items()},
+            'onnx_sha256':digest,
+            'pretrained_checkpoint_sha256':pretrained_digest,
+            'pretrained_checkpoint_source_url':args.pretrained_model_source_url,
+            'model_license':'NOASSERTION',
+            'model_license_review':'not-reviewed; AGPL trainer acknowledgement does not approve checkpoint, dataset or output model rights',
+            'confidence_thresholds':'experimental_not_calibrated',
+        }
+        (model_dir/'training-evidence.json').write_text(json.dumps(evidence,indent=2)+'\n',encoding='utf-8')
+    print('Training and ONNX export completed. Model remains EXPERIMENTAL and all detections remain unverified.')
+    print(f'Model artifact: {model_target}')
+    print(f'Manifest: {manifest_path}')
+    print('Do not enable field deployment until independent per-class evaluation and thresholds have been reviewed.')
 
 if __name__=='__main__':
     main()

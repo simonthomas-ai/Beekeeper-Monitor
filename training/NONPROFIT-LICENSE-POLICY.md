@@ -3,6 +3,11 @@
 Updated 2026-11-19. This file documents candidate sources; it does not certify
 their images, export access, or any resulting model for production.
 
+## Open-source local annotation and QA tooling
+- CVAT Community (MIT, self-hosted) for bounding-box annotation and YOLO export: https://github.com/cvat-ai/cvat. Review bundled FFmpeg LGPL/GPL components before redistribution.
+- FiftyOne (Apache-2.0) for local duplicate discovery, dataset curation and model error analysis: https://github.com/voxel51/fiftyone.
+- These tools do not license source images; per-image media rights remain mandatory. See [DATASET-ANNOTATION-WORKFLOW.md](DATASET-ANNOTATION-WORKFLOW.md).
+
 ## Source priority
 1. **CC0**: preferred when authorship and image provenance can be verified.
 2. **CC BY 4.0**: allowed with creator credit, license link, change notice and provenance.

@@ -27,6 +27,7 @@ jobs:
           python -m json.tool manifest.webmanifest >/dev/null
           python scripts/check_sources.py
           python scripts/test_static.py
+          python -m unittest training.test_provenance -v
           node --check app.js
           node --check integrations-ui.js
           node --check sw.js

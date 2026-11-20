@@ -105,7 +105,14 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
 
         from network.source_api import BoundedSourceHTTPServer, make_handler as make_source_handler
         from network.source_event_store import SQLiteSourceEventStore
+        from camera.contracts import Detection, make_source_event
+        from camera.source_client import SourceApiClient
+        from datetime import datetime, timezone
 
+        cls.Detection = Detection
+        cls.make_source_event = make_source_event
+        cls.datetime = datetime
+        cls.timezone = timezone
         cls.BoundedSourceHTTPServer = BoundedSourceHTTPServer
         cls.SQLiteSourceEventStore = SQLiteSourceEventStore
         cls.make_source_handler = make_source_handler
@@ -130,6 +137,9 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
             target=cls.source_server.serve_forever, daemon=True
         )
         cls.source_thread.start()
+        cls.camera_client = SourceApiClient(
+            f"http://127.0.0.1:{cls.source_server.server_port}", SOURCE_KEY
+        )
 
         # The integration fixture intentionally sends 410 POST requests
         # (205 initial deliveries + 205 replay deliveries); raise only this
@@ -206,27 +216,16 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
         return result.stdout
 
     def _post_source_event(self, index):
-        event = {
-            "id": f"station-event-{index:04d}",
-            "observed_at": "2026-11-20T08:00:00Z",
-            "station_id": "integration-station-north",
-            "species": "Vespa velutina",
-            "confidence": 0.87,
-            "prey_detected": index % 2 == 0,
-        }
-        request = urllib.request.Request(
-            f"http://127.0.0.1:{self.source_server.server_port}/api/events",
-            data=json.dumps(event).encode("utf-8"),
-            headers={
-                "X-API-Key": SOURCE_KEY,
-                "Content-Type": "application/json",
-            },
-            method="POST",
+        # Use the actual BeeKeeper local camera contract and authenticated API client.
+        observed_at = self.datetime(2026, 11, 20, 8, 0, tzinfo=self.timezone.utc)
+        event = self.__class__.make_source_event(
+            station_id="integration-station-north",
+            detection=self.Detection(
+                "Vespa velutina", 0.87, prey_detected=(index % 2 == 0)
+            ),
+            observed_at=observed_at,
         )
-        with urllib.request.urlopen(request, timeout=5) as response:
-            self.assertIn(response.status, (200, 201))
-            acknowledgement = json.loads(response.read().decode("utf-8"))
-            self.assertTrue(acknowledgement["accepted"])
+        self.assertTrue(self.camera_client.send_event(event))
 
     def test_205_events_cross_real_source_api_bridge_and_monitor_http(self):
         for index in range(1, 206):
