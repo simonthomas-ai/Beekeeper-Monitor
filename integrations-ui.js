@@ -4,6 +4,7 @@
   const tokenInput = document.getElementById('station-events-token');
   const status = document.getElementById('station-events-status');
   const list = document.getElementById('station-events-list');
+  const exportButton = document.getElementById('station-events-export');
   if (!form || !tokenInput || !status || !list) return;
 
   const isLocalGateway =
@@ -41,6 +42,29 @@
     }
     if (!response.ok) throw new Error('Lokaler Server meldet HTTP ' + response.status);
     return response.json();
+  }
+
+  async function exportEvents() {
+    if (!isLocalGateway || !activeToken) throw new Error('Bitte zuerst mit dem lokalen Empfangsschlüssel verbinden.');
+    const response = await fetch('/api/v1/events/export?limit=500', {
+      mode: 'same-origin', credentials: 'omit', cache: 'no-store', redirect: 'error',
+      headers: { Authorization: 'Bearer ' + activeToken }
+    });
+    if (response.status === 401) {
+      activeToken = '';
+      throw new Error('Schlüssel abgewiesen. Bitte erneut verbinden.');
+    }
+    if (!response.ok) throw new Error('Export fehlgeschlagen: HTTP ' + response.status);
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'beekeeper-station-events.json';
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+    setStatus('Stationsdaten exportiert. Die Datei enthält sensible Stationsmetadaten; sicher speichern.');
   }
 
   function renderRows(rows) {
@@ -98,6 +122,16 @@
     setStatus(data.count + ' lokale Stationsereignisse geladen. Unbestätigte Kandidaten sind keine Artbestimmung.');
   }
 
+  if (exportButton) {
+    exportButton.disabled = true;
+    exportButton.addEventListener('click', async () => {
+      exportButton.disabled = true;
+      try { await exportEvents(); }
+      catch (error) { setStatus('Export fehlgeschlagen: ' + error.message); }
+      finally { exportButton.disabled = !activeToken; }
+    });
+  }
+
   if (!isLocalGateway) {
     tokenInput.disabled = true;
     form.querySelector('button[type="submit"]').disabled = true;
@@ -118,8 +152,10 @@
     button.disabled = true;
     try {
       await refresh();
+      if (exportButton) exportButton.disabled = false;
     } catch (error) {
       activeToken = '';
+      if (exportButton) exportButton.disabled = true;
       clearList();
       setStatus('Verbindung fehlgeschlagen: ' + error.message);
     } finally {
