@@ -408,5 +408,66 @@ class StorageFailureTests(unittest.TestCase):
             thread.join(timeout=3)
 
 
+
+class SQLiteBackupTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = os.path.join(self.tmp.name, "secure")
+        os.mkdir(self.root, 0o700)
+        self.source = os.path.join(self.root, "live.sqlite3")
+        self.store = SQLiteEventStore(self.source)
+        self.store(HiveEvent(
+            "hive_telemetry", "backup-sensor", "2026-11-19T19:00:00Z",
+            {"temperature_c": 20.5, "humidity_pct": 47},
+        ))
+        self.backup_path = os.path.join(self.root, "backup.sqlite3")
+        self.restore_path = os.path.join(self.root, "restored.sqlite3")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_backup_verify_restore_round_trip(self):
+        from integrations.store_backup import backup, verify, restore
+        self.assertEqual(backup(self.source, self.backup_path), 1)
+        self.assertEqual(verify(self.backup_path), 1)
+        self.assertEqual(restore(self.backup_path, self.restore_path), 1)
+        self.assertEqual(verify(self.restore_path), 1)
+        restored = SQLiteEventStore(self.restore_path)
+        self.assertEqual(restored.count(), 1)
+        self.assertEqual(restored.list_events()[0]["event"]["device_id"], "backup-sensor")
+
+    def test_backup_refuses_to_overwrite_existing_destination(self):
+        from integrations.store_backup import backup
+        with open(self.backup_path, "wb") as handle:
+            handle.write(b"keep-existing")
+        with self.assertRaises(FileExistsError):
+            backup(self.source, self.backup_path)
+        with open(self.backup_path, "rb") as handle:
+            self.assertEqual(handle.read(), b"keep-existing")
+
+    def test_restore_refuses_to_overwrite_existing_destination(self):
+        from integrations.store_backup import backup, restore
+        backup(self.source, self.backup_path)
+        with open(self.restore_path, "wb") as handle:
+            handle.write(b"keep-existing")
+        with self.assertRaises(FileExistsError):
+            restore(self.backup_path, self.restore_path)
+        with open(self.restore_path, "rb") as handle:
+            self.assertEqual(handle.read(), b"keep-existing")
+
+    def test_verify_rejects_corrupt_database(self):
+        from integrations.store_backup import verify
+        bad = os.path.join(self.root, "corrupt.sqlite3")
+        with open(bad, "wb") as handle:
+            handle.write(b"not sqlite")
+        with self.assertRaises(sqlite3.DatabaseError):
+            verify(bad)
+
+    def test_backup_refuses_same_source_and_destination(self):
+        from integrations.store_backup import backup
+        with self.assertRaises(ValueError):
+            backup(self.source, self.source)
+
+
 if __name__ == "__main__":
     unittest.main()
