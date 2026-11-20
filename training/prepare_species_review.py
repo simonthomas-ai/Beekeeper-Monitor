@@ -9,7 +9,7 @@ from pathlib import Path
 
 REQUIRED = {"source_id", "source_url", "image_url", "creator", "license", "license_url",
             "attribution", "observation_id", "photo_id", "species_candidate", "review_status"}
-FIELDS = ["species_candidate", "review_group", "photo_id", "observation_id", "source_url",
+PRIORITY = {"Vespa velutina": 1, "Bombus lapidarius": 2, "Vespa crabro": 3,\n            "Vespula vulgaris": 4, "Vespula germanica": 4,\n            "Apis mellifera": 5, "Bombus terrestris": 6}\nFIELDS = ["review_priority", "species_candidate", "review_group", "photo_id", "observation_id", "source_url",
           "image_url", "creator", "attribution", "license", "license_url",
           "license_review", "taxon_review", "image_quality_review", "bbox_annotation_review",
           "training_eligible"]
@@ -35,14 +35,14 @@ def prepare(source, target):
             raise ValueError("Missing or duplicate photo ID")
         seen.add(photo_id)
         item = {k: row.get(k, "") for k in FIELDS}
-        item["review_group"] = group(row["species_candidate"])
+        item["review_group"] = group(row["species_candidate"])\n        item["review_priority"] = str(PRIORITY.get(row["species_candidate"], 9))
         item["license_review"] = "PENDING"
         item["taxon_review"] = "PENDING"
         item["image_quality_review"] = "PENDING"
         item["bbox_annotation_review"] = "PENDING"
         item["training_eligible"] = "NO"
         output.append(item)
-    output.sort(key=lambda x: (x["review_group"], x["photo_id"]))
+    output.sort(key=lambda x: (int(x["review_priority"]),\n                               0 if x["license"] == "CC0-1.0" else 1,\n                               x["observation_id"], x["photo_id"]))
     dest = Path(target)
     dest.parent.mkdir(parents=True, exist_ok=True)
     with dest.open("w", newline="", encoding="utf-8") as f:
@@ -51,7 +51,7 @@ def prepare(source, target):
         writer.writerows(output)
     counts = dict(sorted(Counter(x["species_candidate"] for x in output).items()))
     summary = {"candidates": len(output), "species_groups": counts,
-               "approved_for_training": 0, "requires_expert_review": True,
+               "approved_for_training": 0, "requires_expert_review": True,\n               "priority_order": ["Vespa velutina", "Bombus lapidarius",\n                                  "Vespa crabro", "Vespula vulgaris",\n                                  "Vespula germanica", "Apis mellifera",\n                                  "Bombus terrestris"],
                "warning": "Species and licenses are unverified. No bounding boxes or trained models produced."}
     dest.with_suffix(".json").write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(json.dumps(summary, indent=2, ensure_ascii=False))
