@@ -1,54 +1,115 @@
 # Hornet3000 / BeeKeeper3000 connection
 
-The companion adapter is maintained in [simonthomas-ai/BeeKeeper3000](https://github.com/simonthomas-ai/BeeKeeper3000/tree/main/monitor-bridge). The Monitor receiver accepts validated metadata over a dedicated local Bearer token.
+The companion adapter is maintained in [BeeKeeper3000](https://github.com/simonthomas-ai/BeeKeeper3000/tree/main/monitor-bridge). The current reference path uses a separately runnable source journal, the cursor-aware BeeKeeper bridge and the authenticated local Monitor receiver.
 
-## Data flow
+## Current software data flow
 
-1. Hornet3000 serves `GET /api/events?limit=100`, authenticated with its own `X-API-Key`.
-2. The BeeKeeper3000 Node.js bridge reads source events and forwards metadata only.
-3. The Monitor receiver accepts `POST /api/v1/events` with a separate ingestion token.
-4. The receiver validates the strict event contract and commits the event to local SQLite before returning HTTP 202.
-5. The local API can list events and explicitly delete one event by its SHA-256 ID.
+1. A trusted local detector/producer submits one metadata-only candidate to the BeeKeeper source API: `POST http://127.0.0.1:8787/api/events`, authenticated with `X-API-Key`.
+2. The source API validates the strict event contract and commits the event to its SQLite journal before acknowledging it.
+3. The Node.js bridge reads `GET /api/events?limit=100&cursor=start` and subsequent signed-cursor pages, authenticated with the separate source API key.
+4. The bridge forwards the metadata to `POST /api/v1/events`, authenticated with a different Monitor Bearer token.
+5. The Monitor validates the event, stores it in local SQLite and returns HTTP 202 only after the durable insert/duplicate check.
+6. The local PWA can list, export and explicitly delete stored station events.
 
-Transferred fields include device/station ID, observation timestamp, unverified candidate label, confidence, source status and prey flag. Image, audio, GPS coordinates, camera credentials and source API keys are excluded. Species labels are marked `unverified_candidate:`; model output is not expert verification.
+The bridge catches up multiple pages, retries transient errors, uses idempotent event IDs and only advances its persistent cursor after a complete page has been acknowledged by the Monitor. It defaults to `BRIDGE_REQUIRE_CURSOR=true` and refuses the older latest-100-only API instead of silently accepting possible event loss.
 
-## Receiver setup
+## Important production boundary
 
-See [LOCAL-INGESTION.md](./LOCAL-INGESTION.md) for requirements, secure token generation, database location, retention, local API routes and limitations.
+This is a functioning **software reference path**, not yet a complete retrofit of the inherited Hornet3000 Wächter 1.6.0 product:
 
-Start from the Monitor repository root:
+- The complete original C++ daemon/source archive is not present in the published BeeKeeper3000 repository.
+- No camera or AI classifier is automatically wired to submit observations to the source API. A trusted producer still has to be connected and tested.
+- The MeshCore signed radio receiver and its local bearing/triangulation store are separate from the HTTP source journal. They are not automatically bridged into the Monitor event list.
+- No actual camera, radio hardware, LoRa coverage, multi-station field triangulation or nationwide deployment has been tested.
+- The application does not declare GDPR compliance. Apply the privacy, retention and operator procedures appropriate to the actual deployment.
+
+The accepted event schema is deliberately metadata-only. It does not transfer photos, audio, file paths, precise GPS, camera credentials or untrusted expert-verification claims. MeshCore station coordinates remain receiver-local; the MeshCore store can calculate a local search hypothesis from at least three compatible bearing stations, but that result is not yet synced to the Monitor. A signature authenticates a key, not a biological species identification.
+
+## 1. Start the local Monitor receiver
+
+From the Beekeeper-Monitor repository root, provision a dedicated token and a private data directory. Keep the token out of source control and service logs.
+
+Linux/macOS:
 
 ```sh
 export VESPAGUARD_INGEST_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
 export VESPAGUARD_INGEST_DB="$HOME/.local/share/beekeeper-monitor/events.sqlite3"
+mkdir -p "$HOME/.local/share/beekeeper-monitor"
+chmod 700 "$HOME/.local/share/beekeeper-monitor"
 python -m integrations.local_ingest
 ```
 
-The default bind address is `127.0.0.1:8765`. Open `http://127.0.0.1:8765/` in the same browser to use the local PWA and its authenticated station-event panel. The token is entered per session and is not persisted. Do not expose the plain-HTTP listener to the public internet.
+Windows PowerShell (run in a persistent service environment, not only a temporary shell):
 
-## Bridge setup
+```powershell
+$env:VESPAGUARD_INGEST_TOKEN = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+$env:VESPAGUARD_INGEST_DB = "$env:LOCALAPPDATA\BeeKeeper-Monitor\events.sqlite3"
+New-Item -ItemType Directory -Force (Split-Path $env:VESPAGUARD_INGEST_DB) | Out-Null
+python -m integrations.local_ingest
+```
 
-Configure `monitor-bridge/.env.example` in BeeKeeper3000:
+The receiver binds to `127.0.0.1:8765`. Open `http://127.0.0.1:8765/` in the same machine's browser to use the local PWA and authenticated station-event panel. The token is entered per session and is not saved in browser storage. Set restrictive NTFS ACLs for the service account and use BitLocker or an encrypted volume; SQLite is not application-encrypted.
 
-- `HORNET3000_URL` — default `http://127.0.0.1:8787`
-- `HORNET3000_API_KEY` — distinct Hornet3000 API key
-- `BEEKEEPER_MONITOR_INGEST_URL` — default `http://127.0.0.1:8765/api/v1/events`
-- `BEEKEEPER_MONITOR_INGEST_TOKEN` — the receiver token above
-- `POLL_INTERVAL_MS` — default 10000
+## 2. Start the BeeKeeper source journal
 
-The bridge currently polls the most recent 100 source events and persists a bounded set of forwarded IDs. This does **not** guarantee lossless catch-up if more than 100 events arrive between polls; the source API needs a cursor/sequence contract before the bridge can guarantee complete delivery. Track this in [BeeKeeper3000 issue #7](https://github.com/simonthomas-ai/BeeKeeper3000/issues/7).
+From the BeeKeeper3000 repository root, generate two independent random secrets. The API key authenticates producer and bridge requests; the cursor secret signs pagination state. Do not reuse the Monitor token.
+
+Linux/macOS:
+
+```sh
+export HORNET3000_API_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export HORNET3000_CURSOR_SECRET="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export HORNET3000_EVENT_DB="$HOME/.local/share/beekeeper3000/source-events.sqlite3"
+mkdir -p "$HOME/.local/share/beekeeper3000"
+chmod 700 "$HOME/.local/share/beekeeper3000"
+python -m network.source_api
+```
+
+Windows PowerShell:
+
+```powershell
+$env:HORNET3000_API_KEY = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+$env:HORNET3000_CURSOR_SECRET = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+$env:HORNET3000_EVENT_DB = "$env:LOCALAPPDATA\BeeKeeper3000\source-events.sqlite3"
+New-Item -ItemType Directory -Force (Split-Path $env:HORNET3000_EVENT_DB) | Out-Null
+python -m network.source_api
+```
+
+The source service binds only to `127.0.0.1:8787`. It uses the Python standard library and a local SQLite database. Configure private filesystem permissions and full-disk encryption. Do not expose the plain-HTTP service publicly.
+
+A producer must POST strict JSON metadata containing exactly `id`, `observed_at` (timezone-aware ISO-8601), `station_id`, `species`, `confidence` (0..1) and `prey_detected` to `/api/events` with `X-API-Key`. The API rejects media, GPS, paths, secrets and human-verification claims. An exact duplicate is acknowledged idempotently; reusing an ID with changed content is rejected.
+
+## 3. Configure and start the bridge
+
+Use `monitor-bridge/.env.example` as the variable template in BeeKeeper3000. Set:
+
+- `HORNET3000_URL=http://127.0.0.1:8787`
+- `HORNET3000_API_KEY` to the source API key
+- `BEEKEEPER_MONITOR_INGEST_URL=http://127.0.0.1:8765/api/v1/events`
+- `BEEKEEPER_MONITOR_INGEST_TOKEN` to the Monitor token
+- `BRIDGE_REQUIRE_CURSOR=true`
+- `BRIDGE_STATE_FILE` to a private, persistent local path
+
+With Node.js 20 or newer, start it from the BeeKeeper3000 repository root:
+
+```sh
+npm --prefix monitor-bridge start
+```
+
+Do not run it with cursor mode disabled in production. Legacy mode exists only as an explicitly accepted local demonstration fallback and can lose older events.
 
 ## Security and privacy boundary
 
-- Generate a unique token for every installation. Never reuse the Hornet3000 API key.
-- Keep the receiver bound to loopback. Remote deployment requires an authenticated VPN and a reviewed HTTPS reverse proxy.
-- The receiver has bounded request workers, socket timeouts, size/content-type checks and an in-memory per-IP rate limit.
-- SQLite event rows contain metadata only. POSIX permissions are restricted to owner read/write; configure NTFS ACLs on Windows.
-- Database encryption at rest is not implemented. Use full-disk or encrypted-volume protection.
-- The PWA has a local station-event panel that reads and deletes server-side metadata events through the same-origin localhost API. Browser IndexedDB and server-side SQLite remain separate stores.
-- Retention of exports, backups, reverse-proxy logs and source-side events requires a separate policy.
-- This design does not establish GDPR compliance.
+- Use a unique source API key, cursor secret and Monitor Bearer token for every installation.
+- Keep both Python services on loopback. Remote federation requires a separately reviewed authenticated VPN/TLS gateway; do not expose plain HTTP.
+- Source API and Monitor receiver enforce request size, time, worker, rate and storage bounds.
+- SQLite data, backups and exports contain sensitive station metadata. Use encrypted storage and restrict service-account access.
+- Browser IndexedDB and server-side SQLite are different stores with separate deletion/export behavior.
+- Define and test retention/deletion for source journals, bridge state, Monitor DB, browser storage, backups and external proxy logs.
+- Do not publish exact nest coordinates or station locations in public dashboards by default.
 
-## Acceptance boundary
+## Verification and acceptance
 
-The receiver tests cover valid transport, authentication failures, input validation, durable storage, duplicate insertion, authenticated retrieval/deletion, local PWA serving and denial of private source paths. A live installation with the actual Hornet3000 API and hardware is still required. The source API polling limit, bridge lossless catch-up, backup/restore, encrypted storage and deployment-specific privacy review remain release gates.
+Automated tests cover source API cursor pagination/restart/retention, bridge retries/checkpointing, strict metadata validation, Monitor storage and PWA/browser behavior. These checks do not replace a live source-producer-to-bridge-to-Monitor test on the actual station.
+
+Before deployment, connect the real local producer, verify event appearance after source and bridge restart, simulate Monitor outage/backlog recovery, check retention-expiry handling, and test the configured radio/hardware. The current MeshCore receiver/store separately supports local bearing collection and triangulation; a three-station field-validated nest search and forwarding of the derived search hypothesis into Monitor remain open tasks.
