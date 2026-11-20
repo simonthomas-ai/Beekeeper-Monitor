@@ -91,11 +91,20 @@ From the Monitor repository root:
 ~~~sh
 python -m unittest training.test_provenance -v
 python scripts/model_readiness.py
-python -m pip install PyYAML==6.0.3
+python -m pip install -r training/requirements-training.txt
 python training/train.py --validate-only
 ~~~
 
 The last command succeeds only when actual images, labels, class coverage and the complete provenance manifest exist. It does not train a model.
+
+After a manual review of the AGPL terms, install the pinned training environment, acquire a pretrained checkpoint from a documented source, and verify its exact SHA-256 before starting training:
+
+~~~powershell
+Get-FileHash .\models\yolo11n.pt -Algorithm SHA256
+python training/train.py --pretrained-model .\models\yolo11n.pt --pretrained-model-sha256 <64-character-lowercase-sha256> --pretrained-model-source-url https://github.com/ultralytics/assets/releases --accept-agpl --device cpu
+~~~
+
+Automatic checkpoint downloads are intentionally disabled. The script checks the local checkpoint hash and exact Ultralytics package version, trains a single six-class baseline, evaluates the held-out test split, exports an ONNX model with an explicit post-NMS matrix6 output, and writes a model manifest plus training evidence. The confidence threshold in that initial manifest is a configurable starting value only; it is not calibrated.
 
 Actual Ultralytics training is additionally gated behind explicit `--accept-agpl` because the configured Ultralytics path has AGPL-3.0 obligations. This flag is an operator acknowledgement, not legal advice. The generated ONNX export uses the post-NMS six-column format consumed by BeeKeeper3000's camera inference adapter. The exported model and manifest remain marked **experimental**; the configured confidence threshold is not a calibrated operating threshold.
 
