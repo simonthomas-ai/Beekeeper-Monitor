@@ -130,3 +130,69 @@ GBIF explicitly states that multimedia licences can differ from the associated o
 3. Continue the existing iNaturalist CC0 and GBIF CC0/CC BY metadata discovery queues, but do not interpret their records as human-verified images.
 4. Exclude the CC BY-NC-SA Insect Detect classification dataset from the current permissive baseline.
 5. Keep source records, image files, model weights and software dependencies under separate licence inventories. No candidate is approved for model training by this document.
+
+
+## Additional open research sources — review 2026-11-20
+
+This section records newly identified sources. They remain research candidates unless the relevant record-level licence, rights holder, exact file version, attribution and biological labels are independently verified. No source in this section has been downloaded into the training corpus.
+
+### InsectDCT — large multi-camera trap dataset and separate test split
+
+- Dataset DOI: https://doi.org/10.5281/zenodo.21154490
+- Research preprint: https://doi.org/10.64898/2026.07.07.736939
+- Code: https://github.com/kimbjerge/insectDCT
+- Published 3 July 2026; dataset version v1.
+
+The Zenodo description lists RGB and motion-enhanced detector training archives (51 GB and 71 GB), a separate 35 GB detector test archive, a 4.5 GB hierarchical classification training archive, a 202 MB classification test archive and a 1.3 GB tracking test archive. The detection data spans multiple camera systems, plants and project sites. The classification description lists 80 taxonomic groups, while the separate test sets contain recordings from camera/site groups not all used for training. This could be valuable for testing generalisation across vegetation, illumination and different camera backgrounds.
+
+**Rights hold:** the indexed Zenodo record exposed a License field but did not expose a usable licence value in the reviewed metadata. Do not infer CC BY from Zenodo's default settings or from the preprint's access status. The upstream insectDCT repository is GPL-3.0 and its README uses YOLO11; both code and its dependencies require separate review. No archive, weights or source code are approved for BeeKeeper3000 use until the precise dataset licence and all third-party image conditions are verified. The data are large and may contain no validated Vespa velutina class; inspect its taxonomy manifest before planning any target-class use. It is an ecological-camera benchmark candidate, not a ready-made Asian-hornet detector.
+
+### VespApp / GBIF — expert-reviewed occurrence context, non-commercial licence
+
+- GBIF dataset DOI: https://doi.org/10.15470/jl2i4v
+- IPT resource: https://ipt.gbif.es/resource?r=uib-vespapp&request_locale=en
+- GBIF dataset UUID: cd0ed6b1-e80b-475f-bda7-df2d534d7773
+
+The dataset was published 6 July 2026 by Universitat de les Illes Balears. Its description states that VespApp collected suspicious individual and nest reports in the Balearic Islands from 2016 to 2024 and that observations were validated or discarded by taxonomic experts. The GBIF resource offers a 571-record Darwin Core Archive snapshot and declares CC BY-NC 4.0.
+
+Potential use: regional occurrence trends and taxonomically reviewed non-target observations, subject to record-level review and a documented non-commercial-use decision. It is occurrence metadata, not camera imagery or a bounding-box dataset. The CC BY-NC licence is not included in the permissive CC0/CC BY training baseline; nonprofit status alone does not clear its conditions. Do not use its locations as current nest coordinates or publish sensitive locations without an independent privacy review.
+
+### Ecdysis Foundation / BugBox — large entomologist-reviewed specimen image collection, CC BY-NC
+
+- Collection and download description: https://bugbox.ecdysis.bio/samples/collection-download/1
+- Training/inference code is linked from that page.
+
+The publisher reports a reviewed collection of about 121,917 images representing 117,200 specimens identified by entomologists to 40 orders and 340 arthropod families; the all-specimen file contains more than 675,000 images, including records not reviewed for identification. The page declares the data and model available under CC BY-NC.
+
+Potential use: taxonomy reference and research into visually similar arthropod groups. Prefer the reviewed-only file; never use the unreviewed set as authoritative labels. The images are specimen/collection imagery, not necessarily natural flying camera-trap images, and the licence is not part of the permissive training baseline. The publisher's model is a separate artifact and is not accepted for deployment. No images or weights have been downloaded.
+
+### Urban insect detection dataset — useful methodology, NC restricted
+
+- Dataset DOI: https://doi.org/10.6084/m9.figshare.28280792
+- Data article: https://doi.org/10.1016/j.dib.2025.111673
+- Article text and dataset description: https://pmc.ncbi.nlm.nih.gov/articles/PMC12159940/
+
+The 2025 data article describes more than 25,000 annotations on scanned UV sticky-trap cards, with insect boxes labelled at order level by at least two entomologists. The article is CC BY-NC; the data record and any third-party image conditions must be checked separately. It is not equivalent to live insect footage and does not provide species-level labels for reliable Vespa velutina discrimination. Keep it outside the current permissive training route unless exact dataset rights and the intended use are cleared.
+
+### Projekt VELUTINA media library — possible direct source for Asian-hornet reference media
+
+- Media library: https://www.velutina.de/mediathek/
+- The publisher states that its photos and videos are made available under Creative Commons licences and shows examples including nests, eggs, larvae, queens and flight/foraging behaviour.
+- The page links separate Lizenz Vereinbarungen and asks users to follow the respective licence and attribution for each asset.
+
+This is a potentially relevant source for Vespa velutina morphology and life-cycle reference images. It is not yet a cleared training dataset: the page's general statement does not identify one uniform licence for every file, and media made for public information may differ in camera angle, staging, nesting context and image distribution from a fixed camera station. Check the linked agreement and the per-asset attribution/licence before any reuse. No photos or videos have been downloaded, copied or annotated.
+
+### EASIN — EU occurrence/taxonomy context, not an image dataset
+
+- Official portal: https://easin.jrc.ec.europa.eu/easin/
+- API documentation: https://easin.jrc.ec.europa.eu/apixg
+
+EASIN is managed by the European Commission's Joint Research Centre and supports EU and Member State work under the Invasive Alien Species Regulation. Its catalogue, maps, open web services and citizen-science features can help with accepted names, aliases and European distribution context. It is not a per-image licence grant, a station camera feed or an independently verified nest-location source. Check source-provider conditions before redistributing records; keep it separate from the image-training corpus.
+
+### Data-source separation rule
+
+- Visual training/evaluation: only media with independently verified per-file rights, traceable source, expert-reviewed labels and group-safe split assignments.
+- Taxonomy/distribution context: GBIF/EASIN and licensed observation archives, kept distinct from camera predictions.
+- Reference material: specimen scans and educational media, not automatically representative of deployed camera footage.
+- NC or unclear rights: quarantine pending a specific rights/use decision; never relabel as free because nonprofit.
+- Sensitive geodata: restrict exact apiary/nest/station coordinates; do not publish imported observation coordinates as active targets without validation.
