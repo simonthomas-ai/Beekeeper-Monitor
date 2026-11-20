@@ -12,8 +12,11 @@ ALLOWED = {"cc0", "cc by 4.0", "cc by 3.0", "cc by 2.0", "public domain"}
 CATEGORIES = {
     "velutina": "Category:Vespa_velutina_nigrithorax",
     "crabro": "Category:Vespa_crabro",
+    "apis": "Category:Apis_mellifera",
+    "bombus": "Category:Bombus",
+    "vespula": "Category:Vespula",
 }
-FALLBACK_CATEGORIES = {"velutina": ["Category:Vespa_velutina"], "crabro": []}
+FALLBACK_CATEGORIES = {"velutina": ["Category:Vespa_velutina"], "crabro": [], "apis": [], "bombus": [], "vespula": []}
 def get_json(params):
     url = API + "?" + urlencode(params)
     with urlopen(Request(url, headers={"User-Agent": "VespaGuardResearchImporter/0.1 (noncommercial research; github.com/simonthomas-ai/Beekeeper-Monitor)"}), timeout=30) as response:
