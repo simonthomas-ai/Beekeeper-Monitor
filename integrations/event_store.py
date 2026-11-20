@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import sqlite3
+import stat
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -20,40 +21,50 @@ class SQLiteEventStore:
             raise ValueError("A database path is required")
         if not 1 <= retention_days <= 3650 or not 100 <= max_rows <= 2_000_000:
             raise ValueError("Invalid retention bounds")
-        self.path = str(Path(path).expanduser())
+        target = Path(path).expanduser().resolve()
+        self.path = str(target)
         self.retention_days = retention_days
         self.max_rows = max_rows
-        target = Path(self.path).resolve()
-        target.parent.mkdir(parents=True, exist_ok=True)
+        target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if os.name == "posix":
+            parent_stat = target.parent.stat()
+            if parent_stat.st_uid != os.getuid():
+                raise PermissionError("SQLite directory must be owned by the service account")
+            if stat.S_IMODE(parent_stat.st_mode) & 0o077:
+                raise PermissionError(
+                    "SQLite directory must be private (mode 0700); choose a dedicated data directory"
+                )
         self._initialize()
-        try:
-            os.chmod(self.path, 0o600)
-        except OSError:
-            # Windows ACLs are managed by the service account and installation.
-            pass
+        self._secure_files()
+
+    def _secure_files(self):
+        """Restrict database and SQLite sidecars on POSIX systems."""
+        if os.name != "posix":
+            # Windows permissions must be established with explicit NTFS ACLs.
+            return
+        for candidate in (self.path, self.path + "-wal", self.path + "-shm"):
+            try:
+                os.chmod(candidate, 0o600)
+            except FileNotFoundError:
+                continue
 
     @contextmanager
     def _db(self):
         db = sqlite3.connect(self.path, timeout=5)
         try:
+            self._secure_files()
             db.execute("PRAGMA busy_timeout=5000")
             db.execute("PRAGMA foreign_keys=ON")
             db.execute("PRAGMA synchronous=FULL")
             db.execute("PRAGMA secure_delete=ON")
             yield db
             db.commit()
-            for suffix in ("", "-wal", "-shm"):
-                try:
-                    os.chmod(self.path + suffix, 0o600)
-                except OSError:
-                    # On Windows, apply equivalent NTFS ACLs to the service
-                    # account and the database directory during installation.
-                    pass
         except Exception:
             db.rollback()
             raise
         finally:
             db.close()
+            self._secure_files()
 
     def _initialize(self):
         with self._db() as db:
@@ -107,7 +118,7 @@ class SQLiteEventStore:
         ]
 
     def delete(self, event_id: str) -> bool:
-        if not isinstance(event_id, str) or len(event_id) != 64:
+        if not isinstance(event_id, str) or len(event_id) != 64 or any(ch not in "0123456789abcdef" for ch in event_id):
             raise ValueError("Invalid event ID")
         with self._db() as db:
             cursor = db.execute("DELETE FROM events WHERE event_id = ?", (event_id,))
