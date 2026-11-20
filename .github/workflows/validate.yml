@@ -17,6 +17,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Checkout companion bridge
+        uses: actions/checkout@v4
+        with:
+          repository: simonthomas-ai/BeeKeeper3000
+          path: BeeKeeper3000
       - name: Validate source catalog and PWA structure
         run: |
           python -m json.tool manifest.webmanifest >/dev/null
@@ -25,14 +30,9 @@ jobs:
           node --check app.js
           node --check integrations-ui.js
           node --check sw.js
-      - name: Test authenticated ingestion and durable event storage
+      - name: Test authenticated ingestion, persistence and bridge end-to-end
+        env:
+          BEEKEEPER_BRIDGE_ENTRY: ${{ github.workspace }}/BeeKeeper3000/monitor-bridge/bridge.mjs
         run: python -m unittest discover -s integrations -p 'test_*.py' -v
-      - name: Checkout companion bridge
-        uses: actions/checkout@v4
-        with:
-          repository: simonthomas-ai/BeeKeeper3000
-          path: BeeKeeper3000
       - name: Test bridge adapter
-        run: |
-          cd BeeKeeper3000/monitor-bridge
-          npm test
+        run: npm --prefix BeeKeeper3000/monitor-bridge test
