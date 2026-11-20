@@ -84,6 +84,7 @@ def main():
     parser.add_argument('--accept-agpl',action='store_true', help='Explicitly accept AGPL-3.0 obligations for the current Ultralytics training path')
     parser.add_argument('--pretrained-model',default='yolo11n.pt')
     parser.add_argument('--pretrained-model-source-url',default='https://github.com/ultralytics/assets/releases')
+    parser.add_argument('--pretrained-model-sha256',required=False)
     parser.add_argument('--confidence-threshold',type=float,default=0.5)
     args=parser.parse_args()
     root=Path(__file__).resolve().parents[1]
@@ -93,12 +94,23 @@ def main():
         return
     if not args.accept_agpl:
         parser.error('The configured Ultralytics trainer has AGPL-3.0 obligations; pass --accept-agpl only after license review, or use a separately reviewed trainer.')
+    pretrained_path=Path(args.pretrained_model).expanduser().resolve()
+    if not pretrained_path.is_file():
+        parser.error('--pretrained-model must be a locally verified checkpoint file; automatic network downloads are disabled')
+    if not args.pretrained_model_sha256 or not re.fullmatch(r'[a-f0-9]{64}', args.pretrained_model_sha256):
+        parser.error('--pretrained-model-sha256 must be the lowercase SHA-256 of the local checkpoint')
+    pretrained_digest=hashlib.sha256(pretrained_path.read_bytes()).hexdigest()
+    if pretrained_digest != args.pretrained_model_sha256:
+        parser.error('Pretrained checkpoint SHA-256 mismatch')
     if not 0.0 <= args.confidence_threshold <= 1.0:
         parser.error('--confidence-threshold must be in 0..1; do not interpret this as a validated operating threshold')
     from urllib.parse import urlparse
     source_url=urlparse(args.pretrained_model_source_url)
     if source_url.scheme != 'https' or not source_url.netloc:
         parser.error('--pretrained-model-source-url must be an HTTPS provenance URL')
+    import ultralytics
+    if ultralytics.__version__ != '8.4.215':
+        parser.error('This export path is tested against ultralytics==8.4.215; install the pinned training requirements first.')
     from ultralytics import YOLO
     import hashlib
     # A single multi-class detector; it is NOT six independent validated models.
@@ -108,7 +120,7 @@ def main():
         cfg['path']=str((root/cfg['path']).resolve())
         resolved=Path(temp)/'data.yaml'
         resolved.write_text(yaml.safe_dump(cfg),encoding='utf-8')
-        model=YOLO(args.pretrained_model)
+        model=YOLO(str(pretrained_path))
         results=model.train(data=str(resolved),epochs=args.epochs,imgsz=args.imgsz,device=args.device,project=str(root/'runs'),name='six-class-detector',exist_ok=False)
         run_dir=Path(model.trainer.save_dir)
         best_weights=run_dir/'weights'/'best.pt'
@@ -132,7 +144,7 @@ def main():
             'manifest_version': 1,
             'model_file': 'detector.onnx',
             'model_sha256': digest,
-            'model_version': f'{args.pretrained_model};ultralytics-{__import__("ultralytics").__version__};best-checkpoint',
+            'model_version': f'{pretrained_path.name};base-{pretrained_digest[:12]};ultralytics-{ultralytics.__version__}',
             'model_source_url': args.pretrained_model_source_url,
             'model_license': 'AGPL-3.0-only',
             'license_review_status': 'approved',
@@ -156,6 +168,8 @@ def main():
             'dataset_validation':report,
             'test_metrics':{str(key):float(value) for key,value in metrics_dict.items()},
             'onnx_sha256':digest,
+            'pretrained_checkpoint_sha256':pretrained_digest,
+            'pretrained_checkpoint_source_url':args.pretrained_model_source_url,
             'model_license':'AGPL-3.0-only',
             'model_license_review':'operator_explicitly_acknowledged_via_accept_agpl_flag',
             'confidence_thresholds':'experimental_not_calibrated',
