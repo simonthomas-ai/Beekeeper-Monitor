@@ -63,8 +63,7 @@ def prepare(source, target):
                                   "Vespula germanica", "Apis mellifera",
                                   "Bombus terrestris"],
                "warning": "Species and licenses are unverified. No bounding boxes or trained models produced."}
-    dest.with_suffix(".json").write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "
-", encoding="utf-8")
+    dest.with_suffix(".json").write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(json.dumps(summary, indent=2, ensure_ascii=False))
 
 def main():
