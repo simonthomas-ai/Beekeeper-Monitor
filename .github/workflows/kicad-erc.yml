@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - hardware/sensoradapter-erc-20261120
+      - fix/kicad-erc-footprint-table-20261120
       - main
     paths:
       - 'hardware/sensoradapter-v01/**'
@@ -30,6 +31,10 @@ jobs:
       - name: ERC ausfuehren
         run: |
           mkdir -p build/kicad
+          cd hardware/sensoradapter-v01
+          mkdir -p "$HOME/.config/kicad/9.0"
+          printf '(fp_lib_table\n  (version 7)\n  (lib (name "Connector_PinHeader_2.54mm")(type "KiCad")(uri "%s/Connector_PinHeader_2.54mm.pretty")(options "")(descr "VespaGuard project footprint"))\n)\n' "$PWD" > "$HOME/.config/kicad/9.0/fp-lib-table"
+          cd ../..
           kicad-cli sch erc --exit-code-violations --output build/kicad/erc-report.txt hardware/sensoradapter-v01/sensoradapter-v01.kicad_sch
       - name: ERC-Bericht speichern
         if: always()
