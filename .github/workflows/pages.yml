@@ -40,6 +40,8 @@ jobs:
             mkdir -p _site/review
             cp review/{velutina,crabro,apis,bombus,vespula}.html _site/review/
             if [ -f review/all.html ]; then cp review/all.html _site/review/; fi
+            # Local-only human photo review interface (no review data uploaded).
+            if [ -f review/photos.html ]; then cp review/photos.html _site/review/; fi
           fi
           # Fail closed rather than silently publishing a missing review link.
           test -s _site/review/all.html
