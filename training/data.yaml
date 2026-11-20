@@ -1,13 +1,15 @@
-# Each class needs real, manually verified images and bounding-box labels.
-# Images and labels are NOT included; no fabricated training samples.
+# Dedicated insect-camera detector for the Asian hornet monitoring workflow.
+# Every class requires genuine, per-image licensed, human-verified training data.
+# No images, labels or trained weights are included in this repository.
 path: datasets/beekeeper
 train: images/train
 val: images/val
 test: images/test
 names:
   0: vespa_velutina
-  1: varroa_destructor
-  2: drone_brood
-  3: pollen_bearing_bee
-  4: bee_swarm
-  5: queen_bee
+  1: vespa_crabro
+  2: other_vespidae
+  3: apis_mellifera
+  4: bombus_spp
+  5: syrphidae
+  6: other_insect
