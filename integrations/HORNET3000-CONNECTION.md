@@ -24,7 +24,7 @@ export VESPAGUARD_INGEST_DB="$HOME/.local/share/beekeeper-monitor/events.sqlite3
 python -m integrations.local_ingest
 ```
 
-The default bind address is `127.0.0.1:8765`. Do not expose the plain-HTTP listener to the public internet.
+The default bind address is `127.0.0.1:8765`. Open `http://127.0.0.1:8765/` in the same browser to use the local PWA and its authenticated station-event panel. The token is entered per session and is not persisted. Do not expose the plain-HTTP listener to the public internet.
 
 ## Bridge setup
 
@@ -45,10 +45,10 @@ The bridge currently polls the most recent 100 source events and persists a boun
 - The receiver has bounded request workers, socket timeouts, size/content-type checks and an in-memory per-IP rate limit.
 - SQLite event rows contain metadata only. POSIX permissions are restricted to owner read/write; configure NTFS ACLs on Windows.
 - Database encryption at rest is not implemented. Use full-disk or encrypted-volume protection.
-- The API can list and delete metadata events, but there is not yet a PWA page that renders this server-side event feed. Browser IndexedDB and server-side SQLite are separate stores.
+- The PWA has a local station-event panel that reads and deletes server-side metadata events through the same-origin localhost API. Browser IndexedDB and server-side SQLite remain separate stores.
 - Retention of exports, backups, reverse-proxy logs and source-side events requires a separate policy.
 - This design does not establish GDPR compliance.
 
 ## Acceptance boundary
 
-The receiver tests cover valid transport, authentication failures, input validation, durable storage, duplicate insertion and authenticated retrieval/deletion. A live installation with the actual Hornet3000 API and hardware is still required. The source API polling limit, end-to-end PWA display, backup/restore, encrypted storage and deployment-specific privacy review remain release gates.
+The receiver tests cover valid transport, authentication failures, input validation, durable storage, duplicate insertion, authenticated retrieval/deletion, local PWA serving and denial of private source paths. A live installation with the actual Hornet3000 API and hardware is still required. The source API polling limit, bridge lossless catch-up, backup/restore, encrypted storage and deployment-specific privacy review remain release gates.
