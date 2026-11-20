@@ -38,7 +38,7 @@ jobs:
       - name: Stage public PWA files only
         run: |
           mkdir -p _site
-          cp index.html style.css app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/
+          cp index.html datenschutz.html impressum.html style.css app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/
           # Wissenschaftliche Quellen und deutschsprachige Wissensseite veroeffentlichen.
           mkdir -p _site/wissen
           cp wissen/wissenschaft-hornissen-bienen.html _site/wissen/
@@ -54,6 +54,8 @@ jobs:
           # Fail closed rather than silently publishing a missing review link.
           test -s _site/review/all.html
           grep -q "vespaguard-unverified-mobile-review-v1" _site/review/all.html
+          test -s _site/datenschutz.html
+          test -s _site/impressum.html
           touch _site/.nojekyll
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
