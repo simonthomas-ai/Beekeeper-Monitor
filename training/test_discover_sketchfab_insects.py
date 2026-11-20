@@ -1,4 +1,5 @@
 import unittest
+import urllib.error
 from training.discover_sketchfab_insects import discover, normalize, verified_license_slug, TERMS
 
 
@@ -71,6 +72,35 @@ class SketchfabDiscoveryTests(unittest.TestCase):
         rows, errors = discover(fetch)
         self.assertEqual(rows, [])
         self.assertEqual(errors, [])
+
+    def test_license_lookup_diagnostics_are_aggregate_only(self):
+        item = {"uid": "abcdef1234567890", "license": {"uid": "secretLicenseId"},
+                "isDownloadable": True}
+        def fetch(url):
+            if "/v3/licences/" in url:
+                raise urllib.error.HTTPError(url, 404, "Not Found", None, None)
+            return {"results": [item]}
+        diagnostics = {}
+        rows, errors = discover(fetch, diagnostics)
+        self.assertEqual(rows, [])
+        self.assertEqual(errors, [])
+        self.assertEqual(diagnostics["license_lookup_outcomes"]["http_404"], 1)
+        self.assertEqual(diagnostics["license_detail_requests"], 1)
+        self.assertNotIn("secretLicenseId", str(diagnostics))
+
+    def test_license_lookup_diagnostics_record_response_shape(self):
+        item = {"uid": "abcdef1234567890", "license": {"uid": "other"},
+                "isDownloadable": True}
+        def fetch(url):
+            if "/v3/licences/" in url:
+                return {"uid": "noncommercial", "label": "Some label"}
+            return {"results": [item]}
+        diagnostics = {}
+        rows, errors = discover(fetch, diagnostics)
+        self.assertEqual(rows, [])
+        self.assertEqual(errors, [])
+        self.assertEqual(diagnostics["license_lookup_outcomes"]["field_uid_str"], 1)
+        self.assertEqual(diagnostics["license_lookup_outcomes"]["unverified_detail"], 1)
 
     def test_upstream_failure_is_not_zero_candidates_claim(self):
         rows, errors = discover(lambda url: (_ for _ in ()).throw(OSError("offline")))
