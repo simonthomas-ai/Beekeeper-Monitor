@@ -1,6 +1,12 @@
 name: Open 3D insect metadata discovery
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'training/discover_sketchfab_insects.py'
+      - 'training/test_discover_sketchfab_insects.py'
+      - '.github/workflows/open-3d-metadata.yml'
   pull_request:
     paths:
       - 'training/discover_sketchfab_insects.py'
@@ -20,7 +26,7 @@ jobs:
       - name: Test fail-closed metadata and licensing filters
         run: python -m unittest training.test_discover_sketchfab_insects -v
       - name: Query public metadata only
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         run: python training/discover_sketchfab_insects.py
       - name: Upload unverified metadata report
         if: always() && github.event_name == 'workflow_dispatch'
