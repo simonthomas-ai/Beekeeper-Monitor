@@ -218,7 +218,7 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
     def _post_source_event(self, index):
         # Use the actual BeeKeeper local camera contract and authenticated API client.
         observed_at = self.datetime(2026, 11, 20, 8, 0, tzinfo=self.timezone.utc)
-        event = self.make_source_event(
+        event = self.__class__.make_source_event(
             station_id="integration-station-north",
             detection=self.Detection(
                 "Vespa velutina", 0.87, prey_detected=(index % 2 == 0)
