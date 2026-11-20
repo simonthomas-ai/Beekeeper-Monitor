@@ -81,13 +81,18 @@ class LocalIngestTests(unittest.TestCase):
         data["payload"]["training_approved"] = True
         self.assertEqual(self.send(data=json.dumps(data)), 400)
 
-    def test_timezone_offset_is_rejected_until_timestamp_is_normalized_to_utc(self):
+    def test_explicit_timezone_offset_is_accepted_but_naive_timestamp_is_rejected(self):
         event = HiveEvent(
             "hive_telemetry", "sensor-1", "2026-11-20T10:00:00+01:00",
             {"temperature_c": 21.5, "humidity_pct": 45},
         )
+        self.assertIsNone(event.validate())
+        naive = HiveEvent(
+            "hive_telemetry", "sensor-1", "2026-11-20T10:00:00",
+            {"temperature_c": 21.5, "humidity_pct": 45},
+        )
         with self.assertRaises(ValueError):
-            event.validate()
+            naive.validate()
 
     def test_duplicate_authorization_headers_are_rejected(self):
         raw = (
