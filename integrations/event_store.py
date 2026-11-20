@@ -38,8 +38,17 @@ class SQLiteEventStore:
         try:
             db.execute("PRAGMA busy_timeout=5000")
             db.execute("PRAGMA foreign_keys=ON")
+            db.execute("PRAGMA synchronous=FULL")
+            db.execute("PRAGMA secure_delete=ON")
             yield db
             db.commit()
+            for suffix in ("", "-wal", "-shm"):
+                try:
+                    os.chmod(self.path + suffix, 0o600)
+                except OSError:
+                    # On Windows, apply equivalent NTFS ACLs to the service
+                    # account and the database directory during installation.
+                    pass
         except Exception:
             db.rollback()
             raise
