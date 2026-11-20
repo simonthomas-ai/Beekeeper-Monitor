@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train one experimental six-class YOLO baseline on licensed, verified images.
+"""Train one experimental seven-class Vespa-focused YOLO baseline on licensed, verified images.
 Fails closed if per-image provenance, splits, annotations or rights metadata are absent.
 """
 import argparse
@@ -10,7 +10,7 @@ from pathlib import Path
 import yaml
 from provenance import validate_provenance
 
-CLASSES=['vespa_velutina','varroa_destructor','drone_brood','pollen_bearing_bee','bee_swarm','queen_bee']
+CLASSES=['vespa_velutina','vespa_crabro','other_vespidae','apis_mellifera','bombus_spp','syrphidae','other_insect']
 SPLITS=('train','val','test')
 IMAGE_SUFFIXES={'.jpg','.jpeg','.png','.webp'}
 def validate(root):
@@ -19,7 +19,7 @@ def validate(root):
     base=(root/config['path']).resolve()
     if not base.is_relative_to(root):
         raise ValueError('Dataset path must remain inside repository')
-    if [config['names'][i] for i in range(6)]!=CLASSES:
+    if [config['names'][i] for i in range(len(CLASSES))]!=CLASSES:
         raise ValueError('Class order mismatch')
     provenance_report = validate_provenance(base)
     report={'provenance': provenance_report}
@@ -57,7 +57,7 @@ def validate(root):
                 except (ValueError, OverflowError) as exc:
                     raise ValueError(f'Invalid class/box in {label}') from exc
                 if (
-                    cls not in range(6)
+                    cls not in range(len(CLASSES))
                     or any(not 0 <= value <= 1 for value in coords)
                     or coords[2] <= 0 or coords[3] <= 0
                     or coords[0] - coords[2] / 2 < 0
@@ -115,7 +115,7 @@ def main():
     if ultralytics.__version__ != '8.4.215':
         parser.error('This export path is tested against ultralytics==8.4.215; install the pinned training requirements first.')
     from ultralytics import YOLO
-    # A single multi-class detector; it is NOT six independent validated models.
+    # One Vespa-focused multi-class detector; it is not seven independent validated models.
     from tempfile import TemporaryDirectory
     with TemporaryDirectory() as temp:
         cfg=yaml.safe_load((root/'training/data.yaml').read_text(encoding='utf-8'))
@@ -123,7 +123,7 @@ def main():
         resolved=Path(temp)/'data.yaml'
         resolved.write_text(yaml.safe_dump(cfg),encoding='utf-8')
         model=YOLO(str(pretrained_path))
-        results=model.train(data=str(resolved),epochs=args.epochs,imgsz=args.imgsz,device=args.device,project=str(root/'runs'),name='six-class-detector',exist_ok=False)
+        results=model.train(data=str(resolved),epochs=args.epochs,imgsz=args.imgsz,device=args.device,project=str(root/'runs'),name='vespa-seven-class-detector',exist_ok=False)
         run_dir=Path(model.trainer.save_dir)
         best_weights=run_dir/'weights'/'best.pt'
         if not best_weights.is_file():
@@ -148,8 +148,8 @@ def main():
             'model_sha256': digest,
             'model_version': f'{pretrained_path.name};base-{pretrained_digest[:12]};ultralytics-{ultralytics.__version__}',
             'model_source_url': args.pretrained_model_source_url,
-            'model_license': 'AGPL-3.0-or-later',
-            'license_review_status': 'approved',
+            'model_license': 'NOASSERTION',
+            'license_review_status': 'not-reviewed',
             'inference_status': 'experimental',
             'input': {
                 'name': 'images', 'width': args.imgsz, 'height': args.imgsz,
@@ -172,8 +172,8 @@ def main():
             'onnx_sha256':digest,
             'pretrained_checkpoint_sha256':pretrained_digest,
             'pretrained_checkpoint_source_url':args.pretrained_model_source_url,
-            'model_license':'AGPL-3.0-or-later',
-            'model_license_review':'operator_explicitly_acknowledged_via_accept_agpl_flag',
+            'model_license':'NOASSERTION',
+            'model_license_review':'not-reviewed; AGPL trainer acknowledgement does not approve checkpoint, dataset or output model rights',
             'confidence_thresholds':'experimental_not_calibrated',
         }
         (model_dir/'training-evidence.json').write_text(json.dumps(evidence,indent=2)+'\n',encoding='utf-8')
