@@ -112,3 +112,23 @@ The model architecture is not selected on COCO leaderboard scores. Once a legall
 - Add RF-DETR Nano and YOLOX only as **candidate benchmarks**; do not silently replace the trainer or download weights.
 - Do not choose a project-wide licence without explicit owner approval.
 - No camera model accuracy, legal clearance, hardware compatibility or production readiness is claimed.
+
+
+## Automated training gate (effective 2026-11-20)
+
+The repository's current automated image importer, image-manifest audit and
+human-reviewed annotation validator share a deliberately narrower allowlist:
+**CC0-1.0 and CC-BY-4.0 only**. Both the media item and the linked occurrence
+record must explicitly declare an accepted licence before the GBIF metadata
+discovery tool emits a candidate. CC BY-SA, CC BY-NC, CC BY-NC-SA and unknown
+or missing licences remain outside the automated training path, even where a
+particular nonprofit use might legally be possible after separate review.
+This is an operational compatibility rule, not a statement that every other
+Creative Commons licence is inherently unusable. Nonprofit status alone does
+not clear non-commercial conditions. Any future allowlist change requires a
+licence compatibility review, importer/auditor/validator tests and model
+redistribution review.
+
+The GBIF discovery stage only records candidate metadata. It does not download
+photos, prove image content or approve taxonomy; a human still needs to verify
+the image, species, source uploader's rights, attribution and annotation.
