@@ -196,3 +196,19 @@ EASIN is managed by the European Commission's Joint Research Centre and supports
 - Reference material: specimen scans and educational media, not automatically representative of deployed camera footage.
 - NC or unclear rights: quarantine pending a specific rights/use decision; never relabel as free because nonprofit.
 - Sensitive geodata: restrict exact apiary/nest/station coordinates; do not publish imported observation coordinates as active targets without validation.
+
+
+### VelutinaFinder — German occurrence aggregation, not an image-training licence
+
+- Data sources and per-source licence notes: https://velutinafinder.aws-xdib.de/datenquellen.html
+- Legal / operator information: https://velutinafinder.aws-xdib.de/impressum.html
+- Privacy statement: https://velutinafinder.aws-xdib.de/datenschutz.html
+- Review date: 20 November 2026; the provider's source page states a data snapshot dated 19 October 2026.
+
+The provider reports 67,709 sightings across four categories: 52 own reports, 26,150 GBIF occurrences (described as mostly CC0/CC BY), 6,684 iNaturalist occurrences (mostly CC BY-NC), and 34,823 Observation.org records (CC BY-NC 4.0). The portal is free to access. Its own legal page says the analyses are freely usable with attribution, while the portal-created content remains protected by copyright. The provider also says the map's imported external records are displayed with their source/original record and source licence.
+
+Potential use for BeeKeeper: compare broad regional occurrence trends and source coverage; use it as a discovery index to find underlying GBIF occurrence records that can be checked and cited individually. It is not an authorised bulk export of the portal database, an image dataset, or permission to reuse the portal's own user-submitted reports, photos, user tracks or reviewer decisions. Do not scrape the portal or treat its aggregation as a separate licence grant.
+
+**Privacy boundary:** the provider's privacy notice describes optional GPS reports, uploaded photos, route recordings and reviewer accounts. These are personal or sensitive operational records under the provider's own system. Do not copy them into BeeKeeper. For any eventual occurrence-only use, fetch and retain only the underlying public records allowed by their individual source terms, preserve attribution and original record links, and avoid redistributing precise private apiary/nest coordinates.
+
+This source is also an example of a useful community-facing detection workflow, but its model, verification policy, storage and infrastructure are separate works and are not imported or adopted here.
