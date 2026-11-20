@@ -42,8 +42,23 @@ jobs:
                   summary.write(f"## CC0 3D inventory\n\n**Status:** missing\n\n{message}\n")
               raise SystemExit(1)
 
-          status = json.loads(path.read_text(encoding="utf-8"))
-          state = status.get("status", "unknown")
+          # Fail clearly on concatenated/truncated JSON or an unexpected schema.
+          raw = path.read_text(encoding="utf-8-sig")
+          try:
+              status = json.loads(raw)
+          except json.JSONDecodeError as exc:
+              message = f"Invalid inventory status JSON: {exc.msg} at line {exc.lineno}, column {exc.colno}."
+              print(f"::error::{message}")
+              with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+                  summary.write(f"## CC0 3D inventory\n\n**Status:** invalid JSON\n\n{message}\n")
+              raise SystemExit(1)
+          if not isinstance(status, dict) or status.get("status") not in ("complete", "upstream_unavailable"):
+              print("::error::Inventory status must be one JSON object with a recognized status.")
+              raise SystemExit(1)
+          if status.get("training_approvals") != 0:
+              print("::error::Discovery must never approve training data.")
+              raise SystemExit(1)
+          state = status["status"]
           if state == "complete":
               message = (
                   f"Scanned {status.get('rows_scanned')} dataset rows; "
