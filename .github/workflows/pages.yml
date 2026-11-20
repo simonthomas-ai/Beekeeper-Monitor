@@ -70,5 +70,9 @@ jobs:
           done
           echo "::error::Uploaded github-pages artifact did not become visible within 60 seconds."
           exit 1
+      # GitHub's Actions artifacts API can list a newly uploaded artifact before
+      # the deploy-pages artifact service can retrieve its metadata.
+      - name: Allow Pages artifact metadata to propagate
+        run: sleep 45
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
