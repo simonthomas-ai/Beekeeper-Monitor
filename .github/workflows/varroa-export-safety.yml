@@ -18,6 +18,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Test hash and review gates without executing third-party models
         run: python3 -m unittest discover -s tests -p test_export_varroa_onnx.py -v
