@@ -14,6 +14,8 @@ test.afterAll(()=>fs.rmSync(dir,{recursive:true,force:true}));
 test.beforeEach(async({page})=>{
  await page.route('https://static.inaturalist.org/**',route=>route.fulfill({status:200,contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="gray"/></svg>'}));
  await page.goto('/');
+ // A review test must never inherit decisions from a previous test on this origin.
+ await page.evaluate(() => localStorage.removeItem('vespaguard-review-v1-Vespa velutina'));
  await page.setContent(html);
 });
 test('mobile gallery: review persists when switching images',async({page})=>{
