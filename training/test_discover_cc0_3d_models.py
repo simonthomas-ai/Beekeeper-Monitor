@@ -2,8 +2,10 @@ import io
 import json
 import unittest
 import urllib.error
+import tempfile
+from pathlib import Path
 
-from discover_cc0_3d_models import candidates, fetch_all
+from discover_cc0_3d_models import candidates, fetch_all, _write_status
 
 
 class CC0ModelDiscoveryTests(unittest.TestCase):
@@ -88,6 +90,13 @@ class CC0ModelDiscoveryTests(unittest.TestCase):
             fetch_all(urlopen=opener, sleep_fn=delays.append)
         self.assertEqual(len(calls), 1)
         self.assertEqual(delays, [])
+
+    def test_status_artifact_is_valid_json(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "status.json"
+            expected = {"status": "upstream_unavailable", "error_type": "HTTPError"}
+            _write_status(path, expected)
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8")), expected)
 
 
 if __name__ == "__main__":
