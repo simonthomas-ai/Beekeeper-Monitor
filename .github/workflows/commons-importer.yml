@@ -27,6 +27,7 @@ jobs:
           path = Path("/tmp/vespaguard-commons-check/velutina/manifest.json")
           data = json.loads(path.read_text())
           assert data["downloaded"] is False
+          assert len(data["items"]) > 0, "Commons returned zero usable candidates"
           assert all(not item["human_approved_for_training"] for item in data["items"])
           print("Commons API reachable; accepted candidate count:", len(data["items"]))
           PY
