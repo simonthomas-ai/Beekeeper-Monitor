@@ -68,7 +68,7 @@ class HiveEvent:
             confidence = self.payload["confidence"]
             if (
                 not isinstance(label, str)
-                or not 1 <= len(label) <= 64
+                or not 1 <= len(label) <= 128
                 or any(ord(char) < 32 for char in label)
             ):
                 raise ValueError("Invalid detection label")
