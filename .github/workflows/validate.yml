@@ -23,6 +23,7 @@ jobs:
           python scripts/check_sources.py
           python scripts/test_static.py
           node --check app.js
+          node --check integrations-ui.js
           node --check sw.js
       - name: Test authenticated ingestion and durable event storage
         run: python -m unittest discover -s integrations -p 'test_*.py' -v
