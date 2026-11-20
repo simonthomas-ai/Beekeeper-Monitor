@@ -247,7 +247,7 @@ def make_handler(
                     if budget <= 0:
                         raise TimeoutError("body deadline exceeded")
                     self.connection.settimeout(min(READ_TIMEOUT_SECONDS, budget))
-                    chunk = self.rfile.read(min(remaining, 8192))
+                    chunk = self.rfile.read1(min(remaining, 8192))
                     if not chunk:
                         raise ValueError("incomplete_body")
                     chunks.extend(chunk)
