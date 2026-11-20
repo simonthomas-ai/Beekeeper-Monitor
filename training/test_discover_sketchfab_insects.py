@@ -111,7 +111,7 @@ class SketchfabDiscoveryTests(unittest.TestCase):
             if "/v3/licences/" in url:
                 raise urllib.error.HTTPError(url, 404, "Not Found", None, None)
             if "/v3/models/" in url:
-                return {"license": {"uid": "cc0", "label": "CC0"}}
+                return {"license": {"slug": "cc0", "label": "CC0"}}
             return {"results": [item, item]}
         diagnostics = {}
         rows, errors = discover(fetch, diagnostics)
