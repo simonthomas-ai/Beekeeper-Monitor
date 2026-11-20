@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import yaml
+from provenance import validate_provenance
 
 CLASSES=['vespa_velutina','varroa_destructor','drone_brood','pollen_bearing_bee','bee_swarm','queen_bee']
 SPLITS=('train','val','test')
@@ -19,7 +20,8 @@ def validate(root):
         raise ValueError('Dataset path must remain inside repository')
     if [config['names'][i] for i in range(6)]!=CLASSES:
         raise ValueError('Class order mismatch')
-    report={}
+    provenance_report = validate_provenance(base)
+    report={'provenance': provenance_report}
     for split in SPLITS:
         image_dir=base/'images'/split
         label_dir=base/'labels'/split
@@ -38,9 +40,20 @@ def validate(root):
                 parts=line.split()
                 if len(parts)!=5:
                     raise ValueError(f'Invalid YOLO annotation in {label}')
-                cls=int(parts[0])
-                coords=list(map(float,parts[1:]))
-                if cls not in range(6) or any(not 0<=v<=1 for v in coords) or coords[2]<=0 or coords[3]<=0:
+                try:
+                    cls=int(parts[0])
+                    coords=list(map(float,parts[1:]))
+                except (ValueError, OverflowError) as exc:
+                    raise ValueError(f'Invalid class/box in {label}') from exc
+                if (
+                    cls not in range(6)
+                    or any(not 0 <= value <= 1 for value in coords)
+                    or coords[2] <= 0 or coords[3] <= 0
+                    or coords[0] - coords[2] / 2 < 0
+                    or coords[1] - coords[3] / 2 < 0
+                    or coords[0] + coords[2] / 2 > 1
+                    or coords[1] + coords[3] / 2 > 1
+                ):
                     raise ValueError(f'Invalid class/box in {label}')
                 counts[CLASSES[cls]]+=1
         report[split]={'images':len(images),'objects':counts}
@@ -57,12 +70,15 @@ def main():
     parser.add_argument('--imgsz',type=int,default=640)
     parser.add_argument('--device',default='cpu')
     parser.add_argument('--validate-only',action='store_true')
+    parser.add_argument('--accept-agpl',action='store_true', help='Explicitly accept AGPL-3.0 obligations for the current Ultralytics training path')
     args=parser.parse_args()
     root=Path(__file__).resolve().parents[1]
     report=validate(root)
     print(json.dumps(report,indent=2))
     if args.validate_only:
         return
+    if not args.accept_agpl:
+        parser.error('The configured Ultralytics trainer has AGPL-3.0 obligations; pass --accept-agpl only after license review, or use a separately reviewed trainer.')
     from ultralytics import YOLO
     # A single multi-class detector; it is NOT six independent validated models.
     from tempfile import TemporaryDirectory
