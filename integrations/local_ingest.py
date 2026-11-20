@@ -121,7 +121,8 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
         def end_headers(self):
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "no-referrer")
-            script_policy = "'self' 'unsafe-inline'" if urlsplit(self.path).path.startswith("/review/") else "'self'"
+            request_path = urlsplit(getattr(self, "path", "")).path
+            script_policy = "'self' 'unsafe-inline'" if request_path.startswith("/review/") else "'self'"
             self.send_header("Content-Security-Policy",
                              "default-src 'self'; script-src " + script_policy + "; object-src 'none'; "
                              "base-uri 'self'; frame-ancestors 'none'; "
