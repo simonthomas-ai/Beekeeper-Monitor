@@ -1,42 +1,54 @@
-# Hornet3000 / BEEKEEPER3000 connection
+# Hornet3000 / BeeKeeper3000 connection
 
-This monitor already contains a small authenticated local ingestion endpoint in `integrations/local_ingest.py`. The companion adapter is maintained in [simonthomas-ai/BeeKeeper3000](https://github.com/simonthomas-ai/BeeKeeper3000/tree/main/monitor-bridge).
+The companion adapter is maintained in [simonthomas-ai/BeeKeeper3000](https://github.com/simonthomas-ai/BeeKeeper3000/tree/main/monitor-bridge). The Monitor receiver accepts validated metadata over a dedicated local Bearer token.
 
-## What is connected
+## Data flow
 
-- Source: Hornet3000 Wächter `GET /api/events?limit=100`, authenticated by `X-API-Key`.
-- Adapter: Node.js 20+ service in the BEEKEEPER3000 repository.
-- Receiver: this repository's `POST /api/v1/events`, authenticated by a separate Bearer token.
-- Data sent: event ID, timestamp, station/device ID, unverified species candidate, confidence, source status and prey flag.
-- Explicitly excluded: image files, audio, GPS coordinates, camera credentials and source API keys.
+1. Hornet3000 serves `GET /api/events?limit=100`, authenticated with its own `X-API-Key`.
+2. The BeeKeeper3000 Node.js bridge reads source events and forwards metadata only.
+3. The Monitor receiver accepts `POST /api/v1/events` with a separate ingestion token.
+4. The receiver validates the strict event contract and commits the event to local SQLite before returning HTTP 202.
+5. The local API can list events and explicitly delete one event by its SHA-256 ID.
 
-Species labels arrive prefixed with `unverified_candidate:`; do not treat model output as verified species identity.
+Transferred fields include device/station ID, observation timestamp, unverified candidate label, confidence, source status and prey flag. Image, audio, GPS coordinates, camera credentials and source API keys are excluded. Species labels are marked `unverified_candidate:`; model output is not expert verification.
 
-## Start the receiver locally
+## Receiver setup
 
-From the Beekeeper-Monitor checkout, use a dedicated random token (at least 24 characters):
+See [LOCAL-INGESTION.md](./LOCAL-INGESTION.md) for requirements, secure token generation, database location, retention, local API routes and limitations.
 
-```bash
-export VESPAGUARD_INGEST_TOKEN='GENERATE_A_UNIQUE_RANDOM_SECRET'
+Start from the Monitor repository root:
+
+```sh
+export VESPAGUARD_INGEST_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+export VESPAGUARD_INGEST_DB="$HOME/.local/share/beekeeper-monitor/events.sqlite3"
 python -m integrations.local_ingest
 ```
 
-It listens on `127.0.0.1:8765`. It validates and logs event metadata; it does not currently write events into the PWA IndexedDB or render them in the browser dashboard.
+The default bind address is `127.0.0.1:8765`. Do not expose the plain-HTTP listener to the public internet.
 
-## Start the adapter
+## Bridge setup
 
-Configure the variables in `monitor-bridge/.env.example` in the BEEKEEPER3000 checkout:
+Configure `monitor-bridge/.env.example` in BeeKeeper3000:
 
 - `HORNET3000_URL` — default `http://127.0.0.1:8787`
-- `HORNET3000_API_KEY` — existing Hornet3000 API key
+- `HORNET3000_API_KEY` — distinct Hornet3000 API key
 - `BEEKEEPER_MONITOR_INGEST_URL` — default `http://127.0.0.1:8765/api/v1/events`
-- `BEEKEEPER_MONITOR_INGEST_TOKEN` — same dedicated receiver token
+- `BEEKEEPER_MONITOR_INGEST_TOKEN` — the receiver token above
 - `POLL_INTERVAL_MS` — default 10000
 
-Then run `npm test` and `npm start` in `monitor-bridge/`.
+The bridge currently polls the most recent 100 source events and persists a bounded set of forwarded IDs. This does **not** guarantee lossless catch-up if more than 100 events arrive between polls; the source API needs a cursor/sequence contract before the bridge can guarantee complete delivery. Track this in [BeeKeeper3000 issue #7](https://github.com/simonthomas-ai/BeeKeeper3000/issues/7).
 
-## Deployment boundary
+## Security and privacy boundary
 
-This documents a compatible local metadata transport. A successful end-to-end installation still requires both services running on the same host/private network, correct local secrets, and a live acceptance test. For remote hosts use HTTPS plus a private VPN/reverse proxy. Never expose either plain HTTP listener to the public internet.
+- Generate a unique token for every installation. Never reuse the Hornet3000 API key.
+- Keep the receiver bound to loopback. Remote deployment requires an authenticated VPN and a reviewed HTTPS reverse proxy.
+- The receiver has bounded request workers, socket timeouts, size/content-type checks and an in-memory per-IP rate limit.
+- SQLite event rows contain metadata only. POSIX permissions are restricted to owner read/write; configure NTFS ACLs on Windows.
+- Database encryption at rest is not implemented. Use full-disk or encrypted-volume protection.
+- The API can list and delete metadata events, but there is not yet a PWA page that renders this server-side event feed. Browser IndexedDB and server-side SQLite are separate stores.
+- Retention of exports, backups, reverse-proxy logs and source-side events requires a separate policy.
+- This design does not establish GDPR compliance.
 
-The monitor's PWA currently has no server-event persistence/display route. That must be implemented and tested separately before describing detections as visible in the monitor dashboard.
+## Acceptance boundary
+
+The receiver tests cover valid transport, authentication failures, input validation, durable storage, duplicate insertion and authenticated retrieval/deletion. A live installation with the actual Hornet3000 API and hardware is still required. The source API polling limit, end-to-end PWA display, backup/restore, encrypted storage and deployment-specific privacy review remain release gates.
