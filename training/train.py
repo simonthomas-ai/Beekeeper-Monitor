@@ -138,7 +138,7 @@ def main():
             'classes': model_classes,
         }
         manifest_path=model_dir/'model-manifest.json'
-        manifest_path.write_text(json.dumps(manifest,indent=2)+'\\n',encoding='utf-8')
+        manifest_path.write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
         metrics_dict=getattr(validation,'results_dict',{}) or {}
         evidence={
             'status':'internal_test_split_only_not_independent_field_validation',
@@ -149,7 +149,7 @@ def main():
             'model_license_review':'operator_explicitly_acknowledged_via_accept_agpl_flag',
             'confidence_thresholds':'experimental_not_calibrated',
         }
-        (model_dir/'training-evidence.json').write_text(json.dumps(evidence,indent=2)+'\\n',encoding='utf-8')
+        (model_dir/'training-evidence.json').write_text(json.dumps(evidence,indent=2)+'\n',encoding='utf-8')
     print('Training and ONNX export completed. Model remains EXPERIMENTAL and all detections remain unverified.')
     print(f'Model artifact: {model_target}')
     print(f'Manifest: {manifest_path}')
