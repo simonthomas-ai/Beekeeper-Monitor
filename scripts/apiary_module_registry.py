@@ -32,7 +32,8 @@ def validate_manifest(manifest: dict, *, weights_path: str | Path | None = None)
     p = Path(weights_path)
     if not p.is_file():
         raise ModuleNotReady("Model weights missing")
-    digest = hashlib.file_digest(p.open("rb"), "sha256").hexdigest()
+    with p.open("rb") as stream:
+        digest = hashlib.file_digest(stream, "sha256").hexdigest()
     if digest != expected:
         raise ModuleNotReady("Model weight digest mismatch")
     return {"id": manifest["id"], "status": "evidence_present_not_independently_verified"}
