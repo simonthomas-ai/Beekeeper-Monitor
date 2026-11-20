@@ -1,4 +1,4 @@
-name: Validate PWA
+name: Validate PWA and integration services
 on:
   push:
   pull_request:
@@ -8,8 +8,15 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Validate source catalog and PWA structure
         run: |
           python -m json.tool manifest.webmanifest >/dev/null
@@ -17,3 +24,9 @@ jobs:
           python scripts/test_static.py
           node --check app.js
           node --check sw.js
+      - name: Test authenticated ingestion and durable event storage
+        run: python -m unittest discover -s integrations -p 'test_*.py' -v
+      - name: Test bridge adapter
+        run: |
+          cd ../BeeKeeper3000/monitor-bridge
+          npm test
