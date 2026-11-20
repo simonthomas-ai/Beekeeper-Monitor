@@ -68,8 +68,8 @@ class SQLiteBackupRestoreTests(unittest.TestCase):
             backup_database(self.source, self.source)
 
     def test_corrupt_backup_is_rejected_and_not_repaired(self):
-        corrupt = self.backup_dir / "corrupt.sqlite3"
         self.backup_dir.mkdir(mode=0o700)
+        corrupt = self.backup_dir / "corrupt.sqlite3"
         corrupt.write_bytes(b"NOT SQLITE")
         with self.assertRaises(sqlite3.DatabaseError):
             verify_database(corrupt)
