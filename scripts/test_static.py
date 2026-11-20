@@ -11,7 +11,7 @@ sw=(root/"sw.js").read_text()
 manifest=json.loads((root/"manifest.webmanifest").read_text())
 catalog=json.loads((root/"sources/catalog.json").read_text())
 assert "<html lang=\"de\">" in html
-for path in ("app.js","live-media.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
+for path in ("app.js","integrations-ui.js","live-media.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
     assert (root/path).is_file(),path
 assert "capture=\"environment\"" in html
 assert "indexedDB.open" in app
@@ -25,11 +25,14 @@ assert "noch nicht validiert" in html
 assert 'id="import"' in html
 assert "validObservation" in app
 assert "async function remove(id)" in app
-assert "beekeeper-shell-v6" in sw
+assert "beekeeper-shell-v7" in sw
+assert "./integrations-ui.js" in sw
+assert 'id="station-events-form"' in html
+assert 'src="./integrations-ui.js"' in html
 assert "./live-media.js" in sw
 assert "SHELL.has(url.href)" in sw
 pages=(root/".github/workflows/pages.yml").read_text()
 assert "path: _site" in pages
-assert "cp index.html style.css app.js live-media.js sw.js manifest.webmanifest icon.svg _site/" in pages
+assert "cp index.html style.css app.js integrations-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/" in pages
 assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
 print("Static PWA and research catalog checks passed; real-device and AI tests remain outstanding.")

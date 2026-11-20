@@ -1,4 +1,4 @@
-name: Validate PWA
+name: Validate PWA and integration services
 on:
   push:
   pull_request:
@@ -8,12 +8,31 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Checkout companion bridge
+        uses: actions/checkout@v4
+        with:
+          repository: simonthomas-ai/BeeKeeper3000
+          path: BeeKeeper3000
       - name: Validate source catalog and PWA structure
         run: |
           python -m json.tool manifest.webmanifest >/dev/null
           python scripts/check_sources.py
           python scripts/test_static.py
           node --check app.js
+          node --check integrations-ui.js
           node --check sw.js
+      - name: Test authenticated ingestion, persistence and bridge end-to-end
+        env:
+          BEEKEEPER_BRIDGE_ENTRY: ${{ github.workspace }}/BeeKeeper3000/monitor-bridge/bridge.mjs
+        run: python -m unittest discover -s integrations -p 'test_*.py' -v
+      - name: Test bridge adapter
+        run: npm --prefix BeeKeeper3000/monitor-bridge test
