@@ -17,9 +17,14 @@ class SQLiteEventStore:
     """Durable, idempotent event sink with bounded retention."""
 
     def __init__(self, path: str, retention_days: int = 90, max_rows: int = 100_000):
-        if not path:
+        if not isinstance(path, str) or not path.strip():
             raise ValueError("A database path is required")
-        if not 1 <= retention_days <= 3650 or not 100 <= max_rows <= 2_000_000:
+        if (
+            type(retention_days) is not int
+            or not 1 <= retention_days <= 3650
+            or type(max_rows) is not int
+            or not 100 <= max_rows <= 2_000_000
+        ):
             raise ValueError("Invalid retention bounds")
         target = Path(path).expanduser().resolve()
         self.path = str(target)
@@ -55,6 +60,8 @@ class SQLiteEventStore:
             self._secure_files()
             db.execute("PRAGMA busy_timeout=5000")
             db.execute("PRAGMA foreign_keys=ON")
+            db.execute("PRAGMA synchronous=FULL")
+            db.execute("PRAGMA secure_delete=ON")
             yield db
             db.commit()
         except Exception:
@@ -87,23 +94,32 @@ class SQLiteEventStore:
         now = datetime.now(timezone.utc)
         cutoff = (now - timedelta(days=self.retention_days)).isoformat()
         with self._db() as db:
+            # Serialize duplicate detection, cleanup and capacity checks. Do not
+            # evict live deduplication records: on capacity, fail closed with 503.
+            db.execute("BEGIN IMMEDIATE")
+            existing = db.execute(
+                "SELECT 1 FROM events WHERE event_id = ?", (event_id,)
+            ).fetchone()
+            if existing is not None:
+                return False
+
+            db.execute("DELETE FROM events WHERE received_at < ?", (cutoff,))
+            count = int(db.execute("SELECT COUNT(*) FROM events").fetchone()[0])
+            if count >= self.max_rows:
+                raise RuntimeError(
+                    "Local event store is at capacity; no accepted event was overwritten"
+                )
+
             cursor = db.execute(
-                "INSERT OR IGNORE INTO events "
+                "INSERT INTO events "
                 "(event_id, kind, device_id, event_timestamp, received_at, event_json) "
                 "VALUES (?, ?, ?, ?, ?, ?)",
                 (event_id, event.kind, event.device_id, event.timestamp, now.isoformat(), event_json),
             )
-            db.execute("DELETE FROM events WHERE received_at < ?", (cutoff,))
-            db.execute("""
-                DELETE FROM events WHERE event_id IN (
-                    SELECT event_id FROM events ORDER BY received_at DESC
-                    LIMIT -1 OFFSET ?
-                )
-            """, (self.max_rows,))
             return cursor.rowcount == 1
 
     def list_events(self, limit: int = 100) -> list[dict]:
-        if not 1 <= limit <= 500:
+        if type(limit) is not int or not 1 <= limit <= 500:
             raise ValueError("limit must be between 1 and 500")
         with self._db() as db:
             rows = db.execute(

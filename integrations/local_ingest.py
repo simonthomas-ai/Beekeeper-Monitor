@@ -20,6 +20,7 @@ from integrations.event_store import SQLiteEventStore
 from pathlib import Path
 
 MAX_BODY = 32768
+BODY_DEADLINE_SECONDS = 10
 MAX_EXPORT_BYTES = 8 * 1024 * 1024
 READ_TIMEOUT_SECONDS = 5
 MAX_WORKERS = 16
@@ -69,8 +70,8 @@ class BoundedThreadingHTTPServer(ThreadingMixIn, HTTPServer):
 
 
 def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_LIMIT_WINDOW_SECONDS, web_root=None):
-    if not token or len(token) < 24:
-        raise ValueError("Set a random ingestion token of at least 24 characters")
+    if not isinstance(token, str) or len(token) < 24 or not token.isascii():
+        raise ValueError("Set an ASCII random ingestion token of at least 24 characters")
     if not callable(sink) or rate_limit < 1 or rate_window < 1:
         raise ValueError("Invalid sink or rate-limit configuration")
 
@@ -93,22 +94,35 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
 
         def translate_path(self, path):
             raw = unquote(urlsplit(path).path)
-            if "\\\\" in raw or "\x00" in raw:
+            if chr(92) in raw or chr(0) in raw:
                 return str(public_root / "__not_found__")
             parts = raw.split("/")
             if any(part in (".", "..") or part.startswith(".") for part in parts if part):
                 return str(public_root / "__not_found__")
             parts = [part for part in parts if part]
             if not parts:
-                return str(public_root / "index.html")
+                candidate = public_root / "index.html"
+                try:
+                    resolved = candidate.resolve()
+                    resolved.relative_to(public_root)
+                except (OSError, ValueError):
+                    return str(public_root / "__not_found__")
+                return str(resolved) if resolved.is_file() else str(public_root / "__not_found__")
             if len(parts) == 1 and parts[0] in public_files:
-                return str(public_root / parts[0])
+                candidate = public_root / parts[0]
+                try:
+                    resolved = candidate.resolve()
+                    resolved.relative_to(public_root)
+                except (OSError, ValueError):
+                    return str(public_root / "__not_found__")
+                return str(resolved) if resolved.is_file() else str(public_root / "__not_found__")
             if parts[0] not in public_dirs:
                 return str(public_root / "__not_found__")
             candidate = public_root.joinpath(*parts)
             try:
-                resolved = candidate.resolve()
                 allowed_base = (public_root / parts[0]).resolve()
+                allowed_base.relative_to(public_root)
+                resolved = candidate.resolve()
                 resolved.relative_to(allowed_base)
             except (OSError, ValueError):
                 return str(public_root / "__not_found__")
@@ -140,7 +154,10 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
             return
 
         def _json(self, status, body):
-            raw = json.dumps(body, separators=(",", ":")).encode("utf-8")
+            raw = json.dumps(body, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+            if len(raw) > MAX_EXPORT_BYTES:
+                status = 413
+                raw = b'{"error":"response_too_large"}'
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
             self.send_header("Cache-Control", "no-store")
@@ -155,8 +172,15 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
             self.close_connection = True
 
         def _authorized(self):
-            supplied = self.headers.get("Authorization", "")
-            return hmac.compare_digest(supplied, "Bearer " + token)
+            values = self.headers.get_all("Authorization", [])
+            if len(values) != 1:
+                return False
+            try:
+                supplied = values[0].encode("utf-8", errors="strict")
+            except UnicodeError:
+                return False
+            expected = ("Bearer " + token).encode("ascii")
+            return hmac.compare_digest(supplied, expected)
 
         def _rate_allowed(self):
             now = time.monotonic()
@@ -215,8 +239,13 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
             try:
                 chunks = bytearray()
                 remaining = length
+                deadline = time.monotonic() + BODY_DEADLINE_SECONDS
                 while remaining:
-                    chunk = self.rfile.read(min(remaining, 8192))
+                    budget = deadline - time.monotonic()
+                    if budget <= 0:
+                        raise TimeoutError("request body deadline exceeded")
+                    self.connection.settimeout(min(READ_TIMEOUT_SECONDS, budget))
+                    chunk = self.rfile.read1(min(remaining, 8192))
                     if not chunk:
                         raise ValueError("incomplete_body")
                     chunks.extend(chunk)
@@ -251,8 +280,11 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
                 query = parse_qs(parsed.query, strict_parsing=False)
                 if set(query) - {"limit"} or any(len(values) != 1 for values in query.values()):
                     raise ValueError("invalid query")
-                default_limit = "500" if parsed.path.endswith("/export") else "100"
+                is_export = parsed.path.endswith("/export")
+                default_limit = "500" if is_export else "100"
                 limit = int(query.get("limit", [default_limit])[0])
+                if not 1 <= limit <= (500 if is_export else 100):
+                    raise ValueError("requested page size is outside the endpoint limit")
                 events = sink.list_events(limit)
                 if parsed.path.endswith("/export"):
                     document = {
@@ -267,6 +299,7 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
                         return
                     self.send_response(200)
                     self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("X-Content-Type-Options", "nosniff")
                     self.send_header("Content-Disposition", 'attachment; filename="beekeeper-station-events.json"')
                     self.send_header("Cache-Control", "no-store")
                     self.send_header("Content-Length", str(len(raw)))
@@ -311,9 +344,9 @@ def make_handler(token, sink, rate_limit=RATE_LIMIT_REQUESTS, rate_window=RATE_L
     return Handler
 
 
-def make_server(token, sink, host="127.0.0.1", port=8765, max_workers=MAX_WORKERS):
+def make_server(token, sink, host="127.0.0.1", port=8765, max_workers=MAX_WORKERS, web_root=None):
     return BoundedThreadingHTTPServer(
-        (host, port), make_handler(token, sink), max_workers=max_workers
+        (host, port), make_handler(token, sink, web_root=web_root), max_workers=max_workers
     )
 
 
