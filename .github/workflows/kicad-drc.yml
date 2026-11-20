@@ -60,13 +60,8 @@ jobs:
           test -f fp-lib-table
           echo 'Verwendete Projekt-Footprintbibliothek:'
           cat fp-lib-table
-          export KICAD9_FOOTPRINT_DIR=/usr/share/kicad/footprints
-          test -d "$KICAD9_FOOTPRINT_DIR/Connector_PinHeader_2.54mm.pretty"
-          # KiCad CLI ohne GUI-Erststart benoetigt eine globale Footprinttabelle.
-          # Das lokale Projekt bleibt die einzige gepflegte Quelle.
-          mkdir -p "$HOME/.config/kicad/9.0"
-          cp fp-lib-table "$HOME/.config/kicad/9.0/fp-lib-table"
-          echo "Footprintbibliothek: $KICAD9_FOOTPRINT_DIR"
+          test -f Connector_PinHeader_2.54mm.pretty/PinHeader_1x04_P2.54mm_Vertical.kicad_mod
+          echo "KiCad nutzt projektlokale Footprintbibliothek (KIPRJMOD)."
           echo "DRC-Pruefung fuer Git-Commit: $(git rev-parse --short HEAD)"
           kicad-cli pcb drc \
             --output "$GITHUB_WORKSPACE/build/kicad/drc-report.txt" \
