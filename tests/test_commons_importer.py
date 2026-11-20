@@ -14,6 +14,10 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 class ImporterTests(unittest.TestCase):
+    def test_class_configuration(self):
+        self.assertEqual(set(module.CATEGORIES), set(module.FALLBACK_CATEGORIES))
+        self.assertTrue({"velutina", "crabro", "apis", "bombus", "vespula"} <= set(module.CATEGORIES))
+
     def test_licenses(self):
         for license_name in ["CC0", "CC BY 4.0", "CC BY 3.0", "CC BY 2.0", "Public Domain"]:
             self.assertTrue(module.allowed(license_name), license_name)
