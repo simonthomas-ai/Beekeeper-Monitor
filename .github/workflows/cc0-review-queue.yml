@@ -30,6 +30,16 @@ jobs:
           path: training/cc0-audit.json
           if-no-files-found: warn
           retention-days: 30
+      - name: Generate iPhone-friendly pending human review CSV
+        run: python training/prepare_human_review.py --input training/inaturalist-review-queue.csv --output training/human-review-pending.csv
+      - name: Preserve pending human review sheet
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cc0-human-review-pending
+          path: training/human-review-pending.csv
+          if-no-files-found: warn
+          retention-days: 30
       - name: Review queue summary
         if: always()
         shell: bash
