@@ -1,6 +1,11 @@
 name: CC0 insect 3D candidate discovery
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'training/discover_cc0_3d_models.py'
+      - 'training/test_discover_cc0_3d_models.py'
+      - '.github/workflows/cc0-insect-3d.yml'
   push:
     paths:
       - 'training/discover_cc0_3d_models.py'
@@ -17,15 +22,52 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
-      - name: Test safe license and species filters
+      - name: Test safe license and species filters and retry behavior
         run: python -m unittest discover -s training -p 'test_discover_cc0_3d_models.py' -v
       - name: Inventory Smithsonian CC0 insect models
-        run: python training/discover_cc0_3d_models.py
-      - name: Upload review-only inventory
+        run: python training/discover_cc0_3d_models.py --allow-unavailable
+      - name: Report external inventory status
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("training/cc0-3d-insect-candidates.status.json")
+          if not path.exists():
+              message = "3D metadata discovery did not produce a status file."
+              print(f"::error::{message}")
+              with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+                  summary.write(f"## CC0 3D inventory\\n\\n**Status:** missing\\n\\n{message}\\n")
+              raise SystemExit(1)
+
+          status = json.loads(path.read_text(encoding="utf-8"))
+          state = status.get("status", "unknown")
+          if state == "complete":
+              message = (
+                  f"Scanned {status.get('rows_scanned')} dataset rows; "
+                  f"found {status.get('candidates_found')} CC0 metadata candidates. "
+                  "No model geometry, species identity or training rights were approved."
+              )
+              print(message)
+          else:
+              message = (
+                  "The upstream Smithsonian/Hugging Face API did not return a complete inventory. "
+                  "The CSV is header-only and must not be interpreted as zero candidates. "
+                  f"Reason: {status.get('error_type', 'unknown')}."
+              )
+              print(f"::warning::{message}")
+          with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write(f"## CC0 3D inventory\\n\\n**Status:** {state}\\n\\n{message}\\n")
+          PY
+      - name: Upload review-only inventory and status
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cc0-insect-3d-review
-          path: training/cc0-3d-insect-candidates.csv
-          if-no-files-found: warn
+          path: |
+            training/cc0-3d-insect-candidates.csv
+            training/cc0-3d-insect-candidates.status.json
+          if-no-files-found: error
           retention-days: 14
