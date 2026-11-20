@@ -1,0 +1,18 @@
+name: KiCad PCB Strukturprüfung
+on:
+  pull_request:
+    paths:
+      - 'hardware/sensoradapter-v01/**'
+      - 'scripts/check_sensor_pcb.py'
+      - '.github/workflows/pcb-structure.yml'
+  workflow_dispatch:
+jobs:
+  structural:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Grundstruktur prüfen (kein ERC/DRC)
+        run: python scripts/check_sensor_pcb.py
