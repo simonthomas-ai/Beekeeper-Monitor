@@ -14,6 +14,12 @@ assert "<html lang=\"de\">" in html
 for path in ("app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
     assert (root/path).is_file(),path
 assert "capture=\"environment\"" in html
+for legal in ("datenschutz.html", "impressum.html"):
+    assert (root/legal).is_file(), legal
+    assert f'href="./{legal}"' in html, legal
+    assert f"./{legal}" in sw, legal
+assert "§ 5 DDG" in (root/"impressum.html").read_text()
+assert "IndexedDB" in (root/"datenschutz.html").read_text()
 assert "indexedDB.open" in app
 assert "navigator.geolocation.getCurrentPosition" in app
 assert "crypto.randomUUID()" in app
@@ -36,7 +42,7 @@ assert "./live-media.js" in sw
 assert "SHELL.has(url.href)" in sw
 pages=(root/".github/workflows/pages.yml").read_text()
 assert "path: _site" in pages
-assert "cp index.html style.css app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/" in pages
+assert "cp index.html datenschutz.html impressum.html style.css app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/" in pages
 assert "cp wissen/wissenschaft-hornissen-bienen.html _site/wissen/" in pages
 assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
 print("Static PWA and research catalog checks passed; real-device and AI tests remain outstanding.")
