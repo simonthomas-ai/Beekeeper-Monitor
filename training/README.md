@@ -1,6 +1,6 @@
 # Training with genuine data
 
-This pipeline trains **one six-class object detector**, not six independently validated models. It does not pretend that an object detector can solve every task: swarm detection and brood classification may require separate architectures and temporal/context data.
+This pipeline trains **one seven-class object detector**, not six independently validated models. It does not pretend that an object detector can solve every task: swarm detection and brood classification may require separate architectures and temporal/context data.
 
 ## Requirements
 

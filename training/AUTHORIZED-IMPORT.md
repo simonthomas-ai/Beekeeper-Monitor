@@ -1,23 +1,30 @@
-# Authorized image import (candidate staging only)
+# Authorized image import (sanitized candidate staging only)
 
-Use `python training/import_authorized_images.py --input approved_images.csv --limit 50`.
+Run:
 
-The input CSV must have columns:
-`source_id,source_url,image_url,creator,license,license_url,attribution`
+~~~sh
+python training/import_authorized_images.py --input individually-reviewed-images.csv --limit 50
+~~~
 
-Include only **individually reviewed and explicitly downloadable** photos. The
-script only accepts CC0-1.0 or CC-BY-4.0 metadata, HTTPS URLs and supported image
-types; it limits file size and saves SHA256-named images under
-`datasets/hornet/unreviewed/` with `licenses.csv`.
+The CSV columns are:
+\`source_id,source_url,image_url,creator,license,license_url,attribution\`.
 
-**No auto-discovery or scraping:** Roboflow dataset exports may require accounts,
-API keys and separate rights checks. Never put API keys in public CSV or Git.
+Only individually reviewed and explicitly downloadable CC0-1.0 or CC-BY-4.0 source records are accepted. Verify the actual rights holder and the individual media licence before use. The importer cannot establish that an uploader owned the image or had authority to license it.
 
-**Do not run this importer on arbitrary/untrusted CSV inputs.** Host resolution
-checks and redirect blocking are defense in depth, not a complete SSRF security
-boundary. Use a restricted runner with no internal network access.
+The importer:
+- accepts public HTTPS URLs only, rejects embedded credentials, private/reserved DNS resolutions and redirects;
+- reads at most 10 MiB per image, checks the declared MIME type against decoded contents and rejects corrupt or oversized images;
+- applies EXIF orientation, re-encodes pixels, strips EXIF and other copied metadata, and verifies the staged file has no EXIF block;
+- records separate SHA-256 hashes for the downloaded original and the sanitized output;
+- writes to local \`unreviewed/\` and \`licenses.csv\`; attempts owner-only POSIX permissions where supported;
+- refuses to overwrite an existing manifest or candidate file and removes newly-created candidates if a later step fails before manifest publication.
 
-Downloaded candidates are NOT YOLO-annotated training data. Before any training,
-verify image ownership, photo license, author attribution, species identification,
-annotation quality, near-duplicates, independent test isolation and negative
-classes. Do not commit images until their redistribution rights are verified.
+Pillow is required and is listed in \`training/requirements.txt\`.
+
+**Output remains UNREVIEWED.** The importer creates no species labels, bounding boxes, rights approval, split assignment or training permission. Human review must confirm the actual image, species, creator, per-file rights, attribution and quality. Then use the separate provenance and annotation gate.
+
+**No scraping or automatic image discovery:** GBIF/iNaturalist/Smithsonian discovery tools create metadata queues only. Candidate URLs are never automatically fed into this importer.
+
+**Network-isolation warning:** DNS checks and redirect blocking are defense in depth, not a complete SSRF boundary. Never run the importer with untrusted CSV input. Use a restricted outbound-only runner with no access to internal networks or credentials.
+
+Do not commit private images, exact apiary coordinates, RTSP credentials or reviewer personal details to this public repository.
