@@ -88,3 +88,45 @@ EASIN is useful for accepted names, invasive-alien-species catalogue information
 **Data boundary:** EASIN catalogue/occurrence records are not camera photographs, not per-image licenses, not verified nest locations and not ground truth for an individual camera event. They can support taxonomy, synonym handling and regional sampling plans, but do not grant rights to train on third-party media. Preserve source, taxonomic authority and retrieval date; do not convert occurrence points into precise public nest alerts.
 
 EASIN data originates from partner datasets and may have separate source-specific terms. Before redistributing records or combining them with a derived dataset, check record-level/source-provider terms and applicable API conditions. This project currently documents EASIN as a candidate metadata source; no EASIN bulk download or automatic model-training ingestion is enabled.
+
+
+## Recently verified candidate datasets and upstream implementations (reviewed 2026-11-20)
+
+These are source leads for a controlled manual review queue. A public dataset listing or a platform-level licence label is not an approval to download, train, redistribute or bundle the content. The per-file provenance gate remains mandatory.
+
+### Insect Detect — useful generic insect hard negatives, not a Vespa velutina model
+
+- Research paper (PLOS ONE, CC BY 4.0): https://doi.org/10.1371/journal.pone.0295474
+- Detection data record: https://doi.org/10.5281/zenodo.7725941
+- Classification data record: https://doi.org/10.5281/zenodo.8325384
+- Creator's object-detection dataset listing: https://universe.roboflow.com/maximilian-sittinger/insect_detect_detection
+- Software: https://github.com/maxsitt/insect-detect
+- ML project: https://github.com/maxsitt/insect-detect-ml
+- Documentation and component licences: https://maxsitt.github.io/insect-detect-docs/
+
+The creator's Roboflow dataset page lists CC BY 4.0 and 1,335 images in six classes: fly, honey bee, hoverfly, other, shadow and wasp. The wasp category is described mainly as Vespula spp.; it is not a Vespa velutina-specific positive class. The imagery is from a standardized artificial flower platform and is useful as a candidate for generic insect/background/hard-negative research, not as proof of performance on Asian hornets around real apiaries.
+
+The separate Zenodo classification dataset (DOI 10.5281/zenodo.8325384) is explicitly CC BY-NC-SA 4.0. It is therefore **excluded from the current permissive production-training route**. Its terms are not interchangeable with the PLOS article's CC BY 4.0 licence. The detection dataset DOI 10.5281/zenodo.7725941 must have its own record-level rights metadata independently verified before use; the listing metadata available in this review did not establish an explicit dataset licence.
+
+The upstream software tree is GPL-3.0 and its ML project is AGPL-3.0. Do not copy or bundle these codebases, model files or derived code in BeeKeeper3000 without a separate component-by-component compatibility decision. The paper itself is CC BY 4.0 and can be cited/adapted with attribution under that licence. Its camera design is an architectural reference only; it uses a flower platform and Luxonis OAK hardware, so it is not a drop-in implementation for a Reolink or USB camera.
+
+### Roboflow Asian hornet datasets — manual source audit only
+
+- Dataset listing, Asian-hornet detection: https://universe.roboflow.com/asianhornet-detection/detection-asian-hornet
+- Dataset listing, Vespa velutina: https://universe.roboflow.com/vespa-velutina/vespa-velutina-a9tnw
+
+The public listings advertise CC BY 4.0; one lists approximately 3,300 images and the other is a small 35-image candidate. These are potentially useful targeted positives, but their public listings do not establish that every source image was uploaded by the rights holder, that labels are taxonomically correct, that train/test splits are independent or that versions remain immutable. They remain **UNREVIEWED**. Do not fetch images into the training set until the exact version, source chain, creator/rights-holder, attribution, per-image terms, duplicate overlap and expert labels have been checked and recorded in provenance.jsonl.
+
+### iNaturalist and GBIF — important licence distinction
+
+iNaturalist documents that observations, images and sounds have separate licences and that the default licence for user content is CC BY-NC unless changed by the contributor. Check the licence of each individual photo; an observation being exported to GBIF does not change that photo's own rights.
+
+GBIF explicitly states that multimedia licences can differ from the associated occurrence-record licence. The GBIF discovery script therefore filters the individual still-image media licence field, not just the occurrence licence. Keep CC BY-NC and unknown/unversioned media out of the current permissive baseline.
+
+### Practical data-use decision
+
+1. Prioritize the Insect Detect CC BY 4.0 object-detection listing for a small manually audited hard-negative pilot, subject to original-image rights confirmation and no code/model reuse from its GPL/AGPL software components.
+2. Audit the two Asian-hornet Roboflow candidate versions at the individual image and annotation level; use neither until that audit is completed.
+3. Continue the existing iNaturalist CC0 and GBIF CC0/CC BY metadata discovery queues, but do not interpret their records as human-verified images.
+4. Exclude the CC BY-NC-SA Insect Detect classification dataset from the current permissive baseline.
+5. Keep source records, image files, model weights and software dependencies under separate licence inventories. No candidate is approved for model training by this document.
