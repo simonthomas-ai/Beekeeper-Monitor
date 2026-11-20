@@ -1,0 +1,33 @@
+name: AI model training readiness
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'datasets/**'
+      - 'training/**'
+      - 'scripts/model_readiness.py'
+      - '.github/workflows/model-training-readiness.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Inventory real train, validation and test files (no mock data)
+        run: python scripts/model_readiness.py
+      - name: Validate real labels if the complete dataset is present
+        shell: bash
+        run: |
+          if [ -d datasets/beekeeper/images/train ] && [ -d datasets/beekeeper/labels/train ] && [ -d datasets/beekeeper/images/val ] && [ -d datasets/beekeeper/labels/val ] && [ -d datasets/beekeeper/images/test ] && [ -d datasets/beekeeper/labels/test ]; then
+            python -m pip install --disable-pip-version-check PyYAML==6.0.3
+            python training/train.py --validate-only
+          else
+            echo '## Model training blocked' >> "$GITHUB_STEP_SUMMARY"
+            echo 'No complete six-class, licensed, annotated train/val/test dataset is available. This is a reported readiness blocker, not a CI infrastructure failure. No weights or accuracy are claimed.' >> "$GITHUB_STEP_SUMMARY"
+            echo '::warning::Model training is blocked until real, reviewed labels exist.'
+          fi
