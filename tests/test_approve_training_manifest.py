@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import hashlib
+import tempfile
 
 path = Path(__file__).resolve().parents[1] / "scripts/approve_training_manifest.py"
 spec = importlib.util.spec_from_file_location("approve_training_manifest", path)
@@ -33,6 +35,20 @@ class ApprovalTests(unittest.TestCase):
         x = self.item()
         x["local_file"] = "../../secret.jpg"
         self.assertEqual(len(mod.validate({"items": [x]})[0]), 0)
+
+    def test_real_image_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            body = b"image test bytes"
+            (root / "example.jpg").write_bytes(body)
+            item = self.item()
+            item["sha256"] = hashlib.sha256(body).hexdigest()
+            self.assertEqual(len(mod.validate({"items": [item]}, image_dir=root)[0]), 1)
+            (root / "example.jpg").write_bytes(b"tampered")
+            self.assertEqual(len(mod.validate({"items": [item]}, image_dir=root)[0]), 0)
+    def test_missing_image_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(len(mod.validate({"items": [self.item()]}, image_dir=Path(directory))[0]), 0)
 
 if __name__ == "__main__":
     unittest.main()
