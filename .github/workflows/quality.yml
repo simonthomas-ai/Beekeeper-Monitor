@@ -1,39 +1,56 @@
-name: Project quality snapshot
+name: Qualitaetsaudit (lokal, ohne Deployment)
 on:
-  # Der Gesamttest prueft Push und PR; diesen erweiterten Audit
-  # gezielt manuell oder woechentlich ausfuehren, ohne doppelte CI.
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/quality.yml'
   schedule:
     - cron: '11 9 * * 1'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/quality.yml'
 permissions:
   contents: read
+concurrency:
+  group: quality-audit-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    name: Quellen, Bildrechte und statische PWA
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install Pillow for original-image pipeline tests
+      - name: Quellcode auschecken
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python einrichten
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Node einrichten
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - name: Bildverarbeitung fuer Audit installieren
         run: python -m pip install --only-binary=:all: 'Pillow>=10,<13'
-      - name: Validate source catalog
-        run: python scripts/check_sources.py
-      - name: Validate static application
-        run: python scripts/test_static.py
-      - name: Audit gallery licensing and original images
-        run: python -m unittest training.test_audit_gallery_rights -v
-      - name: Verify iNaturalist metadata and image pipeline
-        run: python -m unittest training.test_verify_inaturalist_photo_metadata training.test_discover_cc0_candidates training.test_audit_inaturalist_candidates training.test_download_original_inaturalist_images training.test_prepare_visual_review_gallery -v
-      - name: Check JavaScript syntax
+      - name: Quellen und lokale PWA pruefen
+        run: |
+          python -m json.tool manifest.webmanifest > /dev/null
+          python scripts/check_sources.py
+          python scripts/test_static.py
+          python scripts/check_pwa_deployment_contract.py
+      - name: Bildrechte und Herkunftsnachweise testen
+        run: |
+          python -m unittest training.test_audit_gallery_rights -v
+          python -m unittest training.test_verify_inaturalist_photo_metadata training.test_discover_cc0_candidates training.test_audit_inaturalist_candidates training.test_download_original_inaturalist_images training.test_prepare_visual_review_gallery -v
+      - name: JavaScript Syntax testen
         run: |
           node --check backup-contract.js
           node --check app.js
           node --check sw.js
-      - name: Generate evidence-based report
+      - name: Nachvollziehbaren Qualitaetsbericht erstellen
         if: always()
         run: python scripts/quality_report.py
-      - name: Upload quality report
+      - name: Bericht als privates CI-Artefakt sichern
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
