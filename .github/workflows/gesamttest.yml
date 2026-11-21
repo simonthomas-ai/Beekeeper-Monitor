@@ -158,6 +158,7 @@ jobs:
         if: always()
         env:
           STATIC: ${{ steps.static.outcome }}
+          ALERTTESTS: ${{ steps.alerttests.outcome }}
           BROWSER: ${{ steps.browser.outcome }}
           WEBKIT: ${{ steps.webkit.outcome }}
           IPHONE: ${{ steps.iphone.outcome }}
