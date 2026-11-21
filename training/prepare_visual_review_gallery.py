@@ -27,10 +27,14 @@ def gallery(source, output, species="Vespa velutina"):
         image_url = normalize_if_inaturalist(row.get("image_url", ""), photo_id)
         if not image_url.startswith("https://"):
             raise ValueError("HTTPS required for image URL")
+        species_candidate = row.get("species_candidate", "")
+        expected_group = SPECIES_TO_GROUP.get(species_candidate)
+        dataset_group = row.get("dataset_group") or expected_group
+        if not expected_group or dataset_group != expected_group:
+            raise ValueError("Scientific species does not match the declared dataset group")
         items.append({
             "photo_id": photo_id, "observation_id": row.get("observation_id", ""),
-            "species_candidate": row.get("species_candidate", ""),
-            "dataset_group": row.get("dataset_group") or SPECIES_TO_GROUP.get(row.get("species_candidate", "")),
+            "species_candidate": species_candidate, "dataset_group": dataset_group,
             "image_url": image_url,
             "source_url": row.get("source_url", ""), "license": row.get("license", ""),
             "creator": row.get("creator", ""),
@@ -40,9 +44,9 @@ def gallery(source, output, species="Vespa velutina"):
     data = json.dumps(items, ensure_ascii=False).replace("<", "\\u003c")
     title = html.escape(species)
     page = """<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VespaGuard – mobile Bildprüfung</title>
+<title>Beekeeper Monitor – mobile Bildprüfung</title>
 <style>body{font:17px system-ui;margin:0 auto;padding:1rem;max-width:750px;background:#f7f8fa;color:#19232c}h1{font-size:1.5rem}button,select,input{font:inherit;min-height:44px}button{padding:.6rem;border-radius:9px;border:1px solid #777;background:white}button:focus{outline:3px solid #1469aa}.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0}.viewer{position:relative;background:#ddd;touch-action:none;min-height:240px}.viewer img{display:block;width:100%;height:auto;max-height:65vh;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}.viewer svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.viewer rect{fill:#22aaff33;stroke:#0674ae;stroke-width:2}small{color:#555}a{overflow-wrap:anywhere}#state{font-weight:600}</style>
-<h1>VespaGuard – Bildprüfung: __SPECIES__</h1>
+<h1>Beekeeper Monitor – Bildprüfung: __SPECIES__</h1>
 <p><strong>Keine automatische Freigabe.</strong> Bilder werden von iNaturalist geladen; ohne Internet sind sie eventuell nicht sichtbar. Prüfentscheidungen bleiben auf diesem Gerät, bis du sie exportierst. Markierungen sind nur Vorschläge und müssen fachlich bestätigt werden.</p>
 <div id="unified-controls" hidden><label for="species-filter">Bildgruppe auswählen</label> <select id="species-filter"><option value="ALL">Alle fünf Bildgruppen</option><option value="asian_hornet">Asiatische Hornisse</option><option value="european_hornet">Europäische Hornisse</option><option value="honey_bee">Honigbiene</option><option value="bumblebees">Hummeln</option><option value="wasps">Wespen</option></select><p id="progress" role="status"></p><progress id="progress-bar" max="100" value="0" style="width:100%"></progress></div>
 <p id="counter"></p><p id="image-meta" role="status">Bildabmessungen werden nach dem Laden angezeigt.</p><div class="viewer" id="viewer"><img id="photo" alt="Ungeprüftes Insektenfoto"><svg id="overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none"></svg></div>
