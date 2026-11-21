@@ -22,6 +22,8 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           path: BeeKeeper3000
+      - name: Install Pillow for original-image pipeline tests
+        run: python -m pip install --only-binary=:all: 'Pillow>=10,<13'
       - name: Validate source catalog and PWA structure
         run: |
           python -m json.tool manifest.webmanifest >/dev/null
@@ -30,7 +32,6 @@ jobs:
           python -m unittest training.test_audit_gallery_rights -v
           python -m unittest training.test_verify_inaturalist_photo_metadata training.test_discover_cc0_candidates training.test_audit_inaturalist_candidates training.test_download_original_inaturalist_images training.test_prepare_visual_review_gallery -v
           python -m unittest training.test_provenance -v
-          python -m pip install --only-binary=:all: 'Pillow>=10,<13'
           python -m unittest training.test_import_authorized_images -v
           node --check app.js
           node --check integrations-ui.js
