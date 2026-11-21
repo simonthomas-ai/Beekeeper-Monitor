@@ -147,6 +147,26 @@ class GalleryRightsAuditTests(unittest.TestCase):
         (self.review / "images").rmdir()
         self.assertEqual(audit(self.root), (6, 2))
 
+    def test_rejects_remote_inaturalist_thumbnail(self):
+        remote_item = {
+            "photo_id": "51", "observation_id": "101",
+            "image_url": "https://static.inaturalist.org/photos/51/square.jpg",
+            "source_url": "https://www.inaturalist.org/observations/101",
+            "license": "CC-BY-4.0", "creator": "Author",
+            "image_delivery": "REMOTE_INATURALIST_ORIGINAL",
+        }
+        (self.review / "velutina-original-images-manifest.csv").unlink()
+        pages = {"all": [remote_item], "velutina": [remote_item],
+                 "crabro": [], "apis": [], "bombus": [], "vespula": []}
+        for name, items in pages.items():
+            (self.review / f"{name}.html").write_text(
+                "<script>const items=" + json.dumps(items) + ";</script>", encoding="utf-8")
+        self.image.unlink()
+        self.image_dir.rmdir()
+        (self.review / "images").rmdir()
+        with self.assertRaisesRegex(AuditError, "original derivative"):
+            audit(self.root)
+
     def test_rejects_manifest_with_wrong_photo_url_host(self):
         self.asset["source_image_url"] = "https://evil.example/photos/42/original.jpg"
         self._write_manifest([self.asset])
