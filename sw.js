@@ -1,5 +1,5 @@
 'use strict';
-const CACHE='beekeeper-shell-v13';
+const CACHE='beekeeper-shell-v14';
 const FILES=['./','./index.html','./style.css','./backup-contract.js','./app.js','./integrations-ui.js','./alert-rules.js','./alert-ui.js','./live-media.js','./varroa.html','./varroa-ui.js','./manifest.webmanifest','./icon.svg','./wissen/wissenschaft-hornissen-bienen.html','./wissen/weltlage-vespa-velutina.html','./datenschutz.html','./impressum.html'];
 const SHELL=new Set(FILES.map(path=>new URL(path,self.registration.scope).href));
 self.addEventListener('install',event=>{
