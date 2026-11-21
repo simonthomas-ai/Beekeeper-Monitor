@@ -100,7 +100,10 @@ class VisualReviewGalleryTests(unittest.TestCase):
                    "source_url":"https://www.inaturalist.org/observations/99",
                    "license":"CC0-1.0", "creator":"Original author",
                    "image_width":"1920", "image_height":"1080", "image_quality_status":"PASS"}
-            self.write_rows(source, fields, [row])
+            missing_original = dict(row, photo_id="43", observation_id="100",
+                                    image_url="https://static.inaturalist.org/photos/43/original.jpg",
+                                    source_url="https://www.inaturalist.org/observations/100")
+            self.write_rows(source, fields, [row, missing_original])
             manifest_fields = ["photo_id", "observation_id", "species_candidate",
                                "source_url", "license", "creator", "source_image_url",
                                "local_image_path", "image_format", "image_width",
@@ -118,6 +121,8 @@ class VisualReviewGalleryTests(unittest.TestCase):
             gallery(source, output, species="Vespa velutina", images_manifest=manifest)
             page = output.read_text(encoding="utf-8")
             self.assertIn('"image_url": "images/velutina/42.jpg"', page)
+            self.assertNotIn('"photo_id": "43"', page)
+            self.assertNotIn("/photos/43/original.jpg", page)
             self.assertNotIn('src item.image_url', page)
             self.assertIn('"image_delivery": "LOCAL_UNMODIFIED_ORIGINAL"', page)
             self.assertIn('"original_sha256": "' + "a"*64 + '"', page)
