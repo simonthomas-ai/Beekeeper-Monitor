@@ -7,6 +7,8 @@ from collections import Counter
 from pathlib import Path
 from urllib.parse import urlparse
 
+from inaturalist_media import ALLOWED_HOSTS, is_original_image_url
+
 REQUIRED = ("source_id", "source_url", "image_url", "creator", "license",
             "license_url", "attribution", "observation_id", "photo_id",
             "species_candidate", "review_status")
@@ -35,6 +37,9 @@ def audit(path):
             u = urlparse(row.get(key) or "")
             if u.scheme != "https" or not u.netloc or u.username or u.password:
                 errors.append("invalid_" + key)
+        image = urlparse(row.get("image_url") or "")
+        if (image.hostname or "").lower() in ALLOWED_HOSTS and not is_original_image_url(row.get("image_url") or "", row.get("photo_id")):
+            errors.append("non_original_inaturalist_image_variant")
         if (row.get("image_url") or "").strip() in seen_image_urls:
             errors.append("duplicate_image_url")
         seen_image_urls.add((row.get("image_url") or "").strip())
