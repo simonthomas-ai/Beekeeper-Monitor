@@ -1,5 +1,7 @@
 """Regression tests for iNaturalist image quality selection."""
 import unittest
+import re
+from pathlib import Path
 
 try:
     from training.inaturalist_media import original_image_url, is_original_image_url, normalize_if_inaturalist
@@ -44,6 +46,22 @@ class INaturalistMediaTests(unittest.TestCase):
     def test_non_inaturalist_https_source_is_not_rewritten(self):
         url = "https://media.example.org/insect/photo.jpg"
         self.assertEqual(normalize_if_inaturalist(url, 2), url)
+
+    def test_published_review_galleries_contain_no_square_thumbnails(self):
+        root = Path(__file__).resolve().parents[1]
+        expected_counts = {
+            "all.html": 250, "velutina.html": 50, "crabro.html": 50,
+            "apis.html": 50, "bombus.html": 50, "vespula.html": 50,
+        }
+        for filename, expected in expected_counts.items():
+            with self.subTest(gallery=filename):
+                page = (root / "review" / filename).read_text(encoding="utf-8")
+                urls = re.findall(
+                    r"https://(?:inaturalist-open-data\\.s3\\.amazonaws\\.com|static\\.inaturalist\\.org)/photos/[0-9]+/([a-z]+)\\.(?:jpe?g|png|webp)",
+                    page,
+                )
+                self.assertEqual(len(urls), expected)
+                self.assertEqual(set(urls), {"original"})
 
 
 if __name__ == "__main__":
