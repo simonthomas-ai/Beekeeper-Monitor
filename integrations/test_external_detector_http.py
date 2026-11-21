@@ -3,6 +3,7 @@
 Uses synthetic metadata only; does not claim a working camera or model.
 """
 import http.client
+import socket
 import json
 import subprocess
 from datetime import datetime, timezone
@@ -43,6 +44,36 @@ class ExternalDetectorHTTPTests(unittest.TestCase):
             return response.status, json.loads(response.read())
         finally:
             conn.close()
+
+    def test_lost_http_response_then_retry_is_idempotent(self):
+        """A disconnected client must not create a second SQLite event."""
+        event = adapt_detection({
+            "taxon": "vespa_velutina", "confidence": 0.97,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event_id": "reconnect-lost-response-001",
+        }, device_id="station_01", source="external_camera")
+        body = event.to_json().encode("utf-8")
+        request = (
+            b"POST /api/v1/events HTTP/1.1\\r\\n"
+            b"Host: 127.0.0.1\\r\\n"
+            + ("Authorization: Bearer " + TOKEN + "\\r\\n").encode("ascii")
+            + b"Content-Type: application/json\\r\\n"
+            + ("Content-Length: " + str(len(body)) + "\\r\\n").encode("ascii")
+            + b"Connection: close\\r\\n\\r\\n" + body
+        )
+        # Send the complete request, then close without reading the response.
+        with socket.create_connection(("127.0.0.1", self.server.server_port), timeout=4) as sock:
+            sock.sendall(request)
+            sock.shutdown(socket.SHUT_WR)
+            # The server can still be processing; a client retry must be safe.
+        status, response = self.request("POST", "/api/v1/events", body)
+        self.assertEqual(status, 202, response)
+        self.assertEqual(self.store.count(), 1)
+        status, response = self.request("GET", "/api/v1/events?limit=10")
+        self.assertEqual(status, 200)
+        self.assertEqual(response["count"], 1)
+        self.assertEqual(response["events"][0]["event"]["payload"]["origin_event_id"],
+                         "reconnect-lost-response-001")
 
     def test_detector_to_http_sqlite_api_with_replay_and_privacy(self):
         event = adapt_detection({
