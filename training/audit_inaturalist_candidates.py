@@ -18,7 +18,7 @@ def audit(path):
         if not reader.fieldnames or any(k not in reader.fieldnames for k in REQUIRED):
             raise ValueError("Required metadata columns missing")
         rows = list(reader)
-    seen_photos, seen_observations, problems = set(), set(), []
+    seen_photos, seen_observations, seen_image_urls, problems = set(), set(), set(), []
     by_species = Counter()
     for i, row in enumerate(rows, start=2):
         errors = []
@@ -33,9 +33,9 @@ def audit(path):
             errors.append("unverified_approval_status")
         for key in ("source_url", "image_url"):
             u = urlparse(row.get(key) or "")
-            if u.scheme != "https" or not u.netloc:
+            if u.scheme != "https" or not u.netloc or u.username or u.password:
                 errors.append("invalid_" + key)
-        if row.get("photo_id") in seen_photos or row.get("observation_id") in seen_observations:
+        if (row.get("image_url") or "").strip() in seen_image_urls:\n            errors.append("duplicate_image_url")\n        seen_image_urls.add((row.get("image_url") or "").strip())\n        if row.get("photo_id") in seen_photos or row.get("observation_id") in seen_observations:
             errors.append("duplicate_photo_or_observation")
         seen_photos.add(row.get("photo_id"))
         seen_observations.add(row.get("observation_id"))
