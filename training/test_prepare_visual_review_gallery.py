@@ -4,7 +4,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from prepare_visual_review_gallery import gallery
+try:
+    from training.prepare_visual_review_gallery import gallery
+except ModuleNotFoundError:
+    from prepare_visual_review_gallery import gallery
 
 
 class VisualReviewGalleryTests(unittest.TestCase):
