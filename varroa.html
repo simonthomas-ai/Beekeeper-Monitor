@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#20563a"><link rel="stylesheet" href="./style.css"><title>Varroa-Fotoanalyse – VespaGuard</title></head>
+<body><header><h1>🐝 Varroa-Fotoanalyse</h1><p>Zwei Untersuchungsarten – experimentelle Vorbereitung</p></header><main>
+<section><h2>Untersuchung auswählen</h2>
+<label for="varroa-mode">Was möchtest du untersuchen?</label>
+<select id="varroa-mode"><option value="board">Milben auf Bodeneinlage (VarroDetector)</option><option value="bee">Milben direkt auf Bienen (Gratheon)</option></select>
+<p id="varroa-description" aria-live="polite"></p>
+<label for="varroa-photo">Eigenes Foto auswählen oder mit der Kamera aufnehmen</label>
+<input id="varroa-photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
+<p id="varroa-photo-status" role="status">Noch kein Foto ausgewählt.</p>
+<img id="varroa-preview" alt="Vorschau des lokal ausgewählten Fotos" hidden style="display:block;max-width:100%;max-height:440px;margin:1rem 0">
+<button id="varroa-clear" type="button">Foto entfernen</button>
+</section>
+<section><h2>KI-Modell und Testergebnis</h2><p id="varroa-model" aria-live="polite"></p>
+<p><strong>Automatische Erkennung: noch nicht verfügbar.</strong> Die Originalmodelle liegen als PyTorch-Dateien vor. Eine geprüfte, browserfähige ONNX-Ausführung und unabhängige Validierung fehlen. Es werden keine erfundenen Erkennungszahlen angezeigt.</p>
+<label for="varroa-manual">Manuell gezählte Milben (optional)</label><input id="varroa-manual" type="number" min="0" max="100000" step="1" inputmode="numeric" value="0">
+<p id="varroa-count" role="status">Manuelle Zählung: 0</p>
+<p class="note">Foto und Zählung bleiben in dieser Ansicht im Browser-Arbeitsspeicher und werden weder hochgeladen noch automatisch gespeichert. Beim Verlassen gehen sie verloren.</p></section>
+<section><h2>Quellen und Nutzungsrechte</h2>
+<p><a href="https://github.com/jodivaso/varrodetector" rel="noopener noreferrer">VarroDetector – Bodeneinlage</a> · <a href="https://github.com/Gratheon/models-varroa-on-bee" rel="noopener noreferrer">Gratheon – Milben auf Bienen</a></p>
+<p>Die jeweiligen Lizenz- und Modellgewichtsrechte müssen vor der technischen KI-Einbindung überprüft werden. Eine Modellwahl allein startet keine externe Datenübertragung.</p></section>
+<p><a href="./">Zurück zu VespaGuard</a> · <a href="./datenschutz.html">Datenschutz</a></p></main><script src="./varroa-ui.js" defer></script></body></html>
