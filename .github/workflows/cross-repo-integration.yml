@@ -45,7 +45,7 @@ jobs:
       - name: Quell-API und Empfänger einzeln prüfen
         run: |
           cd beekeeper3000
-          python -m unittest discover -s network -p 'test_source_api*.py' -v
+          python -m unittest network.test_source_api -v
           cd ../monitor
           python -m unittest discover -s integrations -p 'test_*.py' -v
       - name: Bridge-Vertrag und Zuverlässigkeit prüfen
