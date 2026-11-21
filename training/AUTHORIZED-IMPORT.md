@@ -16,6 +16,8 @@ The importer:
 - reads at most 10 MiB per image, checks the declared MIME type against decoded contents and rejects corrupt or oversized images;
 - applies EXIF orientation, re-encodes pixels, strips EXIF and other copied metadata, and verifies the staged file has no EXIF block;
 - records separate SHA-256 hashes for the downloaded original and the sanitized output;
+- upgrades recognized iNaturalist square, small, medium and large image URLs to the original derivative before download; records both the requested URL and the actual downloaded URL;
+- records the sanitized raster width and height in pixels in the per-image manifest so image dimensions can be audited;
 - writes to local \`unreviewed/\` and \`licenses.csv\`; attempts owner-only POSIX permissions where supported;
 - refuses to overwrite an existing manifest or candidate file and removes newly-created candidates if a later step fails before manifest publication.
 
