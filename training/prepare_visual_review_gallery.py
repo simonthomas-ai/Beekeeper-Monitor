@@ -8,8 +8,10 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 try:
+    from training.dataset_groups import SPECIES_TO_GROUP
     from training.inaturalist_media import normalize_if_inaturalist
 except ModuleNotFoundError:
+    from dataset_groups import SPECIES_TO_GROUP
     from inaturalist_media import normalize_if_inaturalist
 
 def gallery(source, output, species="Vespa velutina"):
@@ -27,7 +29,9 @@ def gallery(source, output, species="Vespa velutina"):
             raise ValueError("HTTPS required for image URL")
         items.append({
             "photo_id": photo_id, "observation_id": row.get("observation_id", ""),
-            "species_candidate": row.get("species_candidate", ""), "image_url": image_url,
+            "species_candidate": row.get("species_candidate", ""),
+            "dataset_group": row.get("dataset_group") or SPECIES_TO_GROUP.get(row.get("species_candidate", "")),
+            "image_url": image_url,
             "source_url": row.get("source_url", ""), "license": row.get("license", ""),
             "creator": row.get("creator", ""),
         })
@@ -40,7 +44,7 @@ def gallery(source, output, species="Vespa velutina"):
 <style>body{font:17px system-ui;margin:0 auto;padding:1rem;max-width:750px;background:#f7f8fa;color:#19232c}h1{font-size:1.5rem}button,select,input{font:inherit;min-height:44px}button{padding:.6rem;border-radius:9px;border:1px solid #777;background:white}button:focus{outline:3px solid #1469aa}.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0}.viewer{position:relative;background:#ddd;touch-action:none;min-height:240px}.viewer img{display:block;width:100%;height:auto;max-height:65vh;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}.viewer svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.viewer rect{fill:#22aaff33;stroke:#0674ae;stroke-width:2}small{color:#555}a{overflow-wrap:anywhere}#state{font-weight:600}</style>
 <h1>VespaGuard – Bildprüfung: __SPECIES__</h1>
 <p><strong>Keine automatische Freigabe.</strong> Bilder werden von iNaturalist geladen; ohne Internet sind sie eventuell nicht sichtbar. Prüfentscheidungen bleiben auf diesem Gerät, bis du sie exportierst. Markierungen sind nur Vorschläge und müssen fachlich bestätigt werden.</p>
-<div id="unified-controls" hidden><label for="species-filter">Art auswählen</label> <select id="species-filter"><option value="ALL">Alle fünf Arten</option><option value="Vespa velutina">Asiatische Hornisse</option><option value="Vespa crabro">Europäische Hornisse</option><option value="Apis mellifera">Honigbiene</option><option value="Bombus terrestris">Hummel</option><option value="Vespula vulgaris">Wespe</option></select><p id="progress" role="status"></p><progress id="progress-bar" max="100" value="0" style="width:100%"></progress></div>
+<div id="unified-controls" hidden><label for="species-filter">Bildgruppe auswählen</label> <select id="species-filter"><option value="ALL">Alle fünf Bildgruppen</option><option value="asian_hornet">Asiatische Hornisse</option><option value="european_hornet">Europäische Hornisse</option><option value="honey_bee">Honigbiene</option><option value="bumblebees">Hummeln</option><option value="wasps">Wespen</option></select><p id="progress" role="status"></p><progress id="progress-bar" max="100" value="0" style="width:100%"></progress></div>
 <p id="counter"></p><p id="image-meta" role="status">Bildabmessungen werden nach dem Laden angezeigt.</p><div class="viewer" id="viewer"><img id="photo" alt="Ungeprüftes Insektenfoto"><svg id="overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none"></svg></div>
 <p><a id="source" target="_blank" rel="noopener noreferrer">Originalbeobachtung ansehen</a></p>
 <p id="state"></p>
@@ -59,7 +63,7 @@ let index=0,start=null,activePointerId=null;
 let visible=items.map((_,i)=>i);
 if(unified){
   $("unified-controls").hidden=false;
-  for(const species of ["Vespa velutina","Vespa crabro","Apis mellifera","Bombus terrestris","Vespula vulgaris"]){
+  for(const species of ["Vespa velutina","Vespa crabro","Apis mellifera","Bombus terrestris","Bombus lapidarius","Vespula vulgaris","Vespula germanica"]){
     const oldKey="vespaguard-review-v1-"+species;
     try{
       const prior=JSON.parse(localStorage.getItem(oldKey)||"{}");
@@ -75,7 +79,7 @@ if(unified){
 function selected(){return items[visible[index]]}
 function refreshFilter(){
   const filter=$("species-filter").value;
-  visible=items.map((_,i)=>i).filter(i=>filter==="ALL"||items[i].species_candidate===filter);
+  visible=items.map((_,i)=>i).filter(i=>filter==="ALL"||items[i].dataset_group===filter);
   index=0;render();
 }
 function updateProgress(){
