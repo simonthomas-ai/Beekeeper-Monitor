@@ -88,7 +88,7 @@ class ImportSafetyTests(unittest.TestCase):
 
     def test_sanitizer_removes_exif_and_reencodes_valid_image(self):
         original = self._jpeg_with_exif()
-        sanitized, suffix, image_format = mod.sanitize_image(original, "image/jpeg")
+        sanitized, suffix, image_format, width, height = mod.sanitize_image(original, "image/jpeg")
         self.assertEqual((suffix, image_format), (".jpg", "JPEG"))
         self.assertNotEqual(hashlib.sha256(original).digest(), hashlib.sha256(sanitized).digest())
         with Image.open(io.BytesIO(sanitized)) as result:
@@ -145,7 +145,7 @@ class ImportSafetyTests(unittest.TestCase):
 
     def test_existing_candidate_file_is_not_deleted(self):
         source = self._jpeg_with_exif()
-        sanitized, suffix, _, width, height = mod.sanitize_image(source, "image/jpeg")
+        sanitized, suffix, _, _, _ = mod.sanitize_image(source, "image/jpeg")
         digest = hashlib.sha256(sanitized).hexdigest()
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
