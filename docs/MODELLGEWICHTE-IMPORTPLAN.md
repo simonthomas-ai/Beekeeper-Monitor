@@ -31,3 +31,21 @@ Ziel: Bereits trainierte Modelle mit echten Gewichten wiederverwenden, statt Tra
 - **Produktivfreigabe:** **GESPERRT**.
 
 Weitere Nachweise: [Varroa-Gewichte](VARROA-WEIGHTS-AVAILABILITY.md), [internationale Hornissendetektoren](INTERNATIONAL-HORNET-DETECTORS-2026.md) und [Freigabe-Checkliste](FREIGABE-CHECKLISTE.md).
+
+## Tatsächliche GitHub-Dateiverzeichnisse erneut geprüft (21.11.2026)
+
+Die GitHub-Tree-API bestätigt die folgenden **Dateieinträge** einschließlich Git-Blob-ID. **Git-Blob-SHA-1 ist nicht die SHA-256-Prüfsumme der heruntergeladenen Datei.** Binärdateien wurden bei dieser Prüfung nicht heruntergeladen, ausgeführt oder in VespaGuard kopiert.
+
+| Upstream | Pfad | Bytes | Git-Blob-ID |
+|---|---|---:|---|
+| jodivaso/varrodetector | `model/weights/best.pt` | 9596067 | `3ae15dc3efc69376d7c6a6f0730aa3e91d559768` |
+| Gratheon/models-varroa-on-bee | `yolo11n.pt` | 5613764 | `45b273b46165267f2d4c90df94468b547f43cf67` |
+| vespCV/vespcv | `models/yolo112025-04-23default_e200_p20_b-1_augment/weights/best.pt` | 19174547 | `69d6e77e25d17907d1b21d807449313b925845f7` |
+| vespCV/hornet3000 | `yolov10nModel/weights/best.pt` | 5779236 | `5c4481640f213fabd61b40edf8b05fa13822fe45` |
+| vespCV/hornet3000 | `yolov8sModel/best.onnx` | 44737849 | `97fb748affc642238c1135768a53098f594de0d1` |
+| andrw3000/vespai | `models/yolov5-params/yolov5s-21all.pt` | 14369205 | `83164c4e9714fee9e60d1e67fa4c9c2568674b7b` |
+| andrw3000/vespai | `models/classifier-runs/basic-model/weights/best.pt` | 1099604 | `8ab278841ed328075509721707acefc69181c432` |
+
+**Korrektur gegenüber der ersten Kandidatenliste:** Für VespAI, vespCV und hornet3000 sind tatsächlich Gewichtsdateien im Upstream-Repository nachweisbar. Bei hornet3000 gibt es auch direkt ONNX-Dateien. Deren Kompatibilität, Herkunft, Lizenzen und Klassen müssen dennoch geprüft werden.
+
+**Nächste technische Priorität:** ONNX-Modell aus hornet3000 anhand eines unveränderlichen Upstream-Commits und einer SHA-256-Dateiprüfung in einer isolierten Prüfstrecke inspizieren; weder produktive Aktivierung noch automatische Veröffentlichung.
