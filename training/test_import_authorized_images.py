@@ -35,9 +35,9 @@ class ImportSafetyTests(unittest.TestCase):
         self.assertEqual(mod.LICENSE_URLS["CC-BY-4.0"], "https://creativecommons.org/licenses/by/4.0/")
 
     def test_provenance_manifest_retains_source_and_sanitized_hashes(self):
-        for field in ("source_id", "source_url", "image_url", "creator", "license",
-                      "license_url", "attribution", "source_sha256", "sha256",
-                      "image_format", "exif_removed"):
+        for field in ("source_id", "source_url", "image_url", "requested_image_url",
+                      "creator", "license", "license_url", "attribution", "source_sha256",
+                      "sha256", "image_format", "width", "height", "exif_removed"):
             self.assertIn(field, mod.OUTPUT)
 
     def test_reject_non_https(self):
@@ -62,6 +62,18 @@ class ImportSafetyTests(unittest.TestCase):
         ]):
             self.assertEqual(mod.public_https("https://example.org/a.jpg"), "https://example.org/a.jpg")
 
+    def test_inaturalist_thumbnail_is_upgraded_before_authorized_download(self):
+        row = {"source_id":"inat:photo:763034625",
+               "source_url":"https://www.inaturalist.org/observations/414481366",
+               "image_url":"https://inaturalist-open-data.s3.amazonaws.com/photos/763034625/square.jpg",
+               "creator":"Creator","license":"CC0-1.0",
+               "license_url":mod.LICENSE_URLS["CC0-1.0"],"attribution":"Creator"}
+        with patch.object(mod, "public_https", side_effect=lambda url: url):
+            prepared = mod.validate_rows([row])[0]
+        self.assertEqual(prepared["requested_image_url"], row["image_url"])
+        self.assertEqual(prepared["image_url"],
+                         "https://inaturalist-open-data.s3.amazonaws.com/photos/763034625/original.jpg")
+
     def test_redirects_rejected(self):
         with self.assertRaises(ValueError):
             mod.NoRedirect().redirect_request(None, None, 302, "redirect", {}, "https://example.org/a.jpg")
@@ -82,6 +94,7 @@ class ImportSafetyTests(unittest.TestCase):
         with Image.open(io.BytesIO(sanitized)) as result:
             result.load()
             self.assertEqual(result.size, (16, 12))
+            self.assertEqual((width, height), (16, 12))
             self.assertEqual(dict(result.getexif()), {})
 
     def test_sanitizer_rejects_mime_mismatch_and_corrupt_image(self):
@@ -132,7 +145,7 @@ class ImportSafetyTests(unittest.TestCase):
 
     def test_existing_candidate_file_is_not_deleted(self):
         source = self._jpeg_with_exif()
-        sanitized, suffix, _ = mod.sanitize_image(source, "image/jpeg")
+        sanitized, suffix, _, width, height = mod.sanitize_image(source, "image/jpeg")
         digest = hashlib.sha256(sanitized).hexdigest()
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
