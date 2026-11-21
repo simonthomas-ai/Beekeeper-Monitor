@@ -32,7 +32,7 @@ class VisualReviewGalleryTests(unittest.TestCase):
             self.assertNotIn("/photos/763034625/square.jpg", result)
             self.assertIn("naturalWidth", result)
             self.assertIn("naturalHeight", result)
-            self.assertIn("2048 px", result)
+            self.assertIn("iNaturalist-Originalvariante", result)
             self.assertIn('option value="asian_hornet"', result)
             self.assertIn('option value="bumblebees"', result)
             self.assertIn('option value="wasps"', result)
