@@ -71,7 +71,7 @@ class VisualReviewGalleryTests(unittest.TestCase):
             self.write_rows(source, fields, [row])
             gallery(source, output, species="ALL")
             page = output.read_text(encoding="utf-8")
-            self.assertIn(r"\\u003c/script>", page)
+            self.assertIn(r"\u003c/script>", page)
             self.assertNotIn(hostile, page)
             self.assertEqual(page.count("</script>"), 1)
 
