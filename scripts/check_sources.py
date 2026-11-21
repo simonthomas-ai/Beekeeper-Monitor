@@ -12,15 +12,26 @@ allowed = {"hornet", "varroa", "brood", "pollen", "swarm", "queen"}
 errors = []
 ids = set()
 for source in catalog["sources"]:
-    if not required.issubset(source):
-        errors.append(f"Missing fields: {source.get('id', '?')}")
-    if source["id"] in ids:
-        errors.append(f"Duplicate ID: {source['id']}")
-    ids.add(source["id"])
-    if not set(source["modules"]).issubset(allowed):
-        errors.append(f"Invalid modules: {source['id']}")
-    if not source["url"].startswith("https://"):
-        errors.append(f"Non-HTTPS URL: {source['id']}")
+    if not isinstance(source, dict):
+        errors.append("Source entry must be an object")
+        continue
+    missing = required.difference(source)
+    if missing:
+        errors.append(f"Missing fields for {source.get('id', '?')}: {', '.join(sorted(missing))}")
+        continue
+    source_id = source["id"]
+    if not isinstance(source_id, str) or not source_id.strip():
+        errors.append("Source ID must be a nonempty string")
+        continue
+    if source_id in ids:
+        errors.append(f"Duplicate ID: {source_id}")
+    ids.add(source_id)
+    if not isinstance(source["modules"], list) or not source["modules"] or any(
+        not isinstance(module, str) or module not in allowed for module in source["modules"]
+    ):
+        errors.append(f"Invalid modules: {source_id}")
+    if not isinstance(source["url"], str) or not source["url"].startswith("https://"):
+        errors.append(f"Non-HTTPS URL: {source_id}")
 print(f"Catalog schema: {len(catalog['sources'])} documented sources")
 for err in errors:
     print("ERROR:", err, file=sys.stderr)
