@@ -5,7 +5,10 @@ import csv
 import html
 from pathlib import Path
 
-from inaturalist_media import is_original_image_url
+try:
+    from training.inaturalist_media import is_original_image_url
+except ModuleNotFoundError:
+    from inaturalist_media import is_original_image_url
 
 def render(rows):
     cards = []
