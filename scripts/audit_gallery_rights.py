@@ -257,6 +257,8 @@ def audit(root: Path) -> tuple[int, int]:
                 parsed = urlsplit(image_url)
                 if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
                     raise AuditError(f"{prefix}: remote image URL must use HTTPS")
+                if (parsed.hostname or "").lower() in IMAGE_HOSTS and not _is_original_image_url(image_url, photo_id):
+                    raise AuditError(f"{prefix}: iNaturalist image URL must reference the original derivative")
 
     all_local_ids = set().union(*(set(items) for items in local_references.values())) if local_references else set()
     manifest_path = review_root / MANIFEST_RELATIVE_PATH.name
