@@ -74,11 +74,13 @@
     const cooldownMs = settings.cooldownSeconds * 1000;
 
     const fresh = [];
+    const batchIds = new Set();
     for (const row of rows) {
       const c = candidateFromRow(row);
-      if (!c || seen.has(c.id)) continue;
+      if (!c || seen.has(c.id) || batchIds.has(c.id)) continue;
       if (c.confidence < threshold) continue;
       if (c.timestampMs === null || nowMs - c.timestampMs > maxAgeMs || c.timestampMs - nowMs > 5 * 60 * 1000) continue;
+      batchIds.add(c.id);
       fresh.push(c);
     }
     fresh.sort((a, b) => a.timestampMs - b.timestampMs);
