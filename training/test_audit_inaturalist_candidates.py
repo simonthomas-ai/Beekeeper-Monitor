@@ -37,7 +37,8 @@ class CandidateAuditTests(unittest.TestCase):
     def test_duplicate_image_url_detected(self):
         duplicate = dict(BASE, source_id="inat:2:22", observation_id="2", photo_id="22")
         report = self.check_rows([BASE, duplicate])
-        self.assertIn("duplicate_image_url", report["metadata_errors"][0]["errors"] + report["metadata_errors"][1]["errors"])
+        self.assertEqual(report["candidates"], 2)
+        self.assertTrue(any("duplicate_image_url" in issue["errors"] for issue in report["metadata_errors"]))
 
     def test_embedded_url_credentials_rejected(self):
         report = self.check_rows([dict(BASE, image_url="https://secret:token@example.org/a.jpg")])
