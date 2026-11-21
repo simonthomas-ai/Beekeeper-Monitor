@@ -16,7 +16,7 @@ jobs:
       - name: YOLOv8 Decoder und NMS mit synthetischen Tensoren pruefen
         run: python3 -m unittest tests.test_hornet3000_decode -v
       - name: Gepinnte ONNX-Datei herunterladen und Byte-Identitaet pruefen
-        run: python3 scripts/verify_hornet3000_onnx.py --download --inspect-graph --synthetic-inference
+        run: python3 -m scripts.verify_hornet3000_onnx --download --inspect-graph --synthetic-inference
       - name: Freigabe bleibt gesperrt
         run: |
           echo 'Nur isolierte CPU-Inferenz auf synthetischem Nullbild. Keine Lizenz-, Genauigkeits-, Kamera- oder Feldfreigabe.' >> "$GITHUB_STEP_SUMMARY"
