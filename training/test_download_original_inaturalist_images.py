@@ -53,7 +53,9 @@ class DownloadOriginalTests(unittest.TestCase):
             candidate = {
                 "photo_id": "42", "observation_id": "99",
                 "species_candidate": "Vespa velutina", "license": "CC0-1.0",
-                "creator": "Test photographer", "attribution": "Test photographer",
+                "creator": "Test photographer", "creator_login": "test-photographer",
+                "attribution": "Test photographer, no rights reserved (CC0)",
+                "license_notice": "no rights reserved",
                 "image_url": photo_url, "source_url": source_url,
                 "image_quality_status": "PASS",
             }
@@ -62,7 +64,10 @@ class DownloadOriginalTests(unittest.TestCase):
                 "species_candidate": "Vespa velutina", "source_url": source_url,
                 "api_photo_found": "YES", "license_metadata_match": "YES",
                 "api_photo_license": "cc0", "api_taxon": "Vespa velutina",
-                "api_quality_grade": "research", "error": "",
+                "api_quality_grade": "research", "api_observer_name": "Test photographer",
+                "api_observer_login": "test-photographer", "api_attribution": "no rights reserved",
+                "api_attribution_statement": "Test photographer, no rights reserved (CC0)",
+                "error": "",
             }
             input_csv = root / "quality.csv"
             verification_csv = root / "verified.csv"
@@ -85,6 +90,9 @@ class DownloadOriginalTests(unittest.TestCase):
             self.assertEqual(rows[0]["image_width"], 1920)
             self.assertEqual(rows[0]["image_height"], 1080)
             self.assertEqual(rows[0]["creator"], "Test photographer")
+            self.assertEqual(rows[0]["creator_login"], "test-photographer")
+            self.assertEqual(rows[0]["attribution"], "Test photographer, no rights reserved (CC0)")
+            self.assertEqual(rows[0]["license_notice"], "no rights reserved")
 
     def test_rejects_candidate_without_exact_cc0_recheck(self):
         with tempfile.TemporaryDirectory() as folder:
