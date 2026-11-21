@@ -31,7 +31,7 @@ class CrossRepositorySmoke(unittest.TestCase):
             try:
                 url = f"http://127.0.0.1:{server.server_address[1]}/api/v1/events"
                 node = r"""
-import { forwardBatch } from process.argv[1];
+const { forwardBatch } = await import(process.argv[1]);
 const endpoint = process.argv[2], token = process.argv[3];
 const event = {id:'contract-test-001',observed_at:new Date().toISOString(),station_id:'station_test',species:'Vespa velutina',confidence:0.82,prey_detected:false};
 const state = new Set();
