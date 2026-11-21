@@ -86,6 +86,14 @@ class GalleryRightsAuditTests(unittest.TestCase):
     def test_accepts_local_original_when_manifest_and_bytes_match(self):
         self.assertEqual(audit(self.root), (6, 2))
 
+    def test_rejects_symlinked_original_file(self):
+        self.image.unlink()
+        real_file = self.image_dir / "42.real.jpg"
+        real_file.write_bytes(self.body)
+        self.image.symlink_to(real_file.name)
+        with self.assertRaisesRegex(AuditError, "symbolic link is not allowed"):
+            audit(self.root)
+
     def test_rejects_modified_original_bytes(self):
         self.image.write_bytes(self.body + b"tampered")
         with self.assertRaisesRegex(AuditError, "byte count differs"):
