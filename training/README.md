@@ -2,6 +2,10 @@
 
 Diese Trainingspipeline erstellt **einen Objektdetektor für sieben Klassen**, nicht sechs unabhängig validierte Modelle. Ein Objektdetektor kann nicht jede imkerliche Aufgabe lösen: Schwarmvorhersage und Brutbewertung benötigen gegebenenfalls andere Architekturen sowie zeitliche und weitere Kontextdaten.
 
+## Architektur- und Feldvalidierungsplan
+
+Der Vergleich von Ein-Stufen-YOLO und einer möglichen zweistufigen Detektor-/Crop-Klassifikator-Pipeline, die Bewertung der verfügbaren Quellen und die Feldabnahmekriterien sind in [DETECTION-ARCHITECTURE-REVIEW-2026-11-21.md](DETECTION-ARCHITECTURE-REVIEW-2026-11-21.md) dokumentiert. Der zweistufige Ansatz wird erst mit echten, freigegebenen Crop-Daten umgesetzt.
+
 ## Voraussetzungen
 - Echte, rechtlich nutzbare Bilder jeder Klasse mit manuell geprüften Begrenzungsrahmen im YOLO-Format.
 - Nachvollziehbare Herkunft und Lizenz für jede Datenquelle sowie getrennte SHA-256-Bindung jeder Bilddatei und ihrer exakt zugehörigen YOLO-Labeldatei im Provenienzmanifest.
