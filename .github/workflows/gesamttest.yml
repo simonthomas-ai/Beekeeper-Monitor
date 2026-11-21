@@ -181,7 +181,7 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           # Pin the integration partner to a reviewed commit; avoid moving-main CI drift.
-          ref: c23f9ea0c43042f009c94af8a3560dc724114ca4
+          ref: 267c7b07970c632d3f51b1171dc0fd0f62afd137
           path: beekeeper3000
           persist-credentials: false
       - name: Node.js einrichten
