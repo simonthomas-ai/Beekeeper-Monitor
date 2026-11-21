@@ -63,3 +63,8 @@ Only after review, copy the first seven fields of approved rows to a separate
 `approved_images.csv` and use `training/import_authorized_images.py`.
 Do not commit unreviewed photos, credentials or personal location data.
 API calls should be infrequent and respect iNaturalist's service policies.
+
+
+## Unveränderte Originaldateien in der öffentlichen Velutina-Prüfung
+
+Die Datei-Prüfung ist nicht mit einer Bildbearbeitung gleichzusetzen. `training/download_original_inaturalist_images.py` lädt nur Kandidaten mit bestandener Dateiprüfung und exakter CC0-API-Nachprüfung herunter. Die Original-Response-Bytes werden unverändert gespeichert; SHA-256, Dateiformat, Pixelmaße und Dateigröße stehen im Manifest. GitHub Pages übernimmt die Originaldateien aus einem Actions-Artefakt. Vor Deployment werden die Hashes erneut verglichen. Es gibt keine Größenänderung, kein Zuschneiden, keine Drehung, keine EXIF-Umschreibung, keine Neukodierung, keine Kompression und keine Thumbnail-Erzeugung. Die Galerie verweist lokal auf genau diese Bytes.
