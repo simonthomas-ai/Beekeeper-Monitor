@@ -14,7 +14,7 @@ BLOB = "97fb748affc642238c1135768a53098f594de0d1"
 SIZE = 44737849
 URL = "https://raw.githubusercontent.com/vespCV/hornet3000/" + COMMIT + "/" + PATH
 
-def inspect(download=False):
+def inspect(download=False, inspect_graph=False):
     if not download:
         return {"status": "not_downloaded", "source": URL, "expected_bytes": SIZE}
     req = urllib.request.Request(URL, headers={"User-Agent": "VespaGuard-research-integrity/1"})
@@ -37,16 +37,16 @@ def inspect(download=False):
                 out.write(chunk)
         if total != SIZE or git_blob.hexdigest() != BLOB:
             raise ValueError("Git blob identity or size mismatch")
-        return {"status": "bytes_verified_not_executed", "source": URL,
+        graph = {}\n        if inspect_graph:\n            import onnx\n            model = onnx.load(str(target), load_external_data=False)\n            if any(t.data_location == onnx.TensorProto.EXTERNAL for t in model.graph.initializer):\n                raise ValueError("External ONNX tensor data not permitted")\n            def tensors(values):\n                return [{"name": v.name, "type": onnx.helper.printable_type(v.type)} for v in values]\n            graph = {"ir_version": model.ir_version, "opsets": [{"domain": x.domain, "version": x.version} for x in model.opset_import],\n                     "inputs": tensors(model.graph.input), "outputs": tensors(model.graph.output),\n                     "nodes": len(model.graph.node), "operators": sorted(set(n.op_type for n in model.graph.node)),\n                     "metadata": {x.key: x.value[:2000] for x in model.metadata_props}}\n        return {"status": "bytes_verified_not_executed", "source": URL,
                 "bytes": total, "git_blob": git_blob.hexdigest(),
-                "sha256": digest.hexdigest(), "license_approved": False,
+                "sha256": digest.hexdigest(), "graph": graph, "license_approved": False,
                 "inference_validated": False}
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--download", action="store_true")
-    args = parser.parse_args()
-    result = inspect(args.download)
+    parser.add_argument("--inspect-graph", action="store_true", help="Read ONNX graph metadata, never run inference")\n    args = parser.parse_args()\n    if args.inspect_graph and not args.download:\n        parser.error("--inspect-graph requires --download")
+    result = inspect(args.download, args.inspect_graph)
     print(json.dumps(result, indent=2))
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
@@ -54,7 +54,7 @@ def main():
             out.write("## hornet3000 ONNX-Pruefung\n\n")
             out.write("Status: " + result["status"] + ". Keine Inferenz oder Freigabe.\n\n")
             if result.get("sha256"):
-                out.write("SHA-256: " + result["sha256"] + "\n")
+                out.write("SHA-256: " + result["sha256"] + "\n")\n            if result.get("graph"):\n                out.write("ONNX-Graph (statisch, ohne Inferenz):\\n\\n```json\\n" + json.dumps(result["graph"], indent=2) + "\\n```\\n")
 
 if __name__ == "__main__":
     main()
