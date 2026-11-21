@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "status": "candidates_only_no_execution",
+  "models": [
+    {
+      "id": "hornet3000-yolov8s-onnx",
+      "task": "hornet_detection",
+      "upstream": "vespCV/hornet3000",
+      "commit": "78f51980ee99e45748e78e54dd1312cff846a5ac",
+      "path": "yolov8sModel/best.onnx",
+      "bytes": 44737849,
+      "git_blob": "97fb748affc642238c1135768a53098f594de0d1",
+      "format": "onnx"
+    },
+    {
+      "id": "hornet3000-yolov10n",
+      "task": "hornet_detection",
+      "upstream": "vespCV/hornet3000",
+      "commit": "78f51980ee99e45748e78e54dd1312cff846a5ac",
+      "path": "yolov10nModel/weights/best.pt",
+      "bytes": 5779236,
+      "git_blob": "5c4481640f213fabd61b40edf8b05fa13822fe45",
+      "format": "pt"
+    },
+    {
+      "id": "vespcv-yolo11",
+      "task": "hornet_detection",
+      "upstream": "vespCV/vespcv",
+      "path": "models/yolo112025-04-23default_e200_p20_b-1_augment/weights/best.pt",
+      "bytes": 19174547,
+      "git_blob": "69d6e77e25d17907d1b21d807449313b925845f7",
+      "format": "pt"
+    },
+    {
+      "id": "vespai-yolov5",
+      "task": "hornet_detection",
+      "upstream": "andrw3000/vespai",
+      "path": "models/yolov5-params/yolov5s-21all.pt",
+      "bytes": 14369205,
+      "git_blob": "83164c4e9714fee9e60d1e67fa4c9c2568674b7b",
+      "format": "pt"
+    },
+    {
+      "id": "varrodetector",
+      "task": "varroa_sticky_board",
+      "upstream": "jodivaso/varrodetector",
+      "path": "model/weights/best.pt",
+      "bytes": 9596067,
+      "git_blob": "3ae15dc3efc69376d7c6a6f0730aa3e91d559768",
+      "format": "pt"
+    },
+    {
+      "id": "gratheon-varroa",
+      "task": "varroa_on_bee",
+      "upstream": "Gratheon/models-varroa-on-bee",
+      "path": "yolo11n.pt",
+      "bytes": 5613764,
+      "git_blob": "45b273b46165267f2d4c90df94468b547f43cf67",
+      "format": "pt"
+    }
+  ]
+}
