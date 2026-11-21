@@ -1,5 +1,8 @@
 import unittest
-from render_hornet_review_gallery import render
+try:
+    from training.render_hornet_review_gallery import render
+except ModuleNotFoundError:
+    from render_hornet_review_gallery import render
 
 class ReviewGalleryTests(unittest.TestCase):
     def test_unreviewed_only_and_escape_metadata(self):
