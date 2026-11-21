@@ -85,5 +85,50 @@ class VisualReviewGalleryTests(unittest.TestCase):
             self.assertIn("nur Sortierung", result)
 
 
+    def test_gallery_prefers_local_unmodified_original_from_verified_manifest(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source = root / "screened.csv"
+            output = root / "velutina.html"
+            manifest = root / "images.csv"
+            fields = ["photo_id", "observation_id", "species_candidate", "dataset_group",
+                      "image_url", "source_url", "license", "creator",
+                      "image_width", "image_height", "image_quality_status"]
+            row = {"photo_id":"42", "observation_id":"99", "species_candidate":"Vespa velutina",
+                   "dataset_group":"asian_hornet",
+                   "image_url":"https://static.inaturalist.org/photos/42/original.jpg",
+                   "source_url":"https://www.inaturalist.org/observations/99",
+                   "license":"CC0-1.0", "creator":"Original author",
+                   "image_width":"1920", "image_height":"1080", "image_quality_status":"PASS"}
+            self.write_rows(source, fields, [row])
+            manifest_fields = ["photo_id", "observation_id", "species_candidate",
+                               "source_url", "license", "creator", "source_image_url",
+                               "local_image_path", "image_format", "image_width",
+                               "image_height", "image_bytes", "sha256", "download_status"]
+            asset = {"photo_id":"42", "observation_id":"99",
+                     "species_candidate":"Vespa velutina",
+                     "source_url":row["source_url"], "license":"CC0-1.0",
+                     "creator":"Original author",
+                     "source_image_url":"https://static.inaturalist.org/photos/42/original.jpg",
+                     "local_image_path":"images/velutina/42.jpg",
+                     "image_format":"JPEG", "image_width":"1920",
+                     "image_height":"1080", "image_bytes":"245678",
+                     "sha256":"a"*64, "download_status":"DOWNLOADED_UNMODIFIED"}
+            self.write_rows(manifest, manifest_fields, [asset])
+            gallery(source, output, species="Vespa velutina", images_manifest=manifest)
+            page = output.read_text(encoding="utf-8")
+            self.assertIn('"image_url": "images/velutina/42.jpg"', page)
+            self.assertNotIn('src item.image_url', page)
+            self.assertIn('"image_delivery": "LOCAL_UNMODIFIED_ORIGINAL"', page)
+            self.assertIn('"original_sha256": "' + "a"*64 + '"', page)
+            self.assertIn("Unveränderte Originaldatei öffnen", page)
+
+    def write_rows(self, path, fields, rows):
+        with Path(path).open("w", newline="", encoding="utf-8") as stream:
+            writer = csv.DictWriter(stream, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows(rows)
+
+
 if __name__ == "__main__":
     unittest.main()
