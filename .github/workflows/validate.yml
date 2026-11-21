@@ -1,47 +1,68 @@
-name: Validate PWA and integration services
+name: PWA und Integrationen validieren (ohne Deployment)
 on:
-  push:
-  pull_request:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/validate.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/validate.yml'
 permissions:
   contents: read
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   validate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    name: Lokale PWA, Sicherheit und Bridge
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      - name: Monitor auschecken
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Python einrichten
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - name: Node einrichten
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
-      - name: Checkout companion bridge
+      - name: BeeKeeper3000 in gepruefter Version auschecken
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: simonthomas-ai/BeeKeeper3000
+          ref: 8eba14db628a5b5d8672bcbab9b078f0e7977799
           path: BeeKeeper3000
-      - name: Install Pillow for original-image pipeline tests
+          persist-credentials: false
+      - name: Pillow installieren
         run: python -m pip install --only-binary=:all: 'Pillow>=10,<13'
-      - name: Validate source catalog and PWA structure
+      - name: PWA und Quellen validieren
         run: |
-          python -m json.tool manifest.webmanifest >/dev/null
+          python -m json.tool manifest.webmanifest > /dev/null
           python scripts/check_sources.py
           python scripts/test_static.py
-          python -m unittest training.test_audit_gallery_rights -v
-          python -m unittest training.test_verify_inaturalist_photo_metadata training.test_discover_cc0_candidates training.test_audit_inaturalist_candidates training.test_download_original_inaturalist_images training.test_prepare_visual_review_gallery -v
-          python -m unittest training.test_provenance -v
-          python -m unittest training.test_import_authorized_images -v
+          python scripts/check_pwa_deployment_contract.py
+          python -m unittest training.test_audit_gallery_rights training.test_provenance training.test_import_authorized_images -v
+      - name: JavaScript und Warnregeln validieren
+        run: |
           node --check app.js
           node --check integrations-ui.js
           node --check alert-rules.js
           node --check alert-ui.js
-          node --test tests/alert-rules.test.cjs
           node --check sw.js
-      - name: Test authenticated ingestion, persistence and bridge end-to-end
+          node --test tests/alert-rules.test.cjs
+      - name: Authentifizierte Ereignisannahme und Integration testen
         env:
           BEEKEEPER_BRIDGE_ENTRY: ${{ github.workspace }}/BeeKeeper3000/monitor-bridge/bridge.mjs
         run: python -m unittest discover -s integrations -p 'test_*.py' -v
-      - name: Test bridge adapter
+      - name: BeeKeeper3000 Bridge testen
         run: npm --prefix BeeKeeper3000/monitor-bridge test
+      - name: Offline-Puffer und HTTP-Wiederherstellung testen
+        run: |
+          PYTHONPATH=BeeKeeper3000 python -m unittest discover -s BeeKeeper3000/camera -p 'test_outbox.py' -v
+          PYTHONPATH=BeeKeeper3000 python -m unittest discover -s BeeKeeper3000/camera -p 'test_offline_http_recovery.py' -v
