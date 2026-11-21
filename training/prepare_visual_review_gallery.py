@@ -42,14 +42,18 @@ def gallery(source, output, species="Vespa velutina", images_manifest=None):
         if any(urlparse(row.get(k, "")).scheme != "https" for k in ("image_url", "source_url")):
             raise ValueError("HTTPS required")
         photo_id = row.get("photo_id", "")
+        species_candidate = row.get("species_candidate", "")
         asset = local_assets.get(photo_id)
+        if images_manifest and species_candidate == "Vespa velutina" and not asset:
+            # A failed local original download must not silently fall back to
+            # the remote source or to another image derivative.
+            continue
         if asset:
             image_url = asset["local_image_path"]
         else:
             image_url = normalize_if_inaturalist(row.get("image_url", ""), photo_id)
             if not image_url.startswith("https://"):
                 raise ValueError("HTTPS required for image URL")
-        species_candidate = row.get("species_candidate", "")
         expected_group = SPECIES_TO_GROUP.get(species_candidate)
         dataset_group = row.get("dataset_group") or expected_group
         if not expected_group or dataset_group != expected_group:
