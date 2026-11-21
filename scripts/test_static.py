@@ -35,6 +35,12 @@ assert re.search(r"beekeeper-shell-v\d+", sw)
 assert "./wissen/wissenschaft-hornissen-bienen.html" in sw
 assert (root/"wissen/wissenschaft-hornissen-bienen.html").is_file()
 assert 'href="./wissen/wissenschaft-hornissen-bienen.html"' in html
+assert "./wissen/weltlage-vespa-velutina.html" in sw
+assert (root/"wissen/weltlage-vespa-velutina.html").is_file()
+assert 'href="./wissen/weltlage-vespa-velutina.html"' in html
+global_page=(root/"wissen/weltlage-vespa-velutina.html").read_text()
+for marker in ("id=\"weltweite-verbreitung\"", "id=\"nestlokalisierung\"", "id=\"quellen\"", "10.14411/eje.2026.022", "10.1038/s42003-024-05979-z"):
+    assert marker in global_page, marker
 assert "./integrations-ui.js" in sw
 assert 'id="station-events-form"' in html
 assert 'src="./integrations-ui.js"' in html
