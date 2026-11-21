@@ -49,5 +49,10 @@ class CandidateAuditTests(unittest.TestCase):
         self.assertEqual(report["approved_training_images"], 0)
         self.assertTrue(report["requires_human_review"])
 
+    def test_square_inaturalist_thumbnail_is_flagged(self):
+        row = dict(BASE, image_url="https://inaturalist-open-data.s3.amazonaws.com/photos/11/square.jpg")
+        report = self.check_rows([row])
+        self.assertIn("non_original_inaturalist_image_variant", report["metadata_errors"][0]["errors"])
+
 if __name__ == "__main__":
     unittest.main()
