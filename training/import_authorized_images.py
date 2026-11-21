@@ -4,7 +4,10 @@ from __future__ import annotations
 import argparse, csv, hashlib, io, ipaddress, os, socket, urllib.error, urllib.parse, urllib.request
 from pathlib import Path
 
-from inaturalist_media import normalize_if_inaturalist
+try:
+    from training.inaturalist_media import normalize_if_inaturalist
+except ModuleNotFoundError:
+    from inaturalist_media import normalize_if_inaturalist
 
 LICENSE_URLS = {
     "CC0-1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
