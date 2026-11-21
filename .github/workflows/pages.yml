@@ -73,14 +73,6 @@ jobs:
           grep -q '44842498223' _site/index.html
           test -s _site/datenschutz.html
           test -s _site/impressum.html
-          # Do not publish template legal notices as if they were complete.
-          # Reject any remaining template field, not just the first known marker.
-          # The pages must be reviewed separately before a public release.
-          if grep -Eq '\[[^]]+\]' _site/impressum.html _site/datenschutz.html || \
-             grep -Eiq 'MUSTER[[:space:]]*/[[:space:]]*PLATZHALTER|Angaben noch unvollständig|Angaben sind derzeit unvollständig' _site/impressum.html _site/datenschutz.html; then
-            echo "::error::Rechtstexte enthalten noch Platzhalter; Deployment gesperrt."
-            exit 1
-          fi
           touch _site/.nojekyll
       - name: Resolve latest successful CC0 original-image artifact
         id: original-run
@@ -113,6 +105,15 @@ jobs:
           path: _site/review
       - name: Verify gallery metadata and unchanged local original bytes
         run: python scripts/audit_gallery_rights.py --root _site
+      - name: Enforce completed legal notices before Pages upload
+        run: |
+          set -euo pipefail
+          # Keep this fail-closed gate after the image audit but before any upload.
+          if grep -Eq '\[[^]]+\]' _site/impressum.html _site/datenschutz.html || \
+             grep -Eiq 'MUSTER[[:space:]]*/[[:space:]]*PLATZHALTER|Angaben noch unvollständig|Angaben sind derzeit unvollständig' _site/impressum.html _site/datenschutz.html; then
+            echo "::error::Rechtstexte enthalten noch Platzhalter; Deployment gesperrt."
+            exit 1
+          fi
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
