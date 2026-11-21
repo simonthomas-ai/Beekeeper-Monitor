@@ -9,12 +9,14 @@ import prepare_hornet_visual_review as review
 
 
 class ReviewQueueTests(unittest.TestCase):
-    def test_large_url_only_https_square(self):
-        self.assertEqual(review.large_url("https://static.inaturalist.org/photos/1/square.jpg"),
-                         "https://static.inaturalist.org/photos/1/large.jpg")
-        self.assertEqual(review.large_url("http://static.inaturalist.org/photos/1/square.jpg"), "")
-        self.assertEqual(review.large_url("https://example.org/photos/1/square.jpg"), "")
-        self.assertEqual(review.large_url("https://static.inaturalist.org/photos/1/original.jpg"), "")
+    def test_original_url_only_trusted_inaturalist_photo(self):
+        self.assertEqual(review.original_url("https://static.inaturalist.org/photos/1/square.jpg", "1"),
+                         "https://static.inaturalist.org/photos/1/original.jpg")
+        self.assertEqual(review.original_url("https://inaturalist-open-data.s3.amazonaws.com/photos/1/large.jpg", "1"),
+                         "https://inaturalist-open-data.s3.amazonaws.com/photos/1/original.jpg")
+        self.assertEqual(review.original_url("http://static.inaturalist.org/photos/1/square.jpg", "1"), "")
+        self.assertEqual(review.original_url("https://example.org/photos/1/square.jpg", "1"), "")
+        self.assertEqual(review.original_url("https://static.inaturalist.org/photos/2/square.jpg", "1"), "")
 
     def test_only_verified_metadata_and_never_approve(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -41,8 +43,8 @@ class ReviewQueueTests(unittest.TestCase):
             self.assertEqual(rows[0]["training_approved"], "NO")
             self.assertEqual(rows[0]["visual_species_verified"], "NO")
             self.assertEqual(rows[0]["rights_verified"], "NO")
-            self.assertEqual(rows[0]["large_review_url"],
-                             "https://static.inaturalist.org/photos/2/large.jpg")
+            self.assertEqual(rows[0]["original_review_url"],
+                             "https://static.inaturalist.org/photos/2/original.jpg")
 
 
 if __name__ == "__main__":
