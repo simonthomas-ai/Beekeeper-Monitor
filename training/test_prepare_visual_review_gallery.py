@@ -38,8 +38,51 @@ class VisualReviewGalleryTests(unittest.TestCase):
             self.assertIn('option value="wasps"', result)
             self.assertIn("items[i].dataset_group===filter", result)
             self.assertIn("label+\": \"+items.filter", result)
-            self.assertIn(" / 200", result)
+            self.assertNotIn(" / 200", result)
+            self.assertIn("Bilddatei in Originalgröße öffnen", result)
             self.assertIn('"dataset_group": "asian_hornet"', result)
+
+
+    def test_quality_screen_rejects_small_images_and_shows_metrics(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "screened.csv"
+            output = Path(folder) / "gallery.html"
+            fields = ["photo_id", "observation_id", "species_candidate", "image_url",
+                      "source_url", "license", "creator", "dataset_group",
+                      "image_width", "image_height", "image_megapixels",
+                      "image_bytes", "sharpness_score", "image_quality_status",
+                      "quality_rank", "quality_reason"]
+            rows = [
+                {"photo_id":"10", "observation_id":"20", "species_candidate":"Vespa velutina",
+                 "dataset_group":"asian_hornet",
+                 "image_url":"https://static.inaturalist.org/photos/10/original.jpg",
+                 "source_url":"https://www.inaturalist.org/observations/20",
+                 "license":"CC0-1.0", "creator":"creator",
+                 "image_width":"1600", "image_height":"1200", "image_megapixels":"1.92",
+                 "image_bytes":"200000", "sharpness_score":"42.1",
+                 "image_quality_status":"PASS", "quality_rank":"1",
+                 "quality_reason":"dimensions passed"},
+                {"photo_id":"11", "observation_id":"21", "species_candidate":"Vespa velutina",
+                 "dataset_group":"asian_hornet",
+                 "image_url":"https://static.inaturalist.org/photos/11/original.jpg",
+                 "source_url":"https://www.inaturalist.org/observations/21",
+                 "license":"CC0-1.0", "creator":"creator",
+                 "image_width":"320", "image_height":"240", "image_megapixels":"0.077",
+                 "image_bytes":"5000", "sharpness_score":"2.0",
+                 "image_quality_status":"REJECT_LOW_RESOLUTION", "quality_rank":"",
+                 "quality_reason":"too small"},
+            ]
+            with source.open("w", newline="", encoding="utf-8") as stream:
+                writer = csv.DictWriter(stream, fieldnames=fields)
+                writer.writeheader()
+                writer.writerows(rows)
+            gallery(source, output, species="Vespa velutina")
+            result = output.read_text(encoding="utf-8")
+            self.assertIn('\"photo_id\": \"10\"', result)
+            self.assertNotIn('\"photo_id\": \"11\"', result)
+            self.assertIn('\"image_width\": 1600', result)
+            self.assertIn('\"sharpness_score\": \"42.1\"', result)
+            self.assertIn("nur Sortierung", result)
 
 
 if __name__ == "__main__":
