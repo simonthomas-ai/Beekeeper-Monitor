@@ -33,6 +33,11 @@ class VisualReviewGalleryTests(unittest.TestCase):
             self.assertIn("naturalWidth", result)
             self.assertIn("naturalHeight", result)
             self.assertIn("2048 px", result)
+            self.assertIn('option value="asian_hornet"', result)
+            self.assertIn('option value="bumblebees"', result)
+            self.assertIn('option value="wasps"', result)
+            self.assertIn("items[i].dataset_group===filter", result)
+            self.assertIn('"dataset_group": "asian_hornet"', result)
 
 
 if __name__ == "__main__":
