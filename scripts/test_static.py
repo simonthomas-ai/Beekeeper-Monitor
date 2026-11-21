@@ -73,3 +73,9 @@ assert (root/'varroa-ui.js').is_file()
 assert 'href="./varroa.html"' in html
 assert 'id="varroa-mode"' in (root/'varroa.html').read_text()
 assert './varroa.html' in sw and './varroa-ui.js' in sw
+
+# Camera model choice must never imply that unreviewed weights execute.
+assert 'id="camera-model"' in html
+assert all('value="'+key+'"' in html for key in ('none','hornet3000','varroa-board','varroa-bee'))
+media=(root/'live-media.js').read_text()
+assert 'NICHT AKTIV' in media and 'modelSelect.addEventListener' in media
