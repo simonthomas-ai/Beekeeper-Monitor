@@ -9,6 +9,8 @@ on:
       - 'training/prepare_visual_review_gallery.py'
       - 'training/screen_inaturalist_image_quality.py'
       - 'training/test_screen_inaturalist_image_quality.py'
+      - 'training/download_original_inaturalist_images.py'
+      - 'training/test_download_original_inaturalist_images.py'
       - 'training/test_prepare_visual_review_gallery.py'
       - '.github/workflows/ki-cc0-quellen.yml'
   schedule:
@@ -31,6 +33,8 @@ jobs:
         run: python3 -m unittest training.test_screen_inaturalist_image_quality -v
       - name: Offline-Test der paginierten Bildrecherche und Bildquellen-Normalisierung
         run: python3 -m unittest training.test_discover_cc0_candidates -v
+      - name: Offline-Test des bytegenauen Originalbild-Downloads
+        run: python3 -m unittest training.test_download_original_inaturalist_images -v
       - name: Offline-Test der sicheren Galeriegenerierung
         run: python3 -m unittest training.test_prepare_visual_review_gallery -v
       - name: iNaturalist CC0-Metadaten recherchieren (100 Kandidaten je Art, keine KI-Freigabe)
@@ -43,14 +47,31 @@ jobs:
         run: python3 training/verify_inaturalist_photo_metadata.py --input training/inaturalist-review-queue.csv --output training/velutina-photo-verification.csv --species 'Vespa velutina' --limit 100
       - name: Originalbild-Dateien temporaer auf Groesse und Lesbarkeit pruefen
         run: python3 training/screen_inaturalist_image_quality.py --input training/inaturalist-review-queue.csv --output training/inaturalist-quality-screen.csv --pause 0.15 --timeout 15
+      - name: Unveraenderte CC0-Originaldateien fuer Vespa velutina herunterladen
+        run: |
+          mkdir -p public-review-assets/images/velutina
+          python3 training/download_original_inaturalist_images.py \
+            --input training/inaturalist-quality-screen.csv \
+            --verification training/velutina-photo-verification.csv \
+            --species 'Vespa velutina' \
+            --output-dir public-review-assets/images/velutina \
+            --manifest public-review-assets/velutina-original-images-manifest.csv
       - name: Pruefgalerie fuer alle fuenf Arten erstellen
         run: |
-          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/velutina-visual-review.html --species 'Vespa velutina'
+          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/velutina-visual-review.html --species 'Vespa velutina' --images-manifest public-review-assets/velutina-original-images-manifest.csv
           python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/crabro-visual-review.html --species 'Vespa crabro'
           python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/apis-visual-review.html --species 'Apis mellifera'
           python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/bombus-visual-review.html --species 'Bombus terrestris'
           python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/vespula-visual-review.html --species 'Vespula vulgaris'
-          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/all-visual-review.html --species ALL
+          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/all-visual-review.html --species ALL --images-manifest public-review-assets/velutina-original-images-manifest.csv
+      - name: Unveraenderte Originaldateien fuer GitHub Pages als Build-Artefakt bereitstellen
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: original-velutina-images
+          path: public-review-assets/
+          if-no-files-found: error
+          retention-days: 14
       - name: Mobile Bildpruefung auf GitHub Pages bereitstellen
         if: success()
         run: |
