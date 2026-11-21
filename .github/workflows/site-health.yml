@@ -1,8 +1,8 @@
 name: Public site health
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '29 8 * * *'
+  # Kein taeglicher Online-Check: oeffentliche Pages-Verteilung ist deaktiviert.
+  # Bei ausdruecklich freigegebener Veroeffentlichung manuell pruefen.
 permissions:
   contents: read
 jobs:
