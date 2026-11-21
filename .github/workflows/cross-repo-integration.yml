@@ -51,6 +51,9 @@ jobs:
       - name: Bridge-Vertrag und Zuverlässigkeit prüfen
         working-directory: beekeeper3000/monitor-bridge
         run: npm test
+      - name: Echte HTTP-Brücke zum lokalen Empfänger und Replay prüfen
+        working-directory: monitor
+        run: python -m unittest scripts.test_cross_repo_smoke -v
       - name: Integrierte Tests dokumentieren
         if: always()
         run: |
