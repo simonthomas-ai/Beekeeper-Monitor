@@ -7,6 +7,24 @@
   const startMic = document.getElementById('start-mic');
   const stop = document.getElementById('stop-media');
   const level = document.getElementById('mic-level');
+  const modelSelect = document.getElementById('camera-model');
+  const modelStatus = document.getElementById('camera-model-status');
+  const modelNames = Object.freeze({
+    none: 'Kein KI-Modell',
+    hornet3000: 'Hornet3000 (Hornissenerkennung)',
+    'varroa-board': 'VarroDetector (Bodeneinlage)',
+    'varroa-bee': 'Gratheon (Milben auf Bienen)'
+  });
+  function updateModelStatus() {
+    const name = Object.prototype.hasOwnProperty.call(modelNames, modelSelect.value)
+      ? modelNames[modelSelect.value] : modelNames.none;
+    modelStatus.textContent = modelSelect.value === 'none'
+      ? 'Aktiv: kein KI-Modell. Kameravorschau ist möglich.'
+      : 'Ausgewählt: ' + name + '. Status: NICHT AKTIV – kein Browsermodell geladen, keine Erkennung.';
+  }
+  modelSelect.addEventListener('change', updateModelStatus);
+  updateModelStatus();
+
   let cameraStream = null, micStream = null, context = null, analyser = null, raf = 0;
   const setStatus = message => { status.textContent = message; };
   const secure = () => window.isSecureContext && !!navigator.mediaDevices?.getUserMedia;
