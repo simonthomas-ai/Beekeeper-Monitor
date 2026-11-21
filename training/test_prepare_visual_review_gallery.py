@@ -41,6 +41,7 @@ class VisualReviewGalleryTests(unittest.TestCase):
             self.assertIn('option value="bumblebees"', result)
             self.assertIn('option value="wasps"', result)
             self.assertIn("items[i].dataset_group===filter", result)
+            self.assertIn("iNaturalist-Beobachter / Attributionsbasis", result)
             self.assertIn("label+\": \"+items.filter", result)
             self.assertNotIn(" / 200", result)
             self.assertIn("Unveränderte Originaldatei öffnen", result)
