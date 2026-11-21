@@ -12,7 +12,10 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from inaturalist_media import original_image_url
+try:
+    from training.inaturalist_media import original_image_url
+except ModuleNotFoundError:
+    from inaturalist_media import original_image_url
 
 FIELDS = ["observation_id", "photo_id", "species_candidate", "license", "source_url",
           "api_photo_found", "api_photo_license", "api_attribution",
