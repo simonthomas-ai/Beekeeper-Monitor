@@ -37,7 +37,19 @@ def inspect(download=False, inspect_graph=False):
                 out.write(chunk)
         if total != SIZE or git_blob.hexdigest() != BLOB:
             raise ValueError("Git blob identity or size mismatch")
-        graph = {}\n        if inspect_graph:\n            import onnx\n            model = onnx.load(str(target), load_external_data=False)\n            if any(t.data_location == onnx.TensorProto.EXTERNAL for t in model.graph.initializer):\n                raise ValueError("External ONNX tensor data not permitted")\n            def tensors(values):\n                return [{"name": v.name, "type": onnx.helper.printable_type(v.type)} for v in values]\n            graph = {"ir_version": model.ir_version, "opsets": [{"domain": x.domain, "version": x.version} for x in model.opset_import],\n                     "inputs": tensors(model.graph.input), "outputs": tensors(model.graph.output),\n                     "nodes": len(model.graph.node), "operators": sorted(set(n.op_type for n in model.graph.node)),\n                     "metadata": {x.key: x.value[:2000] for x in model.metadata_props}}\n        return {"status": "bytes_verified_not_executed", "source": URL,
+        graph = {}
+        if inspect_graph:
+            import onnx
+            model = onnx.load(str(target), load_external_data=False)
+            if any(t.data_location == onnx.TensorProto.EXTERNAL for t in model.graph.initializer):
+                raise ValueError("External ONNX tensor data not permitted")
+            def tensors(values):
+                return [{"name": v.name, "type": onnx.helper.printable_type(v.type)} for v in values]
+            graph = {"ir_version": model.ir_version, "opsets": [{"domain": x.domain, "version": x.version} for x in model.opset_import],
+                     "inputs": tensors(model.graph.input), "outputs": tensors(model.graph.output),
+                     "nodes": len(model.graph.node), "operators": sorted(set(n.op_type for n in model.graph.node)),
+                     "metadata": {x.key: x.value[:2000] for x in model.metadata_props}}
+        return {"status": "bytes_verified_not_executed", "source": URL,
                 "bytes": total, "git_blob": git_blob.hexdigest(),
                 "sha256": digest.hexdigest(), "graph": graph, "license_approved": False,
                 "inference_validated": False}
