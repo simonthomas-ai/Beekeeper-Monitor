@@ -37,6 +37,12 @@ class CandidateAuditTests(unittest.TestCase):
         self.assertEqual(report["approved_training_images"], 0)
         self.assertTrue(report["requires_human_review"])
 
+    def test_cc0_license_notice_is_not_accepted_as_creator_identity(self):
+        row = dict(BASE, creator="no rights reserved")
+        report = self.check_rows([row])
+        errors = report["metadata_errors"][0]["errors"]
+        self.assertIn("creator_identity_missing_or_mislabelled", errors)
+
     def test_duplicate_image_url_detected(self):
         duplicate = dict(BASE, source_id="inat:2:22", observation_id="2", photo_id="22")
         report = self.check_rows([BASE, duplicate])
