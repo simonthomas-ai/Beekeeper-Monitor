@@ -189,7 +189,7 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           # Pin the integration partner to a reviewed commit; avoid moving-main CI drift.
-          ref: 267c7b07970c632d3f51b1171dc0fd0f62afd137
+          ref: 419ee0cd6bbf8e6ee32621cb64f5d15801fa2507
           path: beekeeper3000
           persist-credentials: false
       - name: Beekeeper-Monitor fuer repo-uebergreifenden Vertrag auschecken
@@ -205,6 +205,9 @@ jobs:
         run: git -C beekeeper3000 rev-parse HEAD
       - name: Bridge-Abhaengigkeiten reproduzierbar installieren
         run: npm --prefix beekeeper3000/monitor-bridge ci --ignore-scripts --no-audit --no-fund
+      - name: Offline HTTP Recovery (echter Loopback-Server und SQLite-Neustart)
+        run: |
+          PYTHONPATH=beekeeper3000 python3 -m unittest discover -s beekeeper3000/camera -p 'test_offline_http_recovery.py' -v
       - name: BeeKeeper3000-Bridge-Tests
         run: npm --prefix beekeeper3000/monitor-bridge test
       - name: Repo-uebergreifender Bridge-Vertrag bis zur Warnregel
