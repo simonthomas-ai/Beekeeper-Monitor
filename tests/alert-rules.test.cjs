@@ -50,6 +50,28 @@ test('only vespa_velutina camera or acoustic events qualify', () => {
   assert.deepEqual(out.alerts.map((a) => a.id), [hex('d')]);
 });
 
+test('BeeKeeper3000 unverified velutina candidate triggers an opt-in warning', () => {
+  const candidate = row('a', {}, {
+    label: 'unverified_candidate:vespa_velutina',
+    verification_status: 'unverified'
+  });
+  const result = rules.selectAlerts([candidate], on(), new Set(), NOW);
+  assert.equal(result.alerts.length, 1);
+  assert.match(rules.describe(result.alerts[0]), /unbestätigt/);
+});
+
+test('other bridge species and misleading prefixes never trigger velutina warnings', () => {
+  for (const label of [
+    'unverified_candidate:vespa_crabro',
+    'unverified_candidate:vespa_velutina_other',
+    'unverified_candidate:other_vespidae',
+    'unverified_candidate:vespa_velutina:confirmed'
+  ]) {
+    const result = rules.selectAlerts([row('a', {}, { label })], on(), new Set(), NOW);
+    assert.equal(result.alerts.length, 0, label);
+  }
+});
+
 test('already seen, stale, future and malformed events are ignored', () => {
   const rows = [
     row('a'),
