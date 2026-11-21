@@ -4,7 +4,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from training.prepare_species_review import prepare
+try:
+    from training.prepare_species_review import prepare
+except ModuleNotFoundError:
+    from prepare_species_review import prepare
 
 
 class SpeciesReviewGroupTests(unittest.TestCase):
@@ -34,6 +37,7 @@ class SpeciesReviewGroupTests(unittest.TestCase):
                 output = list(csv.DictReader(stream))
             self.assertEqual({row["species_candidate"] for row in output}, {"Bombus terrestris", "Bombus lapidarius"})
             self.assertEqual({row["review_group"] for row in output}, {"bumblebees"})
+            self.assertEqual({row["dataset_group"] for row in output}, {"bumblebees"})
             summary = json.loads(target.with_suffix(".json").read_text(encoding="utf-8"))
             self.assertEqual(summary["dataset_group_counts"], {"bumblebees": 2})
             self.assertEqual(summary["approved_for_training"], 0)
