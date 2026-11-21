@@ -1,5 +1,11 @@
 # Automatische Veröffentlichung und Betriebsprüfungen
 
+## Aktueller Veröffentlichungsstatus – 21.11.2026
+
+Die GitHub-Pages-URL ist die vorgesehene öffentliche Adresse, aber die Veröffentlichung des aktuellen `main`-Quellstands ist derzeit nicht nachgewiesen. `impressum.html` und `datenschutz.html` enthalten noch Platzhalter für Betreiberidentität, Anschrift und Kontakt. Der Pages-Workflow erkennt diese Angaben und bricht vor dem Upload des Veröffentlichungsartefakts absichtlich ab.
+
+**Diese Sperre nicht umgehen und keine Betreiber- oder Rechtsdaten erfinden.** Erst nach Eintragung und Prüfung der echten Angaben darf ein Pages-Deployment erfolgreich sein. Ein früherer erfolgreicher Pages-Lauf belegt nicht, dass der aktuelle Stand veröffentlicht ist.
+
 ## Automatische Abläufe
 - Jeder Push auf `main` startet `.github/workflows/pages.yml` zur Prüfung und Veröffentlichung der statischen PWA.
 - `.github/workflows/browser.yml` prüft die Integration mit Chromium.
