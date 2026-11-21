@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 from urllib.parse import urlparse
 
+from inaturalist_media import normalize_if_inaturalist
+
 def gallery(source, output, species="Vespa velutina"):
     with open(source, newline="", encoding="utf-8-sig") as f:
         rows = [r for r in csv.DictReader(f) if species == "ALL" or r.get("species_candidate") == species]
@@ -16,7 +18,16 @@ def gallery(source, output, species="Vespa velutina"):
     for row in rows:
         if any(urlparse(row.get(k, "")).scheme != "https" for k in ("image_url", "source_url")):
             raise ValueError("HTTPS required")
-        items.append({k: row.get(k, "") for k in ("photo_id", "observation_id", "species_candidate", "image_url", "source_url", "license", "creator")})
+        photo_id = row.get("photo_id", "")
+        image_url = normalize_if_inaturalist(row.get("image_url", ""), photo_id)
+        if not image_url.startswith("https://"):
+            raise ValueError("HTTPS required for image URL")
+        items.append({
+            "photo_id": photo_id, "observation_id": row.get("observation_id", ""),
+            "species_candidate": row.get("species_candidate", ""), "image_url": image_url,
+            "source_url": row.get("source_url", ""), "license": row.get("license", ""),
+            "creator": row.get("creator", ""),
+        })
     if len({item["photo_id"] for item in items}) != len(items):
         raise ValueError("Duplicate photo IDs across species")
     data = json.dumps(items, ensure_ascii=False).replace("<", "\\u003c")
@@ -27,7 +38,7 @@ def gallery(source, output, species="Vespa velutina"):
 <h1>VespaGuard – Bildprüfung: __SPECIES__</h1>
 <p><strong>Keine automatische Freigabe.</strong> Bilder werden von iNaturalist geladen; ohne Internet sind sie eventuell nicht sichtbar. Prüfentscheidungen bleiben auf diesem Gerät, bis du sie exportierst. Markierungen sind nur Vorschläge und müssen fachlich bestätigt werden.</p>
 <div id="unified-controls" hidden><label for="species-filter">Art auswählen</label> <select id="species-filter"><option value="ALL">Alle fünf Arten</option><option value="Vespa velutina">Asiatische Hornisse</option><option value="Vespa crabro">Europäische Hornisse</option><option value="Apis mellifera">Honigbiene</option><option value="Bombus terrestris">Hummel</option><option value="Vespula vulgaris">Wespe</option></select><p id="progress" role="status"></p><progress id="progress-bar" max="100" value="0" style="width:100%"></progress></div>
-<p id="counter"></p><div class="viewer" id="viewer"><img id="photo" alt="Ungeprüftes Insektenfoto"><svg id="overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none"></svg></div>
+<p id="counter"></p><p id="image-meta" role="status">Bildabmessungen werden nach dem Laden angezeigt.</p><div class="viewer" id="viewer"><img id="photo" alt="Ungeprüftes Insektenfoto"><svg id="overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none"></svg></div>
 <p><a id="source" target="_blank" rel="noopener noreferrer">Originalbeobachtung ansehen</a></p>
 <p id="state"></p>
 <label for="decision">Visuelle Prüfung</label>
@@ -73,7 +84,9 @@ function updateProgress(){
 
 function current(){const item=selected();return saved[item.photo_id]||{decision:"PENDING",boxes:[]}}
 function persist(v){saved[selected().photo_id]=v;try{localStorage.setItem(key,JSON.stringify(saved))}catch(e){$("state").textContent="Speichern nicht möglich – bitte JSON exportieren."}}
-function render(){const item=selected(),v=current();$("counter").textContent=(index+1)+"/"+visible.length+" – "+item.species_candidate+" – Foto "+item.photo_id;updateProgress();$("photo").src=item.image_url;$("source").href=item.source_url;$("decision").value=v.decision;$("state").textContent="Status: "+v.decision+" · Markierungen: "+v.boxes.length+" · KEINE Trainingsfreigabe";$("overlay").replaceChildren();for(const b of v.boxes){const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");rect.setAttribute("x",(b.x-b.width/2)*1000);rect.setAttribute("y",(b.y-b.height/2)*1000);rect.setAttribute("width",b.width*1000);rect.setAttribute("height",b.height*1000);$("overlay").append(rect)}}
+$("photo").onload=()=>{$("image-meta").textContent="Geladene Bildgröße: "+$("photo").naturalWidth+" × "+$("photo").naturalHeight+" Pixel · iNaturalist-Variante original (maximal 2048 px Kantenlänge; nicht zwingend Kamera-Original)."};
+$("photo").onerror=()=>{$("image-meta").textContent="Bild konnte nicht geladen werden; bitte Originalquelle prüfen."};
+function render(){const item=selected(),v=current();$("counter").textContent=(index+1)+"/"+visible.length+" – "+item.species_candidate+" – Foto "+item.photo_id;updateProgress();$("image-meta").textContent="Bild wird geladen …";$("photo").src=item.image_url;$("source").href=item.source_url;$("decision").value=v.decision;$("state").textContent="Status: "+v.decision+" · Markierungen: "+v.boxes.length+" · KEINE Trainingsfreigabe";$("overlay").replaceChildren();for(const b of v.boxes){const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");rect.setAttribute("x",(b.x-b.width/2)*1000);rect.setAttribute("y",(b.y-b.height/2)*1000);rect.setAttribute("width",b.width*1000);rect.setAttribute("height",b.height*1000);$("overlay").append(rect)}}
 $("species-filter").onchange=refreshFilter;
 $("decision").onchange=()=>{const v=current();v.decision=$("decision").value;persist(v);render()};
 $("prev").onclick=()=>{index=(index-1+visible.length)%visible.length;render()};
