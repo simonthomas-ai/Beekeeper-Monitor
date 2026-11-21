@@ -184,6 +184,26 @@ class GalleryRightsAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(AuditError, "original derivative"):
             audit(self.root)
 
+    def test_rejects_remote_image_from_unapproved_host(self):
+        remote_item = {
+            "photo_id": "51", "observation_id": "101",
+            "species_candidate": "Vespa crabro", "dataset_group": "european_hornet",
+            "image_url": "https://evil.example/photos/51/original.jpg",
+            "source_url": "https://www.inaturalist.org/observations/101",
+            "license": "CC0-1.0", "creator": "Author",
+            "creator_login": "author-login",
+            "attribution": "Author, no rights reserved (CC0)",
+            "license_notice": "no rights reserved",
+            "image_delivery": "REMOTE_INATURALIST_ORIGINAL",
+        }
+        self._write_galleries(all_items=self.local_items() + [remote_item])
+        (self.review / "crabro.html").write_text(
+            "<script>const items=" + json.dumps([remote_item]) + ";</script>",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(AuditError, "allowlisted HTTPS iNaturalist original"):
+            audit(self.root)
+
     def test_rejects_velutina_remote_fallback(self):
         remote_item = {
             "photo_id": "51", "observation_id": "101",
