@@ -1,5 +1,11 @@
 name: Täglicher Bildlizenz-Abgleich
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/photo-license-audit.yml'
+      - 'scripts/check_live_photo_licenses.py'
+      - 'review/all.html'
   workflow_dispatch:
   schedule:
     - cron: '43 6 * * *'
