@@ -48,6 +48,15 @@ class VisualReviewGalleryTests(unittest.TestCase):
             self.assertIn('"dataset_group": "asian_hornet"', result)
 
 
+    def test_untrusted_species_filter_is_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaisesRegex(ValueError, "Unsupported species filter"):
+                gallery(
+                    Path(folder) / "missing.csv",
+                    Path(folder) / "gallery.html",
+                    species="ALL</script><script>alert(1)</script>",
+                )
+
     def test_external_creator_metadata_cannot_close_inline_script(self):
         with tempfile.TemporaryDirectory() as folder:
             source = Path(folder) / "in.csv"
