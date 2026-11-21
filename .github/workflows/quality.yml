@@ -18,3 +18,5 @@ jobs:
       - run: node --check app.js
       - run: node --check sw.js
       - run: python3 scripts/quality_report.py
+      - run: python3 -m unittest training.test_audit_gallery_rights -v
+      - run: python3 -m unittest training.test_provenance -v
