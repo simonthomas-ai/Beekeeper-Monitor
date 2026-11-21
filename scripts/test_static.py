@@ -45,6 +45,8 @@ assert "path: _site" in pages
 assert "cp index.html datenschutz.html impressum.html style.css app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/" in pages
 assert "cp wissen/wissenschaft-hornissen-bienen.html _site/wissen/" in pages
 assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
+import subprocess
+subprocess.run(["python", str(root/"scripts/audit_gallery_rights.py")], cwd=root, check=True)
 print("Static PWA and research catalog checks passed; real-device and AI tests remain outstanding.")
 for asset in ("alert-rules.js","alert-ui.js"):
     assert f'./{asset}' in sw,asset
