@@ -59,6 +59,7 @@ jobs:
           python3 -m unittest discover -s training -p 'test_stage_mobile_reviews.py' -v
           python3 -m unittest discover -s training -p 'test_stage_iphone_csv_reviews.py' -v
           python3 -m unittest training.test_provenance -v
+          python3 -m unittest training.test_train -v
       - name: KI-Dateninventur
         id: model
         continue-on-error: true
@@ -172,7 +173,7 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           # Pin the integration partner to a reviewed commit; avoid moving-main CI drift.
-          ref: 33f232bebfda97e7334a3a7b4533a4eee19865dd
+          ref: 97022a907fabdd1a3af06c85b3b353c39333d093
           path: beekeeper3000
           persist-credentials: false
       - name: Node.js einrichten

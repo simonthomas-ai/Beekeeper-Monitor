@@ -8,21 +8,66 @@ import json
 import re
 from pathlib import Path
 import yaml
-from provenance import validate_provenance
 try:
+    from .provenance import validate_provenance
     from .class_schema import CLASS_NAMES
     from .evaluation import validate_per_class_summary
 except ImportError:  # Supports direct execution: python training/train.py
+    from provenance import validate_provenance
     from class_schema import CLASS_NAMES
     from evaluation import validate_per_class_summary
 
 CLASSES = list(CLASS_NAMES)
 SPLITS=('train','val','test')
 IMAGE_SUFFIXES={'.jpg','.jpeg','.png','.webp'}
+
+def validate_image_file(path):
+    """Decode each source image and reject mislabeled, animated or unsafe files."""
+    import warnings
+    from PIL import Image, UnidentifiedImageError
+
+    expected_formats = {'.jpg': 'JPEG', '.jpeg': 'JPEG', '.png': 'PNG', '.webp': 'WEBP'}
+    expected_format = expected_formats.get(Path(path).suffix.lower())
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(path) as image:
+                actual_format = image.format
+                width, height = image.size
+                frame_count = getattr(image, "n_frames", 1)
+                if width < 16 or height < 16:
+                    raise ValueError(f'Image dimensions are too small: {path}')
+                if width * height > 80_000_000:
+                    raise ValueError(f'Image exceeds the 80 megapixel safety limit: {path}')
+                if frame_count != 1:
+                    raise ValueError(f'Animated images are not accepted as still training samples: {path}')
+                image.verify()
+            # verify() checks container integrity; load() also exercises pixel decoding.
+            with Image.open(path) as image:
+                image.load()
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning,
+            UnidentifiedImageError, OSError) as exc:
+        raise ValueError(f'Image is corrupt, unreadable or unsafe: {path}') from exc
+
+    if actual_format != expected_format:
+        raise ValueError(
+            f'Image extension/content mismatch for {path}: '
+            f'expected {expected_format}, got {actual_format}'
+        )
+    return {'format': actual_format, 'width': width, 'height': height}
+
+
 def validate(root):
     root=Path(root).resolve()
     config=yaml.safe_load((root/'training/data.yaml').read_text(encoding='utf-8'))
-    base=(root/config['path']).resolve()
+    dataset_path = root / config['path']
+    if not dataset_path.is_dir():
+        raise FileNotFoundError(
+            'Real training dataset directory is missing: %s. '
+            'Create datasets/beekeeper with train/val/test images, labels and provenance '
+            'after the source rights and expert annotations are approved.' % dataset_path
+        )
+    base=dataset_path.resolve()
     if not base.is_relative_to(root):
         raise ValueError('Dataset path must remain inside repository')
     if [config['names'][i] for i in range(len(CLASSES))]!=CLASSES:
@@ -36,6 +81,7 @@ def validate(root):
             raise FileNotFoundError(f'Missing actual images/labels for {split}')
         counts={name:0 for name in CLASSES}
         images=sorted(p for p in image_dir.rglob('*') if p.suffix.lower() in IMAGE_SUFFIXES)
+        decoded_images = 0
         if not images:
             raise ValueError(f'No real images in {image_dir}')
         expected_labels = {
@@ -49,6 +95,8 @@ def validate(root):
         if expected_labels != actual_labels:
             raise ValueError(f'Label files do not match images in {split}: missing={len(expected_labels-actual_labels)} orphan={len(actual_labels-expected_labels)}')
         for img in images:
+            validate_image_file(img)
+            decoded_images += 1
             relative=img.relative_to(image_dir).with_suffix('.txt')
             label=label_dir/relative
             if not label.is_file():
@@ -73,7 +121,7 @@ def validate(root):
                 ):
                     raise ValueError(f'Invalid class/box in {label}')
                 counts[CLASSES[cls]]+=1
-        report[split]={'images':len(images),'objects':counts}
+        report[split]={'images':len(images),'decoded_images':decoded_images,'objects':counts}
     # Per-class coverage must be present in each split before claiming all models trained.
     for split in SPLITS:
         info = report[split]
@@ -93,9 +141,21 @@ def main():
     parser.add_argument('--pretrained-model-source-url',default='https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt')
     parser.add_argument('--pretrained-model-sha256',required=False)
     parser.add_argument('--confidence-threshold',type=float,default=0.5)
+    parser.add_argument('--batch',type=int,default=16)
+    parser.add_argument('--workers',type=int,default=4)
+    parser.add_argument('--seed',type=int,default=42)
+    parser.add_argument('--patience',type=int,default=20)
     args=parser.parse_args()
     if not 1 <= args.epochs <= 500 or not 32 <= args.imgsz <= 4096:
         parser.error('--epochs must be 1..500 and --imgsz must be 32..4096')
+    if not 1 <= args.batch <= 256:
+        parser.error('--batch must be 1..256')
+    if not 0 <= args.workers <= 32:
+        parser.error('--workers must be 0..32')
+    if not 0 <= args.seed <= 2147483647:
+        parser.error('--seed must be 0..2147483647')
+    if not 0 <= args.patience <= 200:
+        parser.error('--patience must be 0..200')
     root=Path(__file__).resolve().parents[1]
     report=validate(root)
     print(json.dumps(report,indent=2))
@@ -129,7 +189,7 @@ def main():
         resolved=Path(temp)/'data.yaml'
         resolved.write_text(yaml.safe_dump(cfg),encoding='utf-8')
         model=YOLO(str(pretrained_path))
-        results=model.train(data=str(resolved),epochs=args.epochs,imgsz=args.imgsz,device=args.device,project=str(root/'runs'),name='vespa-seven-class-detector',exist_ok=False)
+        results=model.train(data=str(resolved),epochs=args.epochs,imgsz=args.imgsz,device=args.device,batch=args.batch,workers=args.workers,seed=args.seed,deterministic=True,patience=args.patience,project=str(root/'runs'),name='vespa-seven-class-detector',exist_ok=False)
         run_dir=Path(model.trainer.save_dir)
         best_weights=run_dir/'weights'/'best.pt'
         if not best_weights.is_file():
@@ -172,8 +232,19 @@ def main():
         manifest_path=model_dir/'model-manifest.json'
         manifest_path.write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
         metrics_dict=getattr(validation,'results_dict',{}) or {}
+        training_config={
+            'epochs': args.epochs,
+            'imgsz': args.imgsz,
+            'device': args.device,
+            'batch': args.batch,
+            'workers': args.workers,
+            'seed': args.seed,
+            'deterministic': True,
+            'patience': args.patience,
+        }
         evidence={
             'status':'internal_test_split_only_not_independent_field_validation',
+            'training_config': training_config,
             'dataset_validation':report,
             'test_metrics':{str(key):float(value) for key,value in metrics_dict.items()},
             'test_metrics_by_class':per_class_metrics,
