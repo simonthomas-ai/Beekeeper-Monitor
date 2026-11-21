@@ -1,8 +1,7 @@
 name: Browser integration tests
 on:
-  push:
-    branches: [main]
-  pull_request:
+  # Manuell ausfuehrbarer gezielter Browsertest.
+  # Bei Push/PR prueft der Ein-Klick-Gesamttest bereits Chromium.
   workflow_dispatch:
 permissions:
   contents: read
