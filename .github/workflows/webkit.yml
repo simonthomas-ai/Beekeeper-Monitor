@@ -1,8 +1,7 @@
 name: Safari WebKit and iPhone emulation
 on:
-  push:
-    branches: [main]
-  pull_request:
+  # Safari und iPhone laufen bei Push/PR bereits im Gesamttest.
+  # Separater WebKit-Lauf bleibt fuer gezielte Diagnose manuell verfuegbar.
   workflow_dispatch:
 permissions:
   contents: read
