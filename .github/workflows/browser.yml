@@ -20,6 +20,8 @@ jobs:
       - run: npm install --no-audit --no-fund
       - name: Verify bundled Chromium
         run: npx playwright --version
+      - name: Run pure PWA contract regression tests
+        run: node --test tests/alert-rules.test.cjs tests/backup-contract.test.cjs
       - name: Run full Chromium integration suite
         run: npm run test:e2e
       - name: Record browser test outcome
