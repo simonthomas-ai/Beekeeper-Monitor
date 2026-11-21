@@ -49,7 +49,7 @@ def main() -> None:
     checks = {
         "Qualitätsprüfung": os.environ.get("QUALITY_STATUS", "unknown"),
         "Validierung": os.environ.get("VALIDATION_STATUS", "unknown"),
-        "Gesamttest": os.environ.get("OVERALL_STATUS", "unknown"),
+        "Browser-Integration im Gesamttest": os.environ.get("BROWSER_STATUS", "unknown"),
     }
     result = render(source, checks)
     print(result)
