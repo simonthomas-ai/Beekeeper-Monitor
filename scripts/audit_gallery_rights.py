@@ -20,8 +20,9 @@ GALLERY_NAMES = ("all", "velutina", "crabro", "apis", "bombus", "vespula")
 MANIFEST_RELATIVE_PATH = Path("review") / "velutina-original-images-manifest.csv"
 MANIFEST_FIELDS = {
     "photo_id", "observation_id", "species_candidate", "source_url", "license",
-    "creator", "source_image_url", "local_image_path", "image_format",
-    "image_width", "image_height", "image_bytes", "sha256", "download_status",
+    "creator", "creator_login", "attribution", "license_notice",
+    "source_image_url", "local_image_path", "image_format", "image_width",
+    "image_height", "image_bytes", "sha256", "download_status",
 }
 IMAGE_HOSTS = {
     "static.inaturalist.org",
@@ -122,8 +123,18 @@ def _read_manifest(review_root: Path) -> dict[str, dict[str, str]]:
                 raise AuditError(f"manifest line {line_number}: image is not marked CC0-1.0")
             if row.get("download_status") != "DOWNLOADED_UNMODIFIED":
                 raise AuditError(f"manifest line {line_number}: original download status is invalid")
-            if not _nonempty(row.get("creator")):
-                raise AuditError(f"manifest line {line_number}: creator/attribution is missing")
+            creator = str(row.get("creator", "")).strip()
+            creator_login = str(row.get("creator_login", "")).strip()
+            attribution = str(row.get("attribution", "")).strip()
+            license_notice = str(row.get("license_notice", "")).strip()
+            if not creator or creator.lower() in ("unknown", "no rights reserved", "attribution unavailable"):
+                raise AuditError(f"manifest line {line_number}: photographer/observer identity is missing or mislabelled")
+            if not creator_login:
+                raise AuditError(f"manifest line {line_number}: iNaturalist observer login is missing")
+            if attribution != f"{creator}, no rights reserved (CC0)":
+                raise AuditError(f"manifest line {line_number}: CC0 attribution statement does not match the observer")
+            if "no rights reserved" not in license_notice.lower():
+                raise AuditError(f"manifest line {line_number}: separate CC0 licence notice is missing")
             observation_id = str(row.get("observation_id", "")).strip()
             if not observation_id.isdecimal() or not _is_observation_url(row.get("source_url"), observation_id):
                 raise AuditError(f"manifest line {line_number}: invalid observation/source URL binding")
@@ -233,8 +244,18 @@ def audit(root: Path) -> tuple[int, int]:
                 raise AuditError(f"{prefix}: invalid observation source URL")
             if not _nonempty(item.get("license")):
                 raise AuditError(f"{prefix}: license metadata missing")
-            if not _nonempty(item.get("creator")):
-                raise AuditError(f"{prefix}: creator/attribution metadata missing")
+            creator = str(item.get("creator", "")).strip()
+            creator_login = str(item.get("creator_login", "")).strip()
+            attribution = str(item.get("attribution", "")).strip()
+            license_notice = str(item.get("license_notice", "")).strip()
+            if not creator or creator.lower() in ("unknown", "no rights reserved", "attribution unavailable"):
+                raise AuditError(f"{prefix}: photographer/observer identity missing or incorrectly mapped")
+            if not creator_login:
+                raise AuditError(f"{prefix}: iNaturalist observer login missing")
+            if item.get("license") == "CC0-1.0" and attribution != f"{creator}, no rights reserved (CC0)":
+                raise AuditError(f"{prefix}: CC0 attribution statement does not match the observer")
+            if "no rights reserved" not in license_notice.lower():
+                raise AuditError(f"{prefix}: separate CC0 licence notice missing")
 
             image_url = item.get("image_url")
             delivery = item.get("image_delivery")
@@ -250,6 +271,8 @@ def audit(root: Path) -> tuple[int, int]:
                 seen_in_gallery.add(photo_id)
                 local_references.setdefault(gallery_name, {})[photo_id] = item
             else:
+                if gallery_name == "velutina" or item.get("species_candidate") == "Vespa velutina":
+                    raise AuditError(f"{prefix}: Velutina must use a manifest-verified local original; remote fallback is forbidden")
                 if delivery not in (None, "REMOTE_INATURALIST_ORIGINAL"):
                     raise AuditError(f"{prefix}: unknown image-delivery mode")
                 if not isinstance(image_url, str):
@@ -284,6 +307,9 @@ def audit(root: Path) -> tuple[int, int]:
                 "source_url": asset["source_url"],
                 "license": asset["license"],
                 "creator": asset["creator"],
+                "creator_login": asset["creator_login"],
+                "attribution": asset["attribution"],
+                "license_notice": asset["license_notice"],
                 "image_url": asset["local_image_path"],
                 "image_width": int(asset["image_width"]),
                 "image_height": int(asset["image_height"]),
