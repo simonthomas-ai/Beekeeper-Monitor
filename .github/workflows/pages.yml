@@ -39,7 +39,7 @@ jobs:
       - name: Stage public PWA files only
         run: |
           mkdir -p _site
-          cp index.html datenschutz.html impressum.html style.css app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/
+          cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/
           # Wissenschaftliche Quellen und deutschsprachige Wissensseite veroeffentlichen.
           mkdir -p _site/wissen
           cp wissen/wissenschaft-hornissen-bienen.html _site/wissen/
