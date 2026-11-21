@@ -34,6 +34,10 @@ jobs:
           python3 -m py_compile scripts/model_readiness.py
           node --check app.js
           node --check sw.js
+      - name: Warnregeln und Bridge-Kandidaten (Node Unit-Tests)
+        id: alerttests
+        continue-on-error: true
+        run: node --test tests/alert-rules.test.cjs
       - name: Browser-Integrationstests
         id: browser
         continue-on-error: true
@@ -102,6 +106,7 @@ jobs:
         if: always()
         env:
           STATIC: ${{ steps.static.outcome }}
+          ALERTTESTS: ${{ steps.alerttests.outcome }}
           BROWSER: ${{ steps.browser.outcome }}
           WEBKIT: ${{ steps.webkit.outcome }}
           IPHONE: ${{ steps.iphone.outcome }}
@@ -117,6 +122,7 @@ jobs:
           echo '| Prüfung | Ergebnis |' >> "$GITHUB_STEP_SUMMARY"
           echo '|---|---|' >> "$GITHUB_STEP_SUMMARY"
           echo "| PWA und Quellcode | $STATIC |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Warnregeln und Bridge-Kandidaten | $ALERTTESTS |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Chromium (18 Tests) | $BROWSER |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Safari WebKit (18 Tests) | $WEBKIT |" >> "$GITHUB_STEP_SUMMARY"
           echo "| iPhone-WebKit-Emulation (18 Tests) | $IPHONE |" >> "$GITHUB_STEP_SUMMARY"
@@ -163,6 +169,7 @@ jobs:
           SITE: ${{ steps.site.outcome }}
         run: |
           test "$STATIC" = success
+          test "$ALERTTESTS" = success
           test "$BROWSER" = success
           test "$WEBKIT" = success
           test "$IPHONE" = success
