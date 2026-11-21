@@ -1,0 +1,59 @@
+name: VespaGuard Repository-Integration
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cross-repo-integration.yml'
+      - 'integrations/**'
+      - 'docs/VESPAGUARD-INTEGRATION.md'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/cross-repo-integration.yml'
+      - 'integrations/**'
+      - 'docs/VESPAGUARD-INTEGRATION.md'
+  schedule:
+    - cron: '17 5 * * *'
+permissions:
+  contents: read
+jobs:
+  source-bridge-receiver:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Monitor auschecken
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: monitor
+          persist-credentials: false
+      - name: BeeKeeper3000 auschecken
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: simonthomas-ai/BeeKeeper3000
+          ref: main
+          path: beekeeper3000
+          persist-credentials: false
+      - name: Python vorbereiten
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+      - name: Node.js vorbereiten
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - name: Quell-API und Empfänger einzeln prüfen
+        run: |
+          cd beekeeper3000
+          python -m unittest discover -s network -p 'test_source_api*.py' -v
+          cd ../monitor
+          python -m unittest discover -s integrations -p 'test_*.py' -v
+      - name: Bridge-Vertrag und Zuverlässigkeit prüfen
+        working-directory: beekeeper3000/monitor-bridge
+        run: npm test
+      - name: Integrierte Tests dokumentieren
+        if: always()
+        run: |
+          echo '## VespaGuard: Repository-übergreifende Prüfung' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Beide aktuellen Hauptzweige werden zusammen ausgecheckt und ihre Source-API-, Bridge- und Receiver-Tests ausgeführt.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Diese Prüfung ist noch kein Feldtest mit echter Kamera, Funkhardware oder freigegebenem KI-Modell.' >> "$GITHUB_STEP_SUMMARY"
