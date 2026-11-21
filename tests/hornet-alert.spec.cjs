@@ -38,6 +38,28 @@ test('qualifying detection raises exactly one unconfirmed warning',async({page})
  await expect(page.locator('#alert-list li').first()).toContainText('unbestätigt');
 });
 
+test('BeeKeeper3000 bridge candidate reaches the visible warning once',async({page})=>{
+ await page.goto('/');
+ await page.locator('#alert-enabled').check();
+ const result=await page.evaluate(()=>{
+  const now=new Date().toISOString();
+  const event={
+   event_id:'e'.repeat(64),received_at:now,
+   event:{kind:'camera_detection',device_id:'yard_cam_north',timestamp:now,
+    source:'hornet3000',schema_version:1,
+    payload:{label:'unverified_candidate:vespa_velutina',confidence:1,
+     verification_status:'unverified',origin_event_id:'camera-123'}}
+  };
+  window.BeekeeperAlerts.process([event]);
+  const first=document.querySelectorAll('#alert-list li').length;
+  window.BeekeeperAlerts.process([event]);
+  return {first,second:document.querySelectorAll('#alert-list li').length};
+ });
+ expect(result).toEqual({first:1,second:1});
+ await expect(page.locator('#alert-list li').first()).toContainText('unbestätigt');
+ await expect(page.locator('#alert-list li').first()).toContainText('yard_cam_north');
+});
+
 test('disabled alert stays silent for qualifying detections',async({page})=>{
  await page.goto('/');
  const count=await page.evaluate(()=>{
