@@ -71,3 +71,21 @@ GitHub Actions runs the integration, storage and backup suite on pull requests u
 - Retention is local to this database; browser IndexedDB, exports, backups, replicas and logs need separate policies.
 - No legal compliance or GDPR compliance claim is made.
 - No real camera, iPhone browser, LoRa/MeshCore radio or field trial is implied by passing unit tests.
+
+## Externe Kameraerkennung (experimenteller Adapter)
+
+`integrations/external_detector_adapter.py` bildet die Metadaten eines **bereits separat geprueften** Fremddetektors auf den bestehenden `HiveEvent`-Vertrag ab. Es werden keine Fremdmodelle, Trainingsbilder, Bilddaten, Audiodaten oder GPS-Koordinaten eingebunden. Die Funktion startet keinen Server und sendet keine Ereignisse von selbst.
+
+Eingabevertrag: genau `taxon`, `confidence` (Zahl von 0 bis 1), `timestamp` (ISO-8601 mit Zeitzone), `event_id` (kurze technische Kennung). Die Artbezeichnungen muessen zuvor explizit auf die sieben bekannten Klassen abgebildet werden. Jede Erkennung bleibt `verification_status=unverified`. Unbekannte Felder und Arten werden verworfen.
+
+Beispiel fuer **Struktur und API, nicht fuer eine echte Messung**:
+
+```python
+from integrations.external_detector_adapter import adapt_detection
+record = {"taxon": "vespa_velutina", "confidence": 0.8,
+          "timestamp": "2026-11-21T17:00:00Z", "event_id": "example-001"}
+event = adapt_detection(record, device_id="station_01", source="external_camera")
+print(event.to_json())
+```
+
+Ein realer Adapter muss vor der Verwendung fuer vespCV/VespAI/Waspinator deren konkrete Ausgabe, Labels, Lizenzbedingungen und Modellversion nachweislich pruefen. Die bestehende authentifizierte Bridge bleibt der einzige vorgesehene Transportweg. Tests: `python -m unittest integrations.test_external_detector_adapter -v`.
