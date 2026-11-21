@@ -9,6 +9,7 @@ Diese Liste unterscheidet automatisiert geprüfte Software-Eigenschaften von noc
 - [x] GitHub-Qualitätslauf mit Bildrechten, Herkunftsnachweisen, iNaturalist-Metadaten und Originalbild-/Review-Tests erfolgreich: [Lauf 44934936918](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/44934936918).
 - [x] Automatisierte Tests für lokale Ereignisverträge, Datenminimierung, Speicherung, Backup und Löschung erfolgreich: [Lauf 44935062700](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/44935062700).
 - [x] Software-Bridge-/Offline-Tests zwischen BeeKeeper3000 und Monitor erfolgreich: [Lauf 44934708750](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/44934708750).
+- [x] Verpflichtende Freigabesperre und Bridge-Integration im zentralen Gesamttest erfolgreich: [Lauf 44935646531](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/44935646531), geprüfter Commit `b2e46709edb864590363d6ec9c6237c3fecab1fa`. Dies ist ein historischer Software-Nachweis, keine Freigabe der aktuellen oder einer späteren Version.
 - [ ] Alle für die **endgültige Freigabeversion** erforderlichen CI-Jobs erneut erfolgreich ausführen und Commit-IDs dokumentieren.
 - [ ] Tatsächliche Offline-Nutzung, Kamera-/Mikrofonberechtigungen, Ausfälle und Wiederanlauf auf den vorgesehenen Geräten im Feld testen.
 - [ ] Backups auf einem zweiten realen Gerät wiederherstellen und Wiederherstellungsprotokoll ablegen.
