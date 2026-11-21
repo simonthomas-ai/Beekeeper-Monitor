@@ -7,8 +7,13 @@ import re
 from collections import Counter
 from pathlib import Path
 
+try:
+    from training.dataset_groups import SPECIES_TO_GROUP
+except ModuleNotFoundError:
+    from dataset_groups import SPECIES_TO_GROUP
+
 REQUIRED = {"source_id", "source_url", "image_url", "creator", "license", "license_url",
-            "attribution", "observation_id", "photo_id", "species_candidate", "review_status"}
+            "attribution", "observation_id", "photo_id", "species_candidate", "dataset_group", "review_status"}
 PRIORITY = {"Vespa velutina": 1, "Bombus lapidarius": 2, "Vespa crabro": 3,
             "Vespula vulgaris": 4, "Vespula germanica": 4,
             "Apis mellifera": 5, "Bombus terrestris": 6}
@@ -38,7 +43,10 @@ def prepare(source, target):
             raise ValueError("Missing or duplicate photo ID")
         seen.add(photo_id)
         item = {k: row.get(k, "") for k in FIELDS}
-        item["review_group"] = group(row["species_candidate"])
+        expected_group = SPECIES_TO_GROUP.get(row["species_candidate"])
+        if not expected_group or row["dataset_group"] != expected_group:
+            raise ValueError("Scientific species does not match the declared dataset group")
+        item["review_group"] = expected_group
         item["review_priority"] = str(PRIORITY.get(row["species_candidate"], 9))
         item["license_review"] = "PENDING"
         item["taxon_review"] = "PENDING"
@@ -56,7 +64,9 @@ def prepare(source, target):
         writer.writeheader()
         writer.writerows(output)
     counts = dict(sorted(Counter(x["species_candidate"] for x in output).items()))
-    summary = {"candidates": len(output), "species_groups": counts,
+    group_counts = dict(sorted(Counter(x["review_group"] for x in output).items()))
+    summary = {"candidates": len(output), "species_counts": counts,
+               "dataset_group_counts": group_counts,
                "approved_for_training": 0, "requires_expert_review": True,
                "priority_order": ["Vespa velutina", "Bombus lapidarius",
                                   "Vespa crabro", "Vespula vulgaris",
