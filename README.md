@@ -39,6 +39,7 @@ Lokaler Empfangsdienst: Start, Token und Umgebungsvariablen stehen in [integrati
 python scripts/check_sources.py
 python scripts/test_static.py
 python -m unittest training.test_audit_gallery_rights -v
+python -m unittest training.test_verify_inaturalist_photo_metadata training.test_discover_cc0_candidates training.test_audit_inaturalist_candidates training.test_download_original_inaturalist_images training.test_prepare_visual_review_gallery -v
 python -m unittest discover -s integrations -p 'test_*.py'
 npm install && npx playwright install --with-deps && npm run test:e2e   # Browser-Tests (Playwright)
 ```
