@@ -17,7 +17,7 @@ REQUIRED = {"source_id", "source_url", "image_url", "creator", "license", "licen
 PRIORITY = {"Vespa velutina": 1, "Bombus lapidarius": 2, "Vespa crabro": 3,
             "Vespula vulgaris": 4, "Vespula germanica": 4,
             "Apis mellifera": 5, "Bombus terrestris": 6}
-FIELDS = ["review_priority", "species_candidate", "review_group", "photo_id", "observation_id", "source_url",
+FIELDS = ["review_priority", "species_candidate", "dataset_group", "review_group", "photo_id", "observation_id", "source_url",
           "image_url", "creator", "attribution", "license", "license_url",
           "license_review", "taxon_review", "image_quality_review", "bbox_annotation_review",
           "training_eligible"]
