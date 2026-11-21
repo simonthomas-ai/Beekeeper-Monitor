@@ -120,6 +120,7 @@ jobs:
           echo "| Chromium (18 Tests) | $BROWSER |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Safari WebKit (18 Tests) | $WEBKIT |" >> "$GITHUB_STEP_SUMMARY"
           echo "| iPhone-WebKit-Emulation (18 Tests) | $IPHONE |" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Hinweis: Ein gruener Gesamttest bestaetigt die verpflichtenden Software- und Bridge-Pruefungen, nicht die Einsatzreife eines KI-Modells.' >> "$GITHUB_STEP_SUMMARY"
           echo '## KI-Forschungsstand (nicht als einsatzbereit freigegeben)' >> "$GITHUB_STEP_SUMMARY"
           echo "| KI-Dateninventur | $MODEL |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Bildimport-Sicherheit und Herkunftsnachweise | $IMPORTTESTS |" >> "$GITHUB_STEP_SUMMARY"
@@ -136,6 +137,7 @@ jobs:
             echo 'KI-DATENSTATUS: BLOCKIERT; keine Modell- oder Feldfreigabe.' >> "$GITHUB_STEP_SUMMARY"
           fi
           echo 'Fehlende Trainingsdaten blockieren die Modellfreigabe. Eine erfolgreiche Inventur belegt keine KI-Genauigkeit, SMS-Zustellung oder Hardwarefunktion.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Trainingsdaten und fachliche Annotationen werden dokumentiert, sind aber absichtlich KEINE verpflichtenden CI-Erfolgskriterien; ihren Status separat beachten.' >> "$GITHUB_STEP_SUMMARY"
       - name: Browser-Testartefakte
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
