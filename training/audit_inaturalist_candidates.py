@@ -17,9 +17,10 @@ try:
 except ModuleNotFoundError:
     from inaturalist_media import ALLOWED_HOSTS, is_original_image_url
 
-REQUIRED = ("source_id", "source_url", "image_url", "creator", "license",
-            "license_url", "attribution", "observation_id", "photo_id",
-            "species_candidate", "dataset_group", "review_status")
+REQUIRED = ("source_id", "source_url", "image_url", "creator", "creator_login",
+            "license", "license_url", "license_notice", "attribution",
+            "observation_id", "photo_id", "species_candidate", "dataset_group",
+            "review_status")
 ALLOWED = {"CC0-1.0", "CC-BY-VERSION-UNVERIFIED"}
 
 def audit(path):
@@ -34,8 +35,14 @@ def audit(path):
     for i, row in enumerate(rows, start=2):
         errors = []
         if any(not (row.get(k) or "").strip() for k in ("source_id", "source_url",
-                "image_url", "creator", "attribution", "observation_id", "photo_id", "species_candidate", "dataset_group")):
+                "image_url", "creator", "creator_login", "license_notice", "attribution",
+                "observation_id", "photo_id", "species_candidate", "dataset_group")):
             errors.append("missing_required_value")
+        if (row.get("creator") or "").strip().lower() in (
+                "", "unknown", "no rights reserved", "attribution unavailable"):
+            errors.append("creator_identity_missing_or_mislabelled")
+        if row.get("license") == "CC0-1.0" and "no rights reserved (cc0)" not in (row.get("attribution") or "").lower():
+            errors.append("cc0_attribution_statement_missing")
         if row.get("license") not in ALLOWED:
             errors.append("unapproved_license_code")
         if row.get("license") == "CC0-1.0" and row.get("license_url") != "https://creativecommons.org/publicdomain/zero/1.0/":
