@@ -10,7 +10,10 @@ import time
 import urllib.parse
 import urllib.request
 
-from inaturalist_media import original_image_url
+try:
+    from training.inaturalist_media import original_image_url
+except ModuleNotFoundError:
+    from inaturalist_media import original_image_url
 
 LICENSES = {
     "cc0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
