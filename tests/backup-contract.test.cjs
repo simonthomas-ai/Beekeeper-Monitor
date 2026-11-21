@@ -55,6 +55,19 @@ test('rejects malformed base64 image data and unsupported image types', () => {
   assert.equal(contract.isSupportedImageType('image/heic'), true);
 });
 
+test('enforces the exact 8 MiB decoded image limit on restore', () => {
+  const prefix = 'data:image/jpeg;base64,';
+  const maxEncoded = Math.ceil(contract.MAX_PHOTO_BYTES / 3) * 4;
+  const exactLimit = observation({
+    photo: { name: 'max.jpg', type: 'image/jpeg', content: prefix + 'A'.repeat(maxEncoded - 1) + '=' }
+  });
+  const oneByteOver = observation({
+    photo: { name: 'too-large.jpg', type: 'image/jpeg', content: prefix + 'A'.repeat(maxEncoded) }
+  });
+  assert.equal(contract.validObservation(exactLimit), true);
+  assert.equal(contract.validObservation(oneByteOver), false);
+});
+
 test('rejects duplicate IDs instead of silently overwriting backup rows', () => {
   assert.throws(
     () => contract.parseBackupText(backupText([observation(), observation()])),
