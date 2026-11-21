@@ -17,6 +17,8 @@ jobs:
           python scripts/check_pwa_deployment_contract.py
           node --check app.js
           node --check sw.js
+          node --check hornet-onnx-decoder.js
+          node --test tests/hornet-onnx-decoder.test.cjs
           node --test tests/alert-rules.test.cjs tests/backup-contract.test.cjs
       - name: Offline-PWA-Dateien bereitstellen (ohne Deployment)
         run: |
