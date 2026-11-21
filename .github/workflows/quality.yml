@@ -30,3 +30,5 @@ jobs:
         run: python3 -m unittest integrations.test_event_contracts integrations.test_external_detector_store integrations.test_local_ingest -v
       - name: Datenschutz - Backup und Loeschung
         run: python3 -m unittest integrations.test_store_backup integrations.test_external_detector_http -v
+      - name: Freigabebericht bleibt trotz gruener Tests gesperrt
+        run: python3 -m unittest discover -s tests -p 'test_release_gate_report.py' -v
