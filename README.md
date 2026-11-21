@@ -1,7 +1,6 @@
 # Beekeeper Monitor
 
 Offline-fähige Beobachtungs-PWA für Imker zur Erfassung und Sichtung von Hinweisen auf die Asiatische Hornisse (*Vespa velutina*). Teil des gemeinsamen VespaGuard-Systems zusammen mit [BeeKeeper3000](https://github.com/simonthomas-ai/BeeKeeper3000).
-Offline-fähige Beobachtungs-PWA für Imker zur Erfassung und Sichtung von Hinweisen auf die Asiatische Hornisse (*Vespa velutina*). Teil des gemeinsamen VespaGuard-Systems zusammen mit [BeeKeeper3000](https://github.com/simonthomas-ai/BeeKeeper3000).
 
 **Wichtig:** Projekt im Aufbau. Es gibt noch kein validiertes KI-Erkennungsmodell und keine nachgewiesene Erkennungsgenauigkeit. Die App ist ein Beobachtungs- und Suchhinweissystem, keine bestätigende Artbestimmung und keine Grundlage für Nestzerstörung. Details: [STATUS.md](STATUS.md).
 
