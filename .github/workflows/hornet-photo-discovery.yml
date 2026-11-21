@@ -15,7 +15,7 @@ on:
       - 'training/prepare_visual_review_gallery.py'
       - 'training/test_prepare_visual_review_gallery.py'
       - 'training/prepare_annotation_tasks.py'
-      - 'training/test_prepare_visual_review_gallery.py'
+      - 'training/test_audit_inaturalist_candidates.py'
       - 'training/import_authorized_images.py'
       - 'training/test_import_authorized_images.py'
       - '.github/workflows/hornet-photo-discovery.yml'
@@ -63,11 +63,7 @@ jobs:
       - name: Generate traceable annotation tasks for human review
         run: python training/prepare_annotation_tasks.py
       - name: Generate mobile review gallery for all five groups
-        run: |
-          python training/prepare_visual_review_gallery.py \\
-            --input training/inaturalist-review-queue.csv \\
-            --output training/inaturalist-review-gallery.html \\
-            --species ALL
+        run: python training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/inaturalist-review-gallery.html --species ALL
       - name: Recheck CC0 Vespa velutina photo metadata at iNaturalist
         run: |
           python training/verify_inaturalist_photo_metadata.py \
