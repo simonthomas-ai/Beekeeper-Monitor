@@ -2,6 +2,10 @@ name: Hornet3000 ONNX Integritaet und isolierte Inferenz
 on:
   workflow_dispatch:
     inputs:
+      multispecies_cc0:
+        description: 'Vier Insektenarten mit echten CC0-Fotos vergleichen (Forschung)'
+        type: boolean
+        default: true
       real_cc0_photo:
         description: 'Echtes CC0-Hornissenfoto isoliert testen (kein Training)'
         type: boolean
@@ -27,6 +31,11 @@ jobs:
         run: |
           python3 -m pip install --only-binary=:all: 'Pillow>=10,<13'
           python3 -m scripts.verify_hornet3000_onnx --download --real-cc0
+      - name: Mehrere echte CC0-Insektenbilder isoliert vergleichen
+        if: inputs.multispecies_cc0 == true
+        run: |
+          python3 -m pip install --only-binary=:all: 'Pillow>=10,<13'
+          python3 -m scripts.verify_hornet3000_onnx --download --multispecies
       - name: Freigabe bleibt gesperrt
         run: |
           echo 'Nur isolierte CPU-Inferenz auf synthetischem Nullbild. Keine Lizenz-, Genauigkeits-, Kamera- oder Feldfreigabe.' >> "$GITHUB_STEP_SUMMARY"
