@@ -9,7 +9,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from training.train import validate_image_file
+from training.train import validate, validate_image_file
 
 
 class TrainingImageValidationTests(unittest.TestCase):
@@ -43,6 +43,25 @@ class TrainingImageValidationTests(unittest.TestCase):
             tiny = self._save(tmp, "tiny.png", "PNG", size=(8, 8))
             with self.assertRaisesRegex(ValueError, "dimensions are too small"):
                 validate_image_file(tiny)
+
+
+    def test_missing_real_dataset_has_actionable_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            training = root / "training"
+            training.mkdir()
+            (training / "data.yaml").write_text(
+                "path: datasets/beekeeper\n"
+                "train: images/train\n"
+                "val: images/val\n"
+                "test: images/test\n"
+                "names:\n  0: vespa_velutina\n  1: vespa_crabro\n"
+                "  2: other_vespidae\n  3: apis_mellifera\n"
+                "  4: bombus_spp\n  5: syrphidae\n  6: other_insect\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(FileNotFoundError, "Real training dataset directory is missing"):
+                validate(root)
 
 
 if __name__ == "__main__":
