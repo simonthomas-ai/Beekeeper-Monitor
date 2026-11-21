@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.11'
-      - run: pip install PyYAML
+      - run: python -m pip install --disable-pip-version-check PyYAML==6.0.3 'Pillow>=10,<13'
       - name: Dokumentierte KI-Dateninventur
         run: python scripts/model_readiness.py
       - name: Echtdaten auf allen drei Splits validieren
