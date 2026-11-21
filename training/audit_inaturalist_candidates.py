@@ -7,7 +7,10 @@ from collections import Counter
 from pathlib import Path
 from urllib.parse import urlparse
 
-from inaturalist_media import ALLOWED_HOSTS, is_original_image_url
+try:
+    from training.inaturalist_media import ALLOWED_HOSTS, is_original_image_url
+except ModuleNotFoundError:
+    from inaturalist_media import ALLOWED_HOSTS, is_original_image_url
 
 REQUIRED = ("source_id", "source_url", "image_url", "creator", "license",
             "license_url", "attribution", "observation_id", "photo_id",
