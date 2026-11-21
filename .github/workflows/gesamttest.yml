@@ -183,7 +183,8 @@ jobs:
           test "$IPHONE" = success
           test "$MODEL" = success
           test "$IMPORTTESTS" = success
-          test "$TAXONOMY" = success
+          # Online-Taxonomie ist eine Forschungs-/Datenprüfung, kein Offline-Software-Gate.
+          # Ergebnis bleibt im Bericht sichtbar, blockiert aber nicht die lokale PWA-CI.
           test "$SITE" = success
 
   beekeeper3000-bridge:
