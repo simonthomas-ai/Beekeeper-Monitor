@@ -18,7 +18,7 @@ class ProvenanceTests(unittest.TestCase):
             target.write_bytes(payload)
             label_target = root / "labels" / split / (split + ".txt")
             label_target.parent.mkdir(parents=True, exist_ok=True)
-            label_payload = b"0 0.5 0.5 0.2 0.2\\n"
+            label_payload = b"0 0.5 0.5 0.2 0.2\n"
             label_target.write_bytes(label_payload)
             row = {
                 "image_path": "images/%s/%s.jpg" % (split, split),
@@ -117,7 +117,7 @@ class ProvenanceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root, rows = self._dataset(tmp)
             label = root / rows[0]["label_path"]
-            label.write_text("0 0.25 0.25 0.1 0.1\\n", encoding="utf-8")
+            label.write_text("0 0.25 0.25 0.1 0.1\n", encoding="utf-8")
             with self.assertRaisesRegex(DatasetProvenanceError, "label SHA-256 mismatch"):
                 validate_provenance(root)
 
@@ -126,14 +126,14 @@ class ProvenanceTests(unittest.TestCase):
             root, rows = self._dataset(tmp)
             rows[0]["label_path"] = "labels/val/train.txt"
             (root / "provenance.jsonl").write_text(
-                "\\n".join(json.dumps(row) for row in rows) + "\\n", encoding="utf-8"
+                "\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8"
             )
             with self.assertRaisesRegex(DatasetProvenanceError, "label_path must match"):
                 validate_provenance(root)
         with tempfile.TemporaryDirectory() as tmp:
             root, rows = self._dataset(tmp)
             extra = root / "labels" / "train" / "orphan.txt"
-            extra.write_text("0 0.5 0.5 0.1 0.1\\n", encoding="utf-8")
+            extra.write_text("0 0.5 0.5 0.1 0.1\n", encoding="utf-8")
             with self.assertRaisesRegex(DatasetProvenanceError, "bind every YOLO label"):
                 validate_provenance(root)
 
