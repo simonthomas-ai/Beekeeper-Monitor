@@ -14,7 +14,7 @@ BLOB = "97fb748affc642238c1135768a53098f594de0d1"
 SIZE = 44737849
 URL = "https://raw.githubusercontent.com/vespCV/hornet3000/" + COMMIT + "/" + PATH
 
-def inspect(download=False, inspect_graph=False):
+def inspect(download=False, inspect_graph=False, run_inference=False):
     if not download:
         return {"status": "not_downloaded", "source": URL, "expected_bytes": SIZE}
     req = urllib.request.Request(URL, headers={"User-Agent": "VespaGuard-research-integrity/1"})
@@ -49,6 +49,23 @@ def inspect(download=False, inspect_graph=False):
                      "inputs": tensors(model.graph.input), "outputs": tensors(model.graph.output),
                      "nodes": len(model.graph.node), "operators": sorted(set(n.op_type for n in model.graph.node)),
                      "metadata": {x.key: x.value[:2000] for x in model.metadata_props}}
+        if run_inference:
+            import numpy as np
+            import onnxruntime as ort
+            session = ort.InferenceSession(str(target), providers=["CPUExecutionProvider"])
+            input_meta, output_meta = session.get_inputs(), session.get_outputs()
+            if len(input_meta) != 1 or input_meta[0].name != "images" or input_meta[0].shape != [1, 3, 640, 640]:
+                raise ValueError("Unexpected ONNX input contract")
+            if len(output_meta) != 1 or output_meta[0].name != "output0" or output_meta[0].shape != [1, 9, 8400]:
+                raise ValueError("Unexpected ONNX output contract")
+            # Controlled synthetic frame; this is NOT a real hornet image or accuracy test.
+            frame = np.zeros((1, 3, 640, 640), dtype=np.float32)
+            output = session.run(["output0"], {"images": frame})[0]
+            if output.shape != (1, 9, 8400) or not np.isfinite(output).all():
+                raise ValueError("Unexpected or non-finite inference output")
+            graph["synthetic_inference"] = {"status": "passed", "input": [1, 3, 640, 640],
+                "output": list(output.shape), "finite": True, "real_image_tested": False,
+                "accuracy_validated": False, "camera_connected": False}
         return {"status": "bytes_verified_not_executed", "source": URL,
                 "bytes": total, "git_blob": git_blob.hexdigest(),
                 "sha256": digest.hexdigest(), "graph": graph, "license_approved": False,
@@ -58,10 +75,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--download", action="store_true")
     parser.add_argument("--inspect-graph", action="store_true", help="Read ONNX graph metadata, never run inference")
+    parser.add_argument("--synthetic-inference", action="store_true", help="CPU inference on a zero-valued synthetic frame")
     args = parser.parse_args()
-    if args.inspect_graph and not args.download:
+    if (args.inspect_graph or args.synthetic_inference) and not args.download:
         parser.error("--inspect-graph requires --download")
-    result = inspect(args.download, args.inspect_graph)
+    result = inspect(args.download, args.inspect_graph, args.synthetic_inference)
+    if args.synthetic_inference:
+        result["status"] = "synthetic_inference_passed_not_validated"
     print(json.dumps(result, indent=2))
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
