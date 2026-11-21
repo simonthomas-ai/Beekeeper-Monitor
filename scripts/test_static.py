@@ -56,7 +56,7 @@ pages=(root/".github/workflows/pages.yml").read_text()
 assert "path: _site" in pages
 assert r"grep -Eq '\[[^]]+\]'" in pages
 assert re.search(r"\[[^]]+\]", "[MISSING OPERATOR DETAILS]")
-assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/" in pages
+assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg _site/" in pages
 assert "cp wissen/wissenschaft-hornissen-bienen.html _site/wissen/" in pages
 assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
 # Local original-image byte verification runs only after Pages stages the
@@ -67,3 +67,9 @@ for asset in ("alert-rules.js","alert-ui.js"):
     assert f'./{asset}' in html,asset
 assert "notificationclick" in sw
 assert 'id="hornet-alert"' in html and "unbestätigt" in html
+
+assert (root/'varroa.html').is_file()
+assert (root/'varroa-ui.js').is_file()
+assert 'href="./varroa.html"' in html
+assert 'id="varroa-mode"' in (root/'varroa.html').read_text()
+assert './varroa.html' in sw and './varroa-ui.js' in sw
