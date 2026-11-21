@@ -22,7 +22,7 @@ def inspect(download=False):
         target = Path(tmp) / "candidate.onnx"
         digest = hashlib.sha256()
         git_blob = hashlib.sha1()
-        git_blob.update(("blob " + str(SIZE) + "\\0").encode("ascii"))
+        git_blob.update(("blob " + str(SIZE) + "\0").encode("ascii"))
         total = 0
         with urllib.request.urlopen(req, timeout=60) as response, target.open("wb") as out:
             while True:
@@ -51,10 +51,10 @@ def main():
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a", encoding="utf-8") as out:
-            out.write("## hornet3000 ONNX-Pruefung\\n\\n")
-            out.write("Status: " + result["status"] + ". Keine Inferenz oder Freigabe.\\n\\n")
+            out.write("## hornet3000 ONNX-Pruefung\n\n")
+            out.write("Status: " + result["status"] + ". Keine Inferenz oder Freigabe.\n\n")
             if result.get("sha256"):
-                out.write("SHA-256: " + result["sha256"] + "\\n")
+                out.write("SHA-256: " + result["sha256"] + "\n")
 
 if __name__ == "__main__":
     main()
