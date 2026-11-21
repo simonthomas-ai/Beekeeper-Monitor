@@ -151,7 +151,12 @@ jobs:
       - name: Freigabebericht (CI-Ergebnisse getrennt von rechtlicher Freigabe)
         if: always()
         env:
+          STATIC_STATUS: ${{ steps.static.outcome }}
+          ALERT_STATUS: ${{ steps.alerttests.outcome }}
           BROWSER_STATUS: ${{ steps.browser.outcome }}
+          WEBKIT_STATUS: ${{ steps.webkit.outcome }}
+          IPHONE_STATUS: ${{ steps.iphone.outcome }}
+          SITE_STATUS: ${{ steps.site.outcome }}
         run: python3 scripts/release_gate_report.py
       - name: Browser-Testartefakte
         if: always()
