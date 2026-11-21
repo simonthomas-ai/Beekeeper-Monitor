@@ -77,8 +77,21 @@ def validate_provenance(dataset_root: str | Path, *, expected_splits=SPLITS) -> 
     if not root.is_dir():
         raise DatasetProvenanceError("dataset root must be a directory")
     manifest = root / "provenance.jsonl"
+    if manifest.is_symlink():
+        raise DatasetProvenanceError("provenance manifest must not be a symbolic link")
     if not manifest.is_file():
         raise DatasetProvenanceError("required per-image provenance.jsonl is missing")
+
+    # The byte hashes bind the files, but symbolic aliases can still make a
+    # reviewed path resolve through an unexpected in-dataset target. Keep the
+    # dataset tree concrete and stable: no symlinked roots, directories or files.
+    for tree_name in ("images", "labels"):
+        tree_root = root / tree_name
+        if tree_root.is_symlink() or not tree_root.is_dir():
+            raise DatasetProvenanceError(f"{tree_name} must be a real directory, not a symbolic link")
+        for candidate in tree_root.rglob("*"):
+            if candidate.is_symlink():
+                raise DatasetProvenanceError(f"symbolic links are not allowed in the {tree_name} dataset tree")
 
     rows = []
     paths, digests, label_paths = set(), set(), set()

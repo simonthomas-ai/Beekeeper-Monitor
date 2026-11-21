@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -155,6 +156,34 @@ class ProvenanceTests(unittest.TestCase):
             with self.assertRaises(DatasetProvenanceError):
                 validate_provenance(root)
 
+
+    def test_rejects_symlinked_image_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, rows = self._dataset(tmp)
+            image = root / rows[0]["image_path"]
+            target = root / "external-image.jpg"
+            target.write_bytes(image.read_bytes())
+            image.unlink()
+            try:
+                image.symlink_to(target)
+            except (OSError, NotImplementedError) as exc:
+                self.skipTest(f"symbolic links are unavailable: {exc}")
+            with self.assertRaisesRegex(DatasetProvenanceError, "symbolic links"):
+                validate_provenance(root)
+
+    def test_rejects_symlinked_label_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root, rows = self._dataset(tmp)
+            label = root / rows[0]["label_path"]
+            target = root / "external-label.txt"
+            target.write_bytes(label.read_bytes())
+            label.unlink()
+            try:
+                label.symlink_to(target)
+            except (OSError, NotImplementedError) as exc:
+                self.skipTest(f"symbolic links are unavailable: {exc}")
+            with self.assertRaisesRegex(DatasetProvenanceError, "symbolic links"):
+                validate_provenance(root)
 
 if __name__ == "__main__":
     unittest.main()
