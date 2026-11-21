@@ -10,6 +10,8 @@ import time
 import urllib.parse
 import urllib.request
 
+from inaturalist_media import original_image_url
+
 LICENSES = {
     "cc0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
     "cc-by": ("CC-BY-VERSION-UNVERIFIED", ""),
@@ -59,9 +61,14 @@ def discover(target, max_pages, pause):
                 for photo in obs.get("photos", []):
                     license_data = LICENSES.get(str(photo.get("license_code", "")).lower())
                     photo_id = photo.get("id")
-                    image_url = photo.get("url") or ""
+                    raw_image_url = photo.get("url") or ""
                     attribution = (photo.get("attribution") or "").strip()
-                    if not license_data or not photo_id or photo_id in seen_photos or not image_url.startswith("https://") or not attribution:
+                    if not license_data or not photo_id or photo_id in seen_photos or not attribution:
+                        continue
+                    try:
+                        image_url = original_image_url(raw_image_url, photo_id)
+                    except ValueError:
+                        # Fail closed: never place an unknown or thumbnail URL in a review queue.
                         continue
                     rows.append({
                         "source_id": "inaturalist-photo-" + str(photo_id),
