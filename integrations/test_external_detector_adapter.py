@@ -2,6 +2,7 @@
 import unittest
 
 from integrations.external_detector_adapter import adapt_detection
+from integrations.event_contracts import HiveEvent
 
 
 class AdapterTests(unittest.TestCase):
@@ -28,6 +29,22 @@ class AdapterTests(unittest.TestCase):
                       "bombus_spp", "other_vespidae", "syrphidae", "other_insect"):
             with self.subTest(taxon=taxon):
                 self.convert({**self.record, "taxon": taxon})
+
+    def test_receiver_contract_roundtrip(self):
+        event = self.convert()
+        restored = HiveEvent.from_json(event.to_json())
+        self.assertEqual(restored, event)
+        self.assertEqual(restored.payload["verification_status"], "unverified")
+        self.assertEqual(restored.payload["origin_event_id"], "detector-123")
+
+    def test_identical_event_is_deterministic(self):
+        self.assertEqual(self.convert().to_json(), self.convert().to_json())
+
+    def test_rejects_invalid_device_and_source(self):
+        for kwargs in ({"device_id": "../station", "source": "external_camera"},
+                       {"device_id": "station_01", "source": "user name"}):
+            with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
+                adapt_detection(self.record, **kwargs)
 
     def test_rejects_unknown_species(self):
         with self.assertRaises(ValueError):
