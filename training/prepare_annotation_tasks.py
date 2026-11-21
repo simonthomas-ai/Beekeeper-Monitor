@@ -10,6 +10,11 @@ from collections import Counter
 from pathlib import Path
 from urllib.parse import urlparse
 
+try:
+    from training.dataset_groups import SPECIES_TO_GROUP
+except ModuleNotFoundError:
+    from dataset_groups import SPECIES_TO_GROUP
+
 FIELDS = ["task_id", "photo_id", "observation_id", "species_candidate", "dataset_group",
           "image_url", "source_url", "creator", "license", "license_url",
           "species_identity", "license_version", "image_quality",
@@ -36,6 +41,8 @@ def prepare(input_path, output_path):
         seen.add(photo)
         if row["training_eligible"] != "NO":
             raise ValueError("Refusing input that claims automatic training approval")
+        if SPECIES_TO_GROUP.get(row["species_candidate"]) != row["dataset_group"]:
+            raise ValueError("Species-to-dataset-group mapping mismatch")
         if any(row[key] != "PENDING" for key in ("license_review", "taxon_review",
                                                   "image_quality_review", "bbox_annotation_review")):
             raise ValueError("Unexpected review state")
