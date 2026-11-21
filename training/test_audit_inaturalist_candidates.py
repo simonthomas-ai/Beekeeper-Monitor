@@ -13,8 +13,11 @@ spec.loader.exec_module(audit_module)
 BASE = {
     "source_id": "inat:1:11", "source_url": "https://www.inaturalist.org/observations/1",
     "image_url": "https://example.org/photo1.jpg", "creator": "Photographer",
-    "license": "CC0-1.0", "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "attribution": "Photographer", "observation_id": "1", "photo_id": "11",
+    "creator_login": "photographer", "license": "CC0-1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "license_notice": "no rights reserved",
+    "attribution": "Photographer, no rights reserved (CC0)",
+    "observation_id": "1", "photo_id": "11",
     "species_candidate": "Vespa velutina", "dataset_group": "asian_hornet", "review_status": "UNREVIEWED",
 }
 
