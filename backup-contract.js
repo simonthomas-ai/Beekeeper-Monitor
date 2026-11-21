@@ -44,7 +44,7 @@
       if (!Number.isFinite(location.latitude) || !Number.isFinite(location.longitude)) return false;
       if (Math.abs(location.latitude) > 90 || Math.abs(location.longitude) > 180) return false;
       if (location.accuracyMeters !== undefined &&
-          (!Number.isFinite(location.accuracyMeters) || location.accuracyMeters <= 0 || location.accuracyMeters > 100000)) return false;
+          (!Number.isFinite(location.accuracyMeters) || location.accuracyMeters < 0 || location.accuracyMeters > 100000)) return false;
     }
     return true;
   }
