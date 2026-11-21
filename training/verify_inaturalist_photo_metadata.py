@@ -18,13 +18,15 @@ except ModuleNotFoundError:
     from inaturalist_media import original_image_url
 
 FIELDS = ["observation_id", "photo_id", "species_candidate", "license", "source_url",
-          "api_photo_found", "api_photo_license", "api_attribution",
+          "api_photo_found", "api_photo_license", "api_observer_name",
+          "api_observer_login", "api_attribution", "api_attribution_statement",
           "api_taxon", "api_quality_grade", "api_photo_url",
           "license_metadata_match", "review_status", "error"]
 
 def verify(row, timeout=15):
     out = {k: row.get(k, "") for k in FIELDS}
-    out.update(api_photo_found="NO", api_photo_license="", api_attribution="",
+    out.update(api_photo_found="NO", api_photo_license="", api_observer_name="",
+               api_observer_login="", api_attribution="", api_attribution_statement="",
                api_taxon="", api_quality_grade="", api_photo_url="",
                license_metadata_match="NO", review_status="UNREVIEWED", error="")
     obs = str(row.get("observation_id", ""))
@@ -44,6 +46,14 @@ def verify(row, timeout=15):
         observation = results[0]
         out["api_taxon"] = (observation.get("taxon") or {}).get("name", "")
         out["api_quality_grade"] = observation.get("quality_grade") or ""
+        observer = observation.get("user") or {}
+        if not isinstance(observer, dict):
+            observer = {}
+        out["api_observer_name"] = str(observer.get("name") or "").strip()
+        out["api_observer_login"] = str(observer.get("login") or observation.get("user_login") or "").strip()
+        if not out["api_observer_login"]:
+            out["error"] = "observer login missing from iNaturalist API response"
+            return out
         matches = [p for p in observation.get("photos", []) if str(p.get("id")) == photo]
         if len(matches) != 1:
             out["error"] = "photo not found in observation"
@@ -52,6 +62,14 @@ def verify(row, timeout=15):
         out["api_photo_found"] = "YES"
         out["api_photo_license"] = p.get("license_code") or ""
         out["api_attribution"] = p.get("attribution") or ""
+        display_creator = out["api_observer_name"] or out["api_observer_login"]
+        if str(p.get("license_code") or "").lower() == "cc0":
+            out["api_attribution_statement"] = f"{display_creator}, no rights reserved (CC0)"
+        else:
+            out["api_attribution_statement"] = ""
+        if row.get("creator_login") and row.get("creator_login") != out["api_observer_login"]:
+            out["error"] = "observer login differs from discovery metadata"
+            return out
         try:
             out["api_photo_url"] = original_image_url(p.get("url") or "", photo)
         except ValueError as exc:

@@ -24,9 +24,14 @@ def gallery(source, output, species="Vespa velutina", images_manifest=None):
             for asset in csv.DictReader(stream):
                 photo_id = str(asset.get("photo_id", ""))
                 parts = PurePosixPath(asset.get("local_image_path", "")).parts
+                creator = str(asset.get("creator", "")).strip()
                 if (not photo_id.isdecimal() or asset.get("species_candidate") != "Vespa velutina"
                         or asset.get("license") != "CC0-1.0"
                         or asset.get("download_status") != "DOWNLOADED_UNMODIFIED"
+                        or not creator or creator.lower() in ("unknown", "no rights reserved", "attribution unavailable")
+                        or not asset.get("creator_login")
+                        or "no rights reserved (cc0)" not in str(asset.get("attribution", "")).lower()
+                        or "no rights reserved" not in str(asset.get("license_notice", "")).lower()
                         or len(parts) != 3 or parts[:2] != ("images", "velutina")
                         or not re.fullmatch(r"[0-9]+\.(?:jpg|png|webp)", parts[2])
                         or not re.fullmatch(r"[a-f0-9]{64}", asset.get("sha256", ""))):
@@ -63,7 +68,10 @@ def gallery(source, output, species="Vespa velutina", images_manifest=None):
             "species_candidate": species_candidate, "dataset_group": dataset_group,
             "image_url": image_url,
             "source_url": row.get("source_url", ""), "license": row.get("license", ""),
-            "creator": row.get("creator", ""),
+            "creator": asset.get("creator", "") if asset else row.get("creator", ""),
+            "creator_login": asset.get("creator_login", "") if asset else row.get("creator_login", ""),
+            "attribution": asset.get("attribution", "") if asset else row.get("attribution", ""),
+            "license_notice": asset.get("license_notice", "") if asset else row.get("license_notice", ""),
             "image_width": int(row["image_width"]) if str(row.get("image_width", "")).isdigit() else None,
             "image_height": int(row["image_height"]) if str(row.get("image_height", "")).isdigit() else None,
             "image_megapixels": row.get("image_megapixels", ""),
@@ -140,7 +148,7 @@ function current(){const item=selected();return saved[item.photo_id]||{decision:
 function persist(v){saved[selected().photo_id]=v;try{localStorage.setItem(key,JSON.stringify(saved))}catch(e){$("state").textContent="Speichern nicht möglich – bitte JSON exportieren."}}
 $("photo").onload=()=>{const item=selected();const measured=item.image_width&&item.image_height?" · Vorabmessung: "+item.image_width+" × "+item.image_height+" px ("+item.image_megapixels+" MP)":" · keine Vorabmessung";const sharp=item.sharpness_score?" · Detailindikator: "+item.sharpness_score+" (nur Sortierung)":" ";const mode=item.image_delivery==="LOCAL_UNMODIFIED_ORIGINAL"?" · lokal gespeicherte Originaldatei (Bytes unverändert)":" · iNaturalist-Originalvariante";$("image-meta").textContent="Bildgröße: "+$("photo").naturalWidth+" × "+$("photo").naturalHeight+" Pixel"+mode+measured+sharp;};
 $("photo").onerror=()=>{$("image-meta").textContent="Bild konnte nicht geladen werden; bitte Originalquelle oder Bilddatei direkt öffnen."};
-function render(){if(!visible.length){$("counter").textContent="Keine Kandidaten erfüllen den aktuellen Bilddatei-Vorfilter."; $("image-meta").textContent="Für diese Gruppe wurden keine ausreichend großen und lesbaren Bilddateien gefunden. Bitte später erneut recherchieren oder andere Quellen nutzen."; $("photo").removeAttribute("src"); $("source").removeAttribute("href"); $("image-original").removeAttribute("href"); $("state").textContent="Keine Bewertungen oder Trainingsfreigaben vorhanden."; $("decision").disabled=true; $("prev").disabled=true; $("next").disabled=true; $("clear").disabled=true; $("overlay").replaceChildren(); updateProgress(); return;} $("decision").disabled=false; $("prev").disabled=false; $("next").disabled=false; $("clear").disabled=false; const item=selected(),v=current();$("counter").textContent=(index+1)+"/"+visible.length+" – "+item.species_candidate+" · "+item.dataset_group+" – Foto "+item.photo_id;updateProgress();$("image-meta").textContent="Bild wird geladen …";$("photo").src=item.image_url;$("source").href=item.source_url;$("image-original").href=item.image_url;$("image-provenance").textContent="Quelle: "+(item.creator||"Urheberangabe fehlt")+" · Lizenzangabe: "+(item.license||"unbekannt")+(item.original_sha256?" · SHA-256: "+item.original_sha256:"");$("decision").value=v.decision;$("state").textContent="Status: "+v.decision+" · Markierungen: "+v.boxes.length+" · KEINE Trainingsfreigabe";$("overlay").replaceChildren();for(const b of v.boxes){const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");rect.setAttribute("x",(b.x-b.width/2)*1000);rect.setAttribute("y",(b.y-b.height/2)*1000);rect.setAttribute("width",b.width*1000);rect.setAttribute("height",b.height*1000);$("overlay").append(rect)}}
+function render(){if(!visible.length){$("counter").textContent="Keine Kandidaten erfüllen den aktuellen Bilddatei-Vorfilter."; $("image-meta").textContent="Für diese Gruppe wurden keine ausreichend großen und lesbaren Bilddateien gefunden. Bitte später erneut recherchieren oder andere Quellen nutzen."; $("photo").removeAttribute("src"); $("source").removeAttribute("href"); $("image-original").removeAttribute("href"); $("state").textContent="Keine Bewertungen oder Trainingsfreigaben vorhanden."; $("decision").disabled=true; $("prev").disabled=true; $("next").disabled=true; $("clear").disabled=true; $("overlay").replaceChildren(); updateProgress(); return;} $("decision").disabled=false; $("prev").disabled=false; $("next").disabled=false; $("clear").disabled=false; const item=selected(),v=current();$("counter").textContent=(index+1)+"/"+visible.length+" – "+item.species_candidate+" · "+item.dataset_group+" – Foto "+item.photo_id;updateProgress();$("image-meta").textContent="Bild wird geladen …";$("photo").src=item.image_url;$("source").href=item.source_url;$("image-original").href=item.image_url;$("image-provenance").textContent="Fotograf/Beobachter: "+(item.creator||"nicht verifiziert")+(item.creator_login?" (@"+item.creator_login+")":"")+" · "+(item.attribution||"Attributionsangabe fehlt")+" · Lizenz: "+(item.license||"unbekannt")+(item.original_sha256?" · SHA-256: "+item.original_sha256:"");$("decision").value=v.decision;$("state").textContent="Status: "+v.decision+" · Markierungen: "+v.boxes.length+" · KEINE Trainingsfreigabe";$("overlay").replaceChildren();for(const b of v.boxes){const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");rect.setAttribute("x",(b.x-b.width/2)*1000);rect.setAttribute("y",(b.y-b.height/2)*1000);rect.setAttribute("width",b.width*1000);rect.setAttribute("height",b.height*1000);$("overlay").append(rect)}}
 $("species-filter").onchange=refreshFilter;
 $("decision").onchange=()=>{const v=current();v.decision=$("decision").value;persist(v);render()};
 $("prev").onclick=()=>{index=(index-1+visible.length)%visible.length;render()};

@@ -12,11 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install Pillow for original-image pipeline tests
+        run: python -m pip install --only-binary=:all: 'Pillow>=10,<13'
       - name: Verify project source and static integrity
         run: |
           python scripts/check_sources.py
           python scripts/test_static.py
           python -m unittest training.test_audit_gallery_rights -v
+          python -m unittest training.test_verify_inaturalist_photo_metadata training.test_discover_cc0_candidates training.test_audit_inaturalist_candidates training.test_download_original_inaturalist_images training.test_prepare_visual_review_gallery -v
           node --check backup-contract.js
           node --check app.js
           node --check sw.js

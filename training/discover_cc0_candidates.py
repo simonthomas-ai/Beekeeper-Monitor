@@ -21,9 +21,10 @@ except ModuleNotFoundError:
 
 SPECIES = ("Vespa velutina", "Vespa crabro", "Apis mellifera",
            "Bombus terrestris", "Vespula vulgaris")
-FIELDS = ("source_id", "source_url", "image_url", "creator", "license",
-          "license_url", "attribution", "observation_id", "photo_id",
-          "species_candidate", "dataset_group", "review_status")
+FIELDS = ("source_id", "source_url", "image_url", "creator", "creator_login",
+          "license", "license_url", "license_notice", "attribution",
+          "observation_id", "photo_id", "species_candidate", "dataset_group",
+          "review_status")
 API = "https://api.inaturalist.org/v1/observations"
 
 def get_json(url):
@@ -78,15 +79,28 @@ def discover(per_species, max_pages=10):
                     oid = str(obs.get("id", ""))
                     if not oid.isdecimal():
                         continue
+                    observer = obs.get("user")
+                    if not isinstance(observer, dict):
+                        observer = {}
+                    creator_login = str(observer.get("login") or obs.get("user_login") or "").strip()
+                    creator_name = str(observer.get("name") or "").strip()
+                    creator = creator_name or creator_login
+                    if not creator_login or not creator:
+                        print("OBSERVER_METADATA_MISSING:", oid, pid, flush=True)
+                        continue
+                    license_notice = str(photo.get("attribution") or "").strip()
+                    attribution = f"{creator}, no rights reserved (CC0)"
                     seen_photos.add(pid)
                     rows.append({
                         "source_id": "inat-photo-" + pid,
                         "source_url": "https://www.inaturalist.org/observations/" + oid,
                         "image_url": url,
-                        "creator": photo.get("attribution") or "Attribution unavailable",
+                        "creator": creator,
+                        "creator_login": creator_login,
                         "license": "CC0-1.0",
                         "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-                        "attribution": photo.get("attribution") or "CC0; verify creator",
+                        "license_notice": license_notice,
+                        "attribution": attribution,
                         "observation_id": oid, "photo_id": pid,
                         "species_candidate": species, "dataset_group": SPECIES_TO_GROUP[species],
                         "review_status": "UNREVIEWED"})

@@ -13,8 +13,11 @@ spec.loader.exec_module(audit_module)
 BASE = {
     "source_id": "inat:1:11", "source_url": "https://www.inaturalist.org/observations/1",
     "image_url": "https://example.org/photo1.jpg", "creator": "Photographer",
-    "license": "CC0-1.0", "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-    "attribution": "Photographer", "observation_id": "1", "photo_id": "11",
+    "creator_login": "photographer", "license": "CC0-1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "license_notice": "no rights reserved",
+    "attribution": "Photographer, no rights reserved (CC0)",
+    "observation_id": "1", "photo_id": "11",
     "species_candidate": "Vespa velutina", "dataset_group": "asian_hornet", "review_status": "UNREVIEWED",
 }
 
@@ -33,6 +36,12 @@ class CandidateAuditTests(unittest.TestCase):
         self.assertEqual(report["metadata_errors"], [])
         self.assertEqual(report["approved_training_images"], 0)
         self.assertTrue(report["requires_human_review"])
+
+    def test_cc0_license_notice_is_not_accepted_as_creator_identity(self):
+        row = dict(BASE, creator="no rights reserved")
+        report = self.check_rows([row])
+        errors = report["metadata_errors"][0]["errors"]
+        self.assertIn("creator_identity_missing_or_mislabelled", errors)
 
     def test_duplicate_image_url_detected(self):
         duplicate = dict(BASE, source_id="inat:2:22", observation_id="2", photo_id="22")

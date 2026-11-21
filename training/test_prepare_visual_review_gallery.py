@@ -16,12 +16,16 @@ class VisualReviewGalleryTests(unittest.TestCase):
             source = Path(folder) / "in.csv"
             output = Path(folder) / "gallery.html"
             fields = ["photo_id", "observation_id", "species_candidate", "image_url",
-                      "source_url", "license", "creator"]
+                      "source_url", "license", "creator", "creator_login",
+                      "attribution", "license_notice"]
             row = {"photo_id":"763034625", "observation_id":"414481366",
                    "species_candidate":"Vespa velutina",
                    "image_url":"https://inaturalist-open-data.s3.amazonaws.com/photos/763034625/square.jpg",
                    "source_url":"https://www.inaturalist.org/observations/414481366",
-                   "license":"CC0-1.0", "creator":"no rights reserved"}
+                   "license":"CC0-1.0", "creator":"Test Observer",
+                   "creator_login":"test-observer",
+                   "attribution":"Test Observer, no rights reserved (CC0)",
+                   "license_notice":"no rights reserved"}
             with source.open("w", newline="", encoding="utf-8") as stream:
                 writer = csv.DictWriter(stream, fieldnames=fields)
                 writer.writeheader()
@@ -48,7 +52,8 @@ class VisualReviewGalleryTests(unittest.TestCase):
             source = Path(folder) / "screened.csv"
             output = Path(folder) / "gallery.html"
             fields = ["photo_id", "observation_id", "species_candidate", "image_url",
-                      "source_url", "license", "creator", "dataset_group",
+                      "source_url", "license", "creator", "creator_login",
+                      "attribution", "license_notice", "dataset_group",
                       "image_width", "image_height", "image_megapixels",
                       "image_bytes", "sharpness_score", "image_quality_status",
                       "quality_rank", "quality_reason"]
@@ -57,7 +62,10 @@ class VisualReviewGalleryTests(unittest.TestCase):
                  "dataset_group":"asian_hornet",
                  "image_url":"https://static.inaturalist.org/photos/10/original.jpg",
                  "source_url":"https://www.inaturalist.org/observations/20",
-                 "license":"CC0-1.0", "creator":"creator",
+                 "license":"CC0-1.0", "creator":"Test Observer",
+                 "creator_login":"test-observer",
+                 "attribution":"Test Observer, no rights reserved (CC0)",
+                 "license_notice":"no rights reserved",
                  "image_width":"1600", "image_height":"1200", "image_megapixels":"1.92",
                  "image_bytes":"200000", "sharpness_score":"42.1",
                  "image_quality_status":"PASS", "quality_rank":"1",
@@ -92,26 +100,33 @@ class VisualReviewGalleryTests(unittest.TestCase):
             output = root / "velutina.html"
             manifest = root / "images.csv"
             fields = ["photo_id", "observation_id", "species_candidate", "dataset_group",
-                      "image_url", "source_url", "license", "creator",
-                      "image_width", "image_height", "image_quality_status"]
+                      "image_url", "source_url", "license", "creator", "creator_login",
+                      "attribution", "license_notice", "image_width", "image_height",
+                      "image_quality_status"]
             row = {"photo_id":"42", "observation_id":"99", "species_candidate":"Vespa velutina",
                    "dataset_group":"asian_hornet",
                    "image_url":"https://static.inaturalist.org/photos/42/original.jpg",
                    "source_url":"https://www.inaturalist.org/observations/99",
                    "license":"CC0-1.0", "creator":"Original author",
+                   "creator_login":"original-author",
+                   "attribution":"Original author, no rights reserved (CC0)",
+                   "license_notice":"no rights reserved",
                    "image_width":"1920", "image_height":"1080", "image_quality_status":"PASS"}
             missing_original = dict(row, photo_id="43", observation_id="100",
                                     image_url="https://static.inaturalist.org/photos/43/original.jpg",
                                     source_url="https://www.inaturalist.org/observations/100")
             self.write_rows(source, fields, [row, missing_original])
             manifest_fields = ["photo_id", "observation_id", "species_candidate",
-                               "source_url", "license", "creator", "source_image_url",
+                               "source_url", "license", "creator", "creator_login",
+                               "attribution", "license_notice", "source_image_url",
                                "local_image_path", "image_format", "image_width",
                                "image_height", "image_bytes", "sha256", "download_status"]
             asset = {"photo_id":"42", "observation_id":"99",
                      "species_candidate":"Vespa velutina",
                      "source_url":row["source_url"], "license":"CC0-1.0",
-                     "creator":"Original author",
+                     "creator":"Original author", "creator_login":"original-author",
+                     "attribution":"Original author, no rights reserved (CC0)",
+                     "license_notice":"no rights reserved",
                      "source_image_url":"https://static.inaturalist.org/photos/42/original.jpg",
                      "local_image_path":"images/velutina/42.jpg",
                      "image_format":"JPEG", "image_width":"1920",
