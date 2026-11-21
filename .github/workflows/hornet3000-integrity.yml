@@ -13,6 +13,8 @@ jobs:
           persist-credentials: false
       - name: ONNX-Parser fuer statische Graphpruefung
         run: python3 -m pip install --disable-pip-version-check 'onnx==1.19.1' 'onnxruntime==1.23.2'
+      - name: YOLOv8 Decoder und NMS mit synthetischen Tensoren pruefen
+        run: python3 -m unittest tests.test_hornet3000_decode -v
       - name: Gepinnte ONNX-Datei herunterladen und Byte-Identitaet pruefen
         run: python3 scripts/verify_hornet3000_onnx.py --download --inspect-graph --synthetic-inference
       - name: Freigabe bleibt gesperrt
