@@ -10,11 +10,11 @@ from collections import Counter
 from pathlib import Path
 from urllib.parse import urlparse
 
-FIELDS = ["task_id", "photo_id", "observation_id", "species_candidate",
+FIELDS = ["task_id", "photo_id", "observation_id", "species_candidate", "dataset_group",
           "image_url", "source_url", "creator", "license", "license_url",
           "species_identity", "license_version", "image_quality",
           "bounding_boxes", "reviewer", "approval_status"]
-REQUIRED = {"photo_id", "observation_id", "species_candidate", "image_url",
+REQUIRED = {"photo_id", "observation_id", "species_candidate", "dataset_group", "image_url",
             "source_url", "creator", "license", "license_url",
             "license_review", "taxon_review", "image_quality_review",
             "bbox_annotation_review", "training_eligible"}
@@ -46,6 +46,7 @@ def prepare(input_path, output_path):
             "photo_id": photo,
             "observation_id": row["observation_id"],
             "species_candidate": row["species_candidate"],
+            "dataset_group": row["dataset_group"],
             "image_url": row["image_url"],
             "source_url": row["source_url"],
             "creator": row["creator"],
@@ -68,6 +69,7 @@ def prepare(input_path, output_path):
     summary = {
         "annotation_tasks": len(tasks),
         "by_species_candidate": dict(sorted(Counter(t["species_candidate"] for t in tasks).items())),
+        "by_dataset_group": dict(sorted(Counter(t["dataset_group"] for t in tasks).items())),
         "training_approved": 0,
         "labels_generated": 0,
         "notes": "No automatic species confirmation, rights approval, or bounding boxes. All tasks need independent expert review."
