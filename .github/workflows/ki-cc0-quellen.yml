@@ -11,6 +11,10 @@ on:
       - 'training/test_screen_inaturalist_image_quality.py'
       - 'training/download_original_inaturalist_images.py'
       - 'training/test_download_original_inaturalist_images.py'
+      - 'training/verify_inaturalist_photo_metadata.py'
+      - 'training/test_verify_inaturalist_photo_metadata.py'
+      - 'training/audit_inaturalist_candidates.py'
+      - 'training/test_audit_inaturalist_candidates.py'
       - 'training/test_prepare_visual_review_gallery.py'
       - 'scripts/audit_gallery_rights.py'
       - 'training/test_audit_gallery_rights.py'
@@ -37,6 +41,8 @@ jobs:
         run: python3 -m unittest training.test_discover_cc0_candidates -v
       - name: Offline-Test des bytegenauen Originalbild-Downloads
         run: python3 -m unittest training.test_download_original_inaturalist_images -v
+      - name: Offline-Test der getrennten Beobachter- und CC0-Attributionsdaten
+        run: python3 -m unittest training.test_verify_inaturalist_photo_metadata training.test_discover_cc0_candidates training.test_audit_inaturalist_candidates -v
       - name: Offline-Test der sicheren Galeriegenerierung
         run: python3 -m unittest training.test_prepare_visual_review_gallery -v
       - name: Offline-Test des lokalen Originalbild-Rechte- und SHA-256-Audits
