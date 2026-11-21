@@ -28,6 +28,12 @@ class ExternalDetectorStoreTests(unittest.TestCase):
             self.assertEqual(stored["payload"]["origin_event_id"], "detector-123")
             self.assertNotIn("image", stored["payload"])
             self.assertNotIn("gps", stored["payload"])
+            # Reopen SQLite to verify durable replay protection across restarts.
+            reopened = SQLiteEventStore(str(Path(root) / "private" / "events.sqlite3"))
+            self.assertFalse(reopened(HiveEvent.from_json(event.to_json())))
+            self.assertEqual(reopened.count(), 1)
+            self.assertTrue(reopened.delete(reopened.list_events(limit=1)[0]["event_id"]))
+            self.assertEqual(reopened.count(), 0)
 
     def test_unreviewed_label_cannot_reach_store(self):
         with tempfile.TemporaryDirectory() as root:
