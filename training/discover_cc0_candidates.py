@@ -79,7 +79,9 @@ def discover(per_species, max_pages=10):
                     oid = str(obs.get("id", ""))
                     if not oid.isdecimal():
                         continue
-                    observer = obs.get("user") or {}
+                    observer = obs.get("user")
+                    if not isinstance(observer, dict):
+                        observer = {}
                     creator_login = str(observer.get("login") or obs.get("user_login") or "").strip()
                     creator_name = str(observer.get("name") or "").strip()
                     creator = creator_name or creator_login
