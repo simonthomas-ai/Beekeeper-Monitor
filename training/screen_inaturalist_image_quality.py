@@ -195,6 +195,9 @@ def main():
         species_counts[species] = {
             "candidates": len(subset),
             "passed": sum(row["image_quality_status"] == "PASS" for row in subset),
+            "high_resolution": sum(row["image_quality_status"] == "PASS" and row["resolution_tier"] == "HIGH_RESOLUTION" for row in subset),
+            "standard_resolution": sum(row["image_quality_status"] == "PASS" and row["resolution_tier"] == "STANDARD" for row in subset),
+            "rejected_or_unavailable": sum(row["image_quality_status"] != "PASS" for row in subset),
         }
     report = {
         "input_candidates": len(screened),
