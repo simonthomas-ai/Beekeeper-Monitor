@@ -92,25 +92,6 @@ jobs:
           if [ -f training/inaturalist-review-queue.csv ]; then
             echo "Ungepruefte CC0-Fotokandidaten: $(($(wc -l < training/inaturalist-review-queue.csv)-1))" >> "$GITHUB_STEP_SUMMARY"
           fi
-          if [ -f training/inaturalist-quality-screen.csv ]; then
-            python3 - <<'PY'
-          import csv, os
-          from collections import Counter
-          with open('training/inaturalist-quality-screen.csv', encoding='utf-8', newline='') as stream:
-              rows = list(csv.DictReader(stream))
-          by_species = {}
-          for species in sorted({row.get('species_candidate', '') for row in rows}):
-              part = [row for row in rows if row.get('species_candidate') == species]
-              by_species[species] = (sum(row.get('image_quality_status') == 'PASS' for row in part), len(part))
-          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
-              passed = sum(row.get('image_quality_status') == 'PASS' for row in rows)
-              summary.write(f'\n### Technischer Bilddatei-Vorfilter\n\n{passed}/{len(rows)} Dateien decodierbar und Mindestpixelmaße erfüllt.\n\n')
-              summary.write('| Art | bestanden / geprüft |\n|---|---:|\n')
-              for species, (count, total) in by_species.items():
-                  summary.write(f'| {species} | {count}/{total} |\n')
-              summary.write('\nBildbytes wurden nur temporär im Arbeitsspeicher verarbeitet und nicht gespeichert. Detailwert ist nur Sortierung, keine Schärfe- oder Artfreigabe.\n')
-          PY
-          fi
           if [ -f training/velutina-photo-verification.csv ]; then
             echo '### Einzelpruefung Asiatische Hornisse' >> "$GITHUB_STEP_SUMMARY"
             python3 -c 'import csv; p="training/velutina-photo-verification.csv"; r=list(csv.DictReader(open(p))); ok=sum(x["api_photo_found"]=="YES" and x["license_metadata_match"]=="YES" and x["api_taxon"]=="Vespa velutina" and x["api_quality_grade"]=="research" for x in r); print(f"API-Metadaten bestaetigt: {ok}/{len(r)}; visuelle Artenpruefung weiterhin offen")' >> "$GITHUB_STEP_SUMMARY"
