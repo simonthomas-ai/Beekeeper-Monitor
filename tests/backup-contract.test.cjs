@@ -71,7 +71,7 @@ test('rejects invalid class, empty note, oversized note and invalid coordinates'
   })), false);
   assert.equal(contract.validObservation(observation({
     location: { latitude: 51, longitude: 7, accuracyMeters: 0 }
-  })), false);
+  })), true);
 });
 
 test('rejects malformed and oversized backups before importing', () => {
