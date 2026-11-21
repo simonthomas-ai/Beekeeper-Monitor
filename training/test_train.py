@@ -50,7 +50,7 @@ class TrainingImageValidationTests(unittest.TestCase):
             root = Path(tmp)
             training = root / "training"
             training.mkdir()
-            data_yaml = "\\n".join([
+            data_yaml = "\n".join([
                 "path: datasets/beekeeper",
                 "train: images/train",
                 "val: images/val",
@@ -63,7 +63,7 @@ class TrainingImageValidationTests(unittest.TestCase):
                 "  4: bombus_spp",
                 "  5: syrphidae",
                 "  6: other_insect",
-            ]) + "\\n"
+            ]) + "\n"
             (training / "data.yaml").write_text(data_yaml, encoding="utf-8")
             actual = root / "actual-dataset"
             actual.mkdir()
