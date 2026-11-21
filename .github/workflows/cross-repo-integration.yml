@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/cross-repo-integration.yml'
       - 'integrations/**'
+      - 'scripts/test_practical_modules_http.py'
       - 'docs/VESPAGUARD-INTEGRATION.md'
   pull_request:
     branches: [main]
@@ -53,7 +54,7 @@ jobs:
         run: npm test
       - name: Echte HTTP-Brücke zum lokalen Empfänger und Replay prüfen
         working-directory: monitor
-        run: python -m unittest scripts.test_cross_repo_smoke -v
+        run: python -m unittest scripts.test_cross_repo_smoke scripts.test_practical_modules_http -v
       - name: Integrierte Tests dokumentieren
         if: always()
         run: |
