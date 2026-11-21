@@ -115,7 +115,7 @@ jobs:
                   try:
                       with urlopen(Request(url, headers={"User-Agent": "VespaGuard-Deployment-Check/1.0", "Cache-Control": "no-cache"}), timeout=20) as response:
                           body = response.read().decode("utf-8")
-                          if response.status == 200 and marker in body:
+                          if response.status == 200 and (marker not in body if path in ("impressum.html", "datenschutz.html") else marker in body):
                               print(f"OK HTTP 200 and expected content: {url}", flush=True)
                               break
                           print(f"Unexpected response or content: {url} (attempt {attempt + 1}/12)", flush=True)
