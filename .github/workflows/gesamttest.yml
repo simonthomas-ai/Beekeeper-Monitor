@@ -202,6 +202,41 @@ jobs:
         run: npm --prefix beekeeper3000/monitor-bridge ci --ignore-scripts --no-audit --no-fund
       - name: BeeKeeper3000-Bridge-Tests
         run: npm --prefix beekeeper3000/monitor-bridge test
+      - name: Repo-uebergreifender Bridge-Vertrag bis zur Warnregel
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { toMonitorEvent } from './beekeeper3000/monitor-bridge/bridge.mjs';
+          import { createRequire } from 'node:module';
+          import { spawnSync } from 'node:child_process';
+          import { createHash } from 'node:crypto';
+          const require = createRequire(import.meta.url);
+          const rules = require('./alert-rules.js');
+          const timestamp = new Date().toISOString();
+          const event = toMonitorEvent({
+            id: 'cross-repo-velutina-1', observed_at: timestamp,
+            station_id: 'Yard Cam / North', species: 'Vespa velutina',
+            confidence: 1, status: 'expert_confirmed',
+            image_path: '/private/secret.jpg', lat: 51.2, lon: 6.8
+          });
+          if (!event) throw new Error('Bridge rejected source event');
+          const check = spawnSync('python3', ['-c',
+            'import sys; from integrations.event_contracts import HiveEvent; HiveEvent.from_json(sys.stdin.read())'
+          ], { input: JSON.stringify(event), encoding: 'utf8' });
+          if (check.status !== 0) throw new Error('Monitor contract rejected bridge output: ' + check.stderr);
+          const id = createHash('sha256').update(JSON.stringify(event)).digest('hex');
+          const row = { event_id: id, received_at: timestamp, event };
+          const alerts = rules.selectAlerts([row], {enabled:true, thresholdPercent:100}, new Set(), Date.now()).alerts;
+          if (alerts.length !== 1 || !rules.describe(alerts[0]).includes('unbestätigt'))
+            throw new Error('Bridge event did not reach unverified alert rule');
+          if (JSON.stringify(event).includes('secret.jpg') || 'lat' in event.payload || 'lon' in event.payload)
+            throw new Error('Bridge leaked media or GPS metadata');
+          const other = toMonitorEvent({id:'cross-repo-crabro-1',observed_at:timestamp,station_id:'Yard Cam / North',species:'Vespa crabro',confidence:1});
+          const otherRow = {event_id:'a'.repeat(64),received_at:timestamp,event:other};
+          if (rules.selectAlerts([otherRow],{enabled:true},new Set(),Date.now()).alerts.length)
+            throw new Error('Native hornet must not trigger velutina warning');
+          console.log('PASS: BeeKeeper3000 source -> bridge -> Monitor Python contract -> JS warning rule');
+          NODE
       - name: Ergebnis im gemeinsamen Bericht
         if: always()
         run: |
