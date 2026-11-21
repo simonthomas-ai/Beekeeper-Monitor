@@ -55,7 +55,17 @@ class ImageQualityScreenTests(unittest.TestCase):
         self.assertGreater(result["image_bytes"], 0)
         self.assertTrue(result["sharpness_score"] != "")
         self.assertEqual(result["image_quality_status"], "PASS")
+        self.assertEqual(result["resolution_tier"], "STANDARD")
         self.assertIn("ranking-only", result["quality_reason"])
+
+    def test_high_resolution_tier_is_metadata_only(self):
+        url = "https://static.inaturalist.org/photos/42/original.jpg"
+        with patch.object(screen.urllib.request, "urlopen",
+                          return_value=FakeResponse(image_bytes((1800, 1200)), url)):
+            result = screen.inspect_candidate(self.row())
+        self.assertEqual(result["resolution_tier"], "HIGH_RESOLUTION")
+        self.assertEqual(result["image_quality_status"], "PASS")
+        self.assertNotIn("training_approved", result)
 
     def test_small_image_is_rejected_and_never_ranked(self):
         url = "https://static.inaturalist.org/photos/42/original.jpg"

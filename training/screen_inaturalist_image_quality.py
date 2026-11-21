@@ -27,11 +27,14 @@ MAX_PIXELS = 40_000_000
 MIN_LONG_EDGE = 960
 MIN_SHORT_EDGE = 480
 MIN_PIXELS = 450_000
+HIGH_QUALITY_LONG_EDGE = 1600
+HIGH_QUALITY_SHORT_EDGE = 900
+HIGH_QUALITY_PIXELS = 1_500_000
 ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
 EXTRA_FIELDS = [
     "original_review_url", "image_width", "image_height", "image_megapixels",
     "image_bytes", "sharpness_score", "image_quality_status",
-    "quality_reason", "quality_rank",
+    "quality_reason", "quality_rank", "resolution_tier",
 ]
 
 
@@ -69,6 +72,7 @@ def inspect_candidate(row, timeout=25):
         "image_quality_status": "UNAVAILABLE",
         "quality_reason": "",
         "quality_rank": "",
+        "resolution_tier": "UNVERIFIED",
     })
     try:
         if not photo_id.isdecimal():
@@ -95,6 +99,9 @@ def inspect_candidate(row, timeout=25):
             body = response.read(MAX_IMAGE_BYTES + 1)
         width, height, sharpness = _inspect_image(body)
         pixels = width * height
+        result["resolution_tier"] = ("HIGH_RESOLUTION" if max(width, height) >= HIGH_QUALITY_LONG_EDGE
+            and min(width, height) >= HIGH_QUALITY_SHORT_EDGE
+            and pixels >= HIGH_QUALITY_PIXELS else "STANDARD")
         result.update({
             "image_width": width,
             "image_height": height,
@@ -103,6 +110,7 @@ def inspect_candidate(row, timeout=25):
             "sharpness_score": round(sharpness, 2),
         })
         if max(width, height) < MIN_LONG_EDGE or min(width, height) < MIN_SHORT_EDGE or pixels < MIN_PIXELS:
+            result["resolution_tier"] = "REJECTED"
             reasons = []
             if max(width, height) < MIN_LONG_EDGE:
                 reasons.append("long edge below " + str(MIN_LONG_EDGE) + " px")
@@ -193,6 +201,7 @@ def main():
         "status_counts": dict(status_counts),
         "by_species": species_counts,
         "image_bytes_persisted": False,
+        "high_resolution_candidates": sum(r["image_quality_status"] == "PASS" and r["resolution_tier"] == "HIGH_RESOLUTION" for r in screened),
         "training_approvals": 0,
         "warning": "PASS checks file decoding and pixel dimensions only. Sharpness is ranking-only; insect visibility, focus on the insect, taxonomy, rights and annotations require human review.",
     }
