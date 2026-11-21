@@ -5,6 +5,7 @@ on:
     paths:
       - 'training/**'
       - 'datasets/**'
+      - 'scripts/model_readiness.py'
       - '.github/workflows/training-data.yml'
 permissions:
   contents: read
@@ -17,11 +18,19 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install PyYAML
-      - name: Validate dataset if authentic labeled images are present
+      - name: Dokumentierte KI-Dateninventur
+        run: python scripts/model_readiness.py
+      - name: Echtdaten auf allen drei Splits validieren
         shell: bash
         run: |
-          if [ -d datasets/beekeeper/images/train ] && [ -d datasets/beekeeper/labels/train ]; then
-            python training/train.py --validate-only
-          else
-            echo 'SKIPPED: no licensed, annotated dataset committed; no model training claimed.'
+          set -euo pipefail
+          if [ ! -d datasets/beekeeper ]; then
+            echo '## Modellfreigabe: BLOCKIERT – keine Trainingsdaten' >> "$GITHUB_STEP_SUMMARY"
+            echo 'Keine realen, lizenzierten und annotierten Daten vorhanden. Es wurde kein Modell trainiert.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'NOTICE: Missing dataset; model training remains blocked.'
+            exit 0
           fi
+          # A partial dataset must not silently bypass provenance and split checks.
+          python training/train.py --validate-only
+          echo '## Echtdaten: formale Validierung bestanden (keine Modellfreigabe)' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Unabhängige Felddaten, Modellgewichte und Qualitätsnachweise sind weiterhin erforderlich.' >> "$GITHUB_STEP_SUMMARY"
