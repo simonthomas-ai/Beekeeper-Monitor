@@ -22,7 +22,13 @@ def candidates():
     if not match:
         raise ValueError("review/all.html: embedded items not found")
     items = json.loads(match.group(1))
-    return {str(i["photo_id"]): i for i in items}
+    candidates_by_id = {}
+    for item in items:
+        pid = str(item["photo_id"])
+        if pid in candidates_by_id and candidates_by_id[pid] != item:
+            raise ValueError(f"Conflicting metadata for photo {pid}")
+        candidates_by_id[pid] = item
+    return candidates_by_id
 
 def check_batch(batch):
     """Fetch observations in a single supported API call, then match exact photo IDs."""
@@ -34,7 +40,9 @@ def check_batch(batch):
     try:
         with urlopen(request, timeout=30) as response:
             payload = json.load(response)
-        observations = {str(o["id"]): o for o in payload.get("results", [])}
+        if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
+            raise ValueError("Unexpected API response format")
+        observations = {str(o["id"]): o for o in payload["results"]}
     except (HTTPError, URLError, TimeoutError, ValueError, KeyError) as exc:
         reason = f"API {getattr(exc, 'code', type(exc).__name__)}"
         return [{"photo_id": pid, "status": "UNRESOLVED", "reason": reason} for pid, _ in batch]
@@ -80,11 +88,13 @@ def main():
     summary = Path(__import__("os").environ.get("GITHUB_STEP_SUMMARY", "/dev/null"))
     with summary.open("a", encoding="utf-8") as f:
         f.write(f"## iNaturalist-Fotolizenzen: täglicher Metadatenabgleich\n\nEinzelbilder: {len(items)}; geprüft: {len(results)}; Übereinstimmungen: {counts.get('MATCHED_METADATA',0)}; Abweichungen: {counts.get('MISMATCH',0)}; ungeklärt: {counts.get('UNRESOLVED',0)}.\n\n**Keine rechtliche Freigabe und keine Trainingsfreigabe.** JSON-Bericht im Workflow-Artefakt.\n")
-    print(json.dumps({"checked": len(results), "counts": counts}, ensure_ascii=False))
+    print(json.dumps({"checked": len(results), "counts": counts, "unresolved_reasons": dict(Counter(r.get("reason", "unknown") for r in results if r["status"] == "UNRESOLVED"))}, ensure_ascii=False))
     if counts.get("MISMATCH", 0):
         raise SystemExit("License metadata mismatches require manual review")
-    if counts.get("UNRESOLVED", 0) == len(results):
-        raise SystemExit("No license metadata could be checked; review connectivity/API")
+    if counts.get("UNRESOLVED", 0):
+        raise SystemExit("Unresolved photo licenses require manual review; no automatic clearance")
+    if len(results) < len(items):
+        raise SystemExit("Not all gallery photos checked; no automatic clearance")
 
 if __name__ == "__main__":
     main()
