@@ -10,6 +10,7 @@ on:
       - 'training/dataset_groups.py'
       - 'training/test_discovery_species.py'
       - 'training/test_prepare_species_review.py'
+      - 'training/test_prepare_annotation_tasks.py'
       - 'training/inaturalist_media.py'
       - 'training/test_inaturalist_media.py'
       - 'training/prepare_visual_review_gallery.py'
@@ -52,6 +53,7 @@ jobs:
           python -m unittest discover -s training -p 'test_prepare_visual_review_gallery.py' -v
           python -m unittest discover -s training -p 'test_discovery_species.py' -v
           python -m unittest discover -s training -p 'test_prepare_species_review.py' -v
+          python -m unittest discover -s training -p 'test_prepare_annotation_tasks.py' -v
       - name: Test fail-closed hornet license audit
         run: python -m unittest discover -s training -p 'test_hornet_license_audit.py' -v
       - name: Search up to 1000 licensed insect photo candidates (200 per group)
