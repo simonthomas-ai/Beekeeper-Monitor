@@ -28,7 +28,7 @@ def gallery(source, output, species="Vespa velutina", images_manifest=None):
                         or asset.get("license") != "CC0-1.0"
                         or asset.get("download_status") != "DOWNLOADED_UNMODIFIED"
                         or len(parts) != 3 or parts[:2] != ("images", "velutina")
-                        or not re.fullmatch(r"[0-9]+\\.(?:jpg|png|webp)", parts[2])
+                        or not re.fullmatch(r"[0-9]+\.(?:jpg|png|webp)", parts[2])
                         or not re.fullmatch(r"[a-f0-9]{64}", asset.get("sha256", ""))):
                     raise ValueError("Invalid or unverified local original-image manifest row")
                 if photo_id in local_assets:
