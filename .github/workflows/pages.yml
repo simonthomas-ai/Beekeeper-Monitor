@@ -30,6 +30,7 @@ jobs:
           python scripts/check_sources.py
           python scripts/test_static.py
           python scripts/check_pwa_deployment_contract.py
+          node --check backup-contract.js
           node --check app.js
           node --check integrations-ui.js
           node --check alert-rules.js
