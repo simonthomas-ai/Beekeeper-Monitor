@@ -29,9 +29,9 @@ MAX_PIXELS = 40_000_000
 ALLOWED_FORMATS = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}
 MANIFEST_FIELDS = [
     "photo_id", "observation_id", "species_candidate", "source_url",
-    "license", "creator", "source_image_url", "local_image_path",
-    "image_format", "image_width", "image_height", "image_bytes",
-    "sha256", "download_status",
+    "license", "creator", "creator_login", "attribution", "license_notice",
+    "source_image_url", "local_image_path", "image_format", "image_width",
+    "image_height", "image_bytes", "sha256", "download_status",
 ]
 
 
@@ -51,6 +51,8 @@ def _verified_cc0(verification, species):
                 and row.get("api_photo_license", "").lower() == "cc0"
                 and row.get("api_taxon") == species
                 and row.get("api_quality_grade") == "research"
+                and bool((row.get("api_observer_login") or "").strip())
+                and bool((row.get("api_attribution_statement") or "").strip())
                 and not row.get("error")):
             result[pid] = row
     return result
@@ -145,7 +147,10 @@ def download_originals(input_csv, verification_csv, species, output_dir, manifes
                 "species_candidate": species,
                 "source_url": row.get("source_url", ""),
                 "license": "CC0-1.0",
-                "creator": row.get("creator") or row.get("attribution") or "Attribution unavailable",
+                "creator": checked.get("api_observer_name") or checked.get("api_observer_login"),
+                "creator_login": checked.get("api_observer_login"),
+                "attribution": checked.get("api_attribution_statement"),
+                "license_notice": checked.get("api_attribution"),
                 "source_image_url": requested,
                 "local_image_path": "images/velutina/" + filename,
                 "image_format": image_format,
