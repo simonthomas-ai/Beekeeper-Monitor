@@ -4,7 +4,8 @@ import argparse
 import csv
 import html
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+import re
 from urllib.parse import urlparse
 
 try:
@@ -14,9 +15,25 @@ except ModuleNotFoundError:
     from dataset_groups import SPECIES_TO_GROUP
     from inaturalist_media import normalize_if_inaturalist
 
-def gallery(source, output, species="Vespa velutina"):
+def gallery(source, output, species="Vespa velutina", images_manifest=None):
     with open(source, newline="", encoding="utf-8-sig") as f:
         rows = [r for r in csv.DictReader(f) if species == "ALL" or r.get("species_candidate") == species]
+    local_assets = {}
+    if images_manifest:
+        with open(images_manifest, newline="", encoding="utf-8-sig") as stream:
+            for asset in csv.DictReader(stream):
+                photo_id = str(asset.get("photo_id", ""))
+                parts = PurePosixPath(asset.get("local_image_path", "")).parts
+                if (not photo_id.isdecimal() or asset.get("species_candidate") != "Vespa velutina"
+                        or asset.get("license") != "CC0-1.0"
+                        or asset.get("download_status") != "DOWNLOADED_UNMODIFIED"
+                        or len(parts) != 3 or parts[:2] != ("images", "velutina")
+                        or not re.fullmatch(r"[0-9]+\\.(?:jpg|png|webp)", parts[2])
+                        or not re.fullmatch(r"[a-f0-9]{64}", asset.get("sha256", ""))):
+                    raise ValueError("Invalid or unverified local original-image manifest row")
+                if photo_id in local_assets:
+                    raise ValueError("Duplicate local original image in manifest")
+                local_assets[photo_id] = asset
     quality_screened = any("image_quality_status" in row for row in rows)
     if quality_screened:
         rows = [row for row in rows if row.get("image_quality_status") == "PASS"]
@@ -25,9 +42,13 @@ def gallery(source, output, species="Vespa velutina"):
         if any(urlparse(row.get(k, "")).scheme != "https" for k in ("image_url", "source_url")):
             raise ValueError("HTTPS required")
         photo_id = row.get("photo_id", "")
-        image_url = normalize_if_inaturalist(row.get("image_url", ""), photo_id)
-        if not image_url.startswith("https://"):
-            raise ValueError("HTTPS required for image URL")
+        asset = local_assets.get(photo_id)
+        if asset:
+            image_url = asset["local_image_path"]
+        else:
+            image_url = normalize_if_inaturalist(row.get("image_url", ""), photo_id)
+            if not image_url.startswith("https://"):
+                raise ValueError("HTTPS required for image URL")
         species_candidate = row.get("species_candidate", "")
         expected_group = SPECIES_TO_GROUP.get(species_candidate)
         dataset_group = row.get("dataset_group") or expected_group
@@ -47,6 +68,10 @@ def gallery(source, output, species="Vespa velutina"):
             "image_quality_status": row.get("image_quality_status", "NOT_SCREENED"),
             "quality_reason": row.get("quality_reason", ""),
             "quality_rank": int(row["quality_rank"]) if str(row.get("quality_rank", "")).isdigit() else None,
+            "original_sha256": asset.get("sha256", "") if asset else "",
+            "original_file_bytes": int(asset["image_bytes"]) if asset and str(asset.get("image_bytes", "")).isdigit() else None,
+            "original_file_format": asset.get("image_format", "") if asset else "",
+            "image_delivery": "LOCAL_UNMODIFIED_ORIGINAL" if asset else "REMOTE_INATURALIST_ORIGINAL",
         })
     if len({item["photo_id"] for item in items}) != len(items):
         raise ValueError("Duplicate photo IDs across species")
@@ -54,12 +79,12 @@ def gallery(source, output, species="Vespa velutina"):
     title = html.escape(species)
     page = """<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Beekeeper Monitor – mobile Bildprüfung</title>
-<style>body{font:17px system-ui;margin:0 auto;padding:1rem;max-width:1200px;background:#f7f8fa;color:#19232c}h1{font-size:1.5rem}button,select,input{font:inherit;min-height:44px}button{padding:.6rem;border-radius:9px;border:1px solid #777;background:white}button:focus{outline:3px solid #1469aa}.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0}.viewer{position:relative;background:#ddd;touch-action:none;min-height:45vh}.viewer img{display:block;width:100%;height:auto;max-height:82vh;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}.viewer svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.viewer rect{fill:#22aaff33;stroke:#0674ae;stroke-width:2}small{color:#555}a{overflow-wrap:anywhere}#state{font-weight:600}</style>
+<style>body{font:17px system-ui;margin:0 auto;padding:1rem;max-width:1200px;background:#f7f8fa;color:#19232c}h1{font-size:1.5rem}button,select,input{font:inherit;min-height:44px}button{padding:.6rem;border-radius:9px;border:1px solid #777;background:white}button:focus{outline:3px solid #1469aa}.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0}.viewer{position:relative;background:#ddd;touch-action:none;min-height:45vh}.viewer img{display:block;width:auto;height:auto;max-width:100%;max-height:none;object-fit:initial;pointer-events:none;user-select:none;-webkit-user-drag:none}.viewer svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.viewer rect{fill:#22aaff33;stroke:#0674ae;stroke-width:2}small{color:#555}a{overflow-wrap:anywhere}#state{font-weight:600}</style>
 <h1>Beekeeper Monitor – Bildprüfung: __SPECIES__</h1>
 <p><strong>Keine automatische Freigabe.</strong> Bilder werden von iNaturalist geladen; ohne Internet sind sie eventuell nicht sichtbar. Prüfentscheidungen bleiben auf diesem Gerät, bis du sie exportierst. Markierungen sind nur Vorschläge und müssen fachlich bestätigt werden. Der technische Vorfilter entfernt defekte und zu kleine Bilddateien; der Detailindikator sortiert nur und ist kein Nachweis für Fokus auf dem Insekt oder korrekte Art.</p>
 <div id="unified-controls" hidden><label for="species-filter">Bildgruppe auswählen</label> <select id="species-filter"><option value="ALL">Alle fünf Bildgruppen</option><option value="asian_hornet">Asiatische Hornisse</option><option value="european_hornet">Europäische Hornisse</option><option value="honey_bee">Honigbiene</option><option value="bumblebees">Hummeln</option><option value="wasps">Wespen</option></select><p id="group-counts" role="status"></p><p id="progress" role="status"></p><progress id="progress-bar" max="100" value="0" style="width:100%"></progress></div>
 <p id="counter"></p><p id="image-meta" role="status">Bildabmessungen werden nach dem Laden angezeigt.</p><div class="viewer" id="viewer"><img id="photo" alt="Ungeprüftes Insektenfoto"><svg id="overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none"></svg></div>
-<p><a id="source" target="_blank" rel="noopener noreferrer">Originalbeobachtung ansehen</a> · <a id="image-original" target="_blank" rel="noopener noreferrer">Bilddatei in Originalgröße öffnen / vergrößern</a></p>
+<p><a id="source" target="_blank" rel="noopener noreferrer">Originalbeobachtung ansehen</a> · <a id="image-original" target="_blank" rel="noopener noreferrer">Unveränderte Originaldatei öffnen</a></p><p id="image-provenance"></p>
 <p id="state"></p>
 <label for="decision">Visuelle Prüfung</label>
 <select id="decision"><option value="PENDING">Noch ungeprüft</option><option value="LIKELY">Art wahrscheinlich – Expertenprüfung nötig</option><option value="REJECT">Bild ungeeignet / falsche Art</option></select>
@@ -109,9 +134,9 @@ function updateProgress(){
 
 function current(){const item=selected();return saved[item.photo_id]||{decision:"PENDING",boxes:[]}}
 function persist(v){saved[selected().photo_id]=v;try{localStorage.setItem(key,JSON.stringify(saved))}catch(e){$("state").textContent="Speichern nicht möglich – bitte JSON exportieren."}}
-$("photo").onload=()=>{const item=selected();const measured=item.image_width&&item.image_height?" · Vorabmessung: "+item.image_width+" × "+item.image_height+" px ("+item.image_megapixels+" MP)":" · keine Vorabmessung";const sharp=item.sharpness_score?" · Detailindikator: "+item.sharpness_score+" (nur Sortierung)":" ";$("image-meta").textContent="Geladene Bildgröße: "+$("photo").naturalWidth+" × "+$("photo").naturalHeight+" Pixel · iNaturalist-Variante original (max. 2048 px Kantenlänge; nicht zwingend Kamera-Original)"+measured+sharp;};
+$("photo").onload=()=>{const item=selected();const measured=item.image_width&&item.image_height?" · Vorabmessung: "+item.image_width+" × "+item.image_height+" px ("+item.image_megapixels+" MP)":" · keine Vorabmessung";const sharp=item.sharpness_score?" · Detailindikator: "+item.sharpness_score+" (nur Sortierung)":" ";const mode=item.image_delivery==="LOCAL_UNMODIFIED_ORIGINAL"?" · lokal gespeicherte Originaldatei (Bytes unverändert)":" · iNaturalist-Originalvariante";$("image-meta").textContent="Bildgröße: "+$("photo").naturalWidth+" × "+$("photo").naturalHeight+" Pixel"+mode+measured+sharp;};
 $("photo").onerror=()=>{$("image-meta").textContent="Bild konnte nicht geladen werden; bitte Originalquelle oder Bilddatei direkt öffnen."};
-function render(){if(!visible.length){$("counter").textContent="Keine Kandidaten erfüllen den aktuellen Bilddatei-Vorfilter."; $("image-meta").textContent="Für diese Gruppe wurden keine ausreichend großen und lesbaren Bilddateien gefunden. Bitte später erneut recherchieren oder andere Quellen nutzen."; $("photo").removeAttribute("src"); $("source").removeAttribute("href"); $("image-original").removeAttribute("href"); $("state").textContent="Keine Bewertungen oder Trainingsfreigaben vorhanden."; $("decision").disabled=true; $("prev").disabled=true; $("next").disabled=true; $("clear").disabled=true; $("overlay").replaceChildren(); updateProgress(); return;} $("decision").disabled=false; $("prev").disabled=false; $("next").disabled=false; $("clear").disabled=false; const item=selected(),v=current();$("counter").textContent=(index+1)+"/"+visible.length+" – "+item.species_candidate+" · "+item.dataset_group+" – Foto "+item.photo_id;updateProgress();$("image-meta").textContent="Bild wird geladen …";$("photo").src=item.image_url;$("source").href=item.source_url;$("image-original").href=item.image_url;$("decision").value=v.decision;$("state").textContent="Status: "+v.decision+" · Markierungen: "+v.boxes.length+" · KEINE Trainingsfreigabe";$("overlay").replaceChildren();for(const b of v.boxes){const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");rect.setAttribute("x",(b.x-b.width/2)*1000);rect.setAttribute("y",(b.y-b.height/2)*1000);rect.setAttribute("width",b.width*1000);rect.setAttribute("height",b.height*1000);$("overlay").append(rect)}}
+function render(){if(!visible.length){$("counter").textContent="Keine Kandidaten erfüllen den aktuellen Bilddatei-Vorfilter."; $("image-meta").textContent="Für diese Gruppe wurden keine ausreichend großen und lesbaren Bilddateien gefunden. Bitte später erneut recherchieren oder andere Quellen nutzen."; $("photo").removeAttribute("src"); $("source").removeAttribute("href"); $("image-original").removeAttribute("href"); $("state").textContent="Keine Bewertungen oder Trainingsfreigaben vorhanden."; $("decision").disabled=true; $("prev").disabled=true; $("next").disabled=true; $("clear").disabled=true; $("overlay").replaceChildren(); updateProgress(); return;} $("decision").disabled=false; $("prev").disabled=false; $("next").disabled=false; $("clear").disabled=false; const item=selected(),v=current();$("counter").textContent=(index+1)+"/"+visible.length+" – "+item.species_candidate+" · "+item.dataset_group+" – Foto "+item.photo_id;updateProgress();$("image-meta").textContent="Bild wird geladen …";$("photo").src=item.image_url;$("source").href=item.source_url;$("image-original").href=item.image_url;$("image-provenance").textContent="Quelle: "+(item.creator||"Urheberangabe fehlt")+" · Lizenzangabe: "+(item.license||"unbekannt")+(item.original_sha256?" · SHA-256: "+item.original_sha256:"");$("decision").value=v.decision;$("state").textContent="Status: "+v.decision+" · Markierungen: "+v.boxes.length+" · KEINE Trainingsfreigabe";$("overlay").replaceChildren();for(const b of v.boxes){const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");rect.setAttribute("x",(b.x-b.width/2)*1000);rect.setAttribute("y",(b.y-b.height/2)*1000);rect.setAttribute("width",b.width*1000);rect.setAttribute("height",b.height*1000);$("overlay").append(rect)}}
 $("species-filter").onchange=refreshFilter;
 $("decision").onchange=()=>{const v=current();v.decision=$("decision").value;persist(v);render()};
 $("prev").onclick=()=>{index=(index-1+visible.length)%visible.length;render()};
@@ -216,5 +241,6 @@ if __name__ == "__main__":
     p.add_argument("--input", required=True)
     p.add_argument("--output", required=True)
     p.add_argument("--species", default="Vespa velutina")
+    p.add_argument("--images-manifest", default=None, help="Optional verified manifest for local, unchanged CC0 originals")
     a=p.parse_args()
-    gallery(a.input,a.output,a.species)
+    gallery(a.input,a.output,a.species,a.images_manifest)
