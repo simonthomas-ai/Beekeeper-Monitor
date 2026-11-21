@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Aktuelle iNaturalist-Fotolizenzen vergleichen
-        run: python scripts/check_live_photo_licenses.py --limit 250 --output photo-license-audit.json
+        run: python scripts/check_live_photo_licenses.py --limit 500 --output photo-license-audit.json
       - name: Prüfbericht archivieren (auch bei Fehlern)
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
