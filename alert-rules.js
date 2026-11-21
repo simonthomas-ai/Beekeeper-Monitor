@@ -11,6 +11,7 @@
   else root.BeekeeperAlertRules = api;
 })(typeof self !== 'undefined' ? self : this, function () {
   const TARGET_LABEL = 'vespa_velutina';
+  const BRIDGE_TARGET_LABEL = 'unverified_candidate:vespa_velutina';
   const KINDS = new Set(['camera_detection', 'acoustic_event']);
   const EVENT_ID = /^[a-f0-9]{64}$/;
   const DEFAULTS = Object.freeze({
@@ -43,7 +44,9 @@
     const event = row.event && typeof row.event === 'object' ? row.event : null;
     const payload = event && event.payload && typeof event.payload === 'object' ? event.payload : null;
     if (!event || !payload || !KINDS.has(event.kind)) return null;
-    if (payload.label !== TARGET_LABEL) return null;
+    // BeeKeeper3000 deliberately prefixes unverified species labels.
+    // Accept only the exact velutina bridge label, never arbitrary prefixes.
+    if (payload.label !== TARGET_LABEL && payload.label !== BRIDGE_TARGET_LABEL) return null;
     if (typeof payload.confidence !== 'number' || !Number.isFinite(payload.confidence)) return null;
     if (payload.confidence < 0 || payload.confidence > 1) return null;
     const parsed = Date.parse(typeof event.timestamp === 'string' ? event.timestamp : row.received_at || '');
