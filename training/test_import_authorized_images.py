@@ -118,6 +118,56 @@ class ImportSafetyTests(unittest.TestCase):
             with self.assertRaises(ValueError): mod.validate_rows([good, good])
             with self.assertRaises(ValueError): mod.validate_rows([dict(good, license="CC-BY-NC-4.0")])
 
+    def test_authorized_import_downloads_original_and_records_pixels(self):
+        source = self._jpeg_with_exif()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            queue = root / "queue.csv"
+            row = {
+                "source_id": "inat:photo:763034625",
+                "source_url": "https://www.inaturalist.org/observations/414481366",
+                "image_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/763034625/square.jpg",
+                "creator": "Creator",
+                "license": "CC0-1.0",
+                "license_url": mod.LICENSE_URLS["CC0-1.0"],
+                "attribution": "Creator",
+            }
+            with queue.open("w", newline="", encoding="utf-8") as stream:
+                writer = csv.DictWriter(stream, fieldnames=mod.FIELDS)
+                writer.writeheader()
+                writer.writerow(row)
+
+            class FakeResponse:
+                def __init__(self):
+                    self.headers = Message()
+                    self.headers["Content-Type"] = "image/jpeg"
+                def __enter__(self): return self
+                def __exit__(self, *args): return False
+                def read(self, _limit): return source
+
+            class FakeOpener:
+                def __init__(self): self.requested_urls = []
+                def open(self, request, **_kwargs):
+                    self.requested_urls.append(request.full_url)
+                    return FakeResponse()
+
+            fake_opener = FakeOpener()
+            dataset = root / "dataset"
+            with patch.object(mod, "public_https", side_effect=lambda url: url), \
+                 patch.object(mod.urllib.request, "build_opener", return_value=fake_opener):
+                result = mod.import_candidates(queue, dataset)
+
+            expected_url = "https://inaturalist-open-data.s3.amazonaws.com/photos/763034625/original.jpg"
+            self.assertEqual(fake_opener.requested_urls, [expected_url])
+            self.assertEqual(result["downloaded"], 1)
+            self.assertEqual(result["training_approved"], 0)
+            with (dataset / "licenses.csv").open(newline="", encoding="utf-8") as stream:
+                manifest = next(csv.DictReader(stream))
+            self.assertEqual(manifest["requested_image_url"], row["image_url"])
+            self.assertEqual(manifest["image_url"], expected_url)
+            self.assertEqual((manifest["width"], manifest["height"]), ("16", "12"))
+            self.assertEqual(manifest["exif_removed"], "true")
+
     def test_existing_manifest_is_not_overwritten(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
