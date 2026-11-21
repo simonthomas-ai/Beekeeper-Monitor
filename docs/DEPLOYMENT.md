@@ -8,10 +8,22 @@ Die GitHub-Pages-URL ist die vorgesehene öffentliche Adresse, aber die Veröffe
 
 ## Automatische Abläufe
 - Jeder Push auf `main` startet `.github/workflows/pages.yml` zur Prüfung und Veröffentlichung der statischen PWA.
+- Der Pages-Build übernimmt die lokalen Originalbilder aus dem neuesten erfolgreichen Lauf von `.github/workflows/ki-cc0-quellen.yml`; bei einem `workflow_run` wird exakt das Artefakt des auslösenden erfolgreichen Laufs verwendet.
+- Das Artefakt enthält nur `velutina-original-images-manifest.csv` und `images/velutina/`. Fehlerberichte und temporäre Prüfdaten werden nicht veröffentlicht. Bei normalem Push oder manueller Ausführung wird die jüngste erfolgreiche CC0-Ausführung auf `main` ausgewählt.
+- Vor dem Pages-Upload prüft `scripts/audit_gallery_rights.py` sämtliche sechs Galerie-JSONs, Quellen-/Urhebermetadaten, Manifestbindung, Pfadgrenzen, Symlinks, Dateigrößen und SHA-256 der tatsächlichen Originalbytes. `velutina.html` und `all.html` müssen exakt dieselbe lokale Bildmenge wie das Manifest referenzieren; fehlende, veränderte oder zusätzliche Dateien brechen den Build ab.
+- Der Audit belegt die technische Byte-Integrität und Konsistenz der gespeicherten Metadaten, ist aber keine unabhängige rechtliche Lizenzprüfung und keine Trainingsfreigabe.
 - `.github/workflows/browser.yml` prüft die Integration mit Chromium.
 - `.github/workflows/site-health.yml` prüft täglich die öffentliche Adresse und fünf Dateien.
 - `.github/workflows/sources.yml` prüft wöchentlich den Katalog der Forschungsquellen.
 - `.github/workflows/training-data.yml` schlägt absichtlich fehl, solange echte beschriftete Trainingsbilder fehlen.
+
+## Originalbild-Deployment und Integritätsprüfung
+
+Die Originalbilddateien werden im CC0-Rechercheworkflow bytegenau geladen und in einem Manifest mit Photo-ID, Beobachtungs-ID, Quellen-URL, Creator, Lizenzmetadaten, Dateiformat, Abmessungen, Bytezahl und SHA-256 dokumentiert. Die Galerie verweist für diese Bilder auf relative lokale Pfade unter `review/images/velutina/`; bei fehlgeschlagenem Download gibt es für diese Kandidaten keinen stillen Remote-Fallback.
+
+Der Pages-Workflow lädt die zugehörige erfolgreiche Actions-Artefaktversion und führt denselben Audit gegen das fertig gestagte `_site` aus. Damit reicht nicht nur ein gültiger Hash im CSV: die tatsächlich publizierte Datei muss dieselbe Bytezahl und denselben SHA-256 besitzen, und beide Galerien müssen die Manifestdaten exakt widerspiegeln. Ein fehlender oder abgelaufener Artefaktnachweis sperrt die Veröffentlichung bei lokalen Bildreferenzen, statt eine fehlerhafte oder uneinheitliche Galerie auszuliefern.
+
+Die bestehenden Sperren für unvollständige Impressums- und Datenschutzhinweise bleiben davon unabhängig bestehen und werden nicht umgangen.
 
 ## Einmalige GitHub-Einstellung
 Unter **Settings > Pages > Build and deployment > Source** muss **GitHub Actions** ausgewählt sein. Der Workflow kann diese Einstellung nicht garantieren. Veröffentlichungsfehler unter **Actions** prüfen.

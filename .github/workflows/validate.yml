@@ -27,6 +27,7 @@ jobs:
           python -m json.tool manifest.webmanifest >/dev/null
           python scripts/check_sources.py
           python scripts/test_static.py
+          python -m unittest training.test_audit_gallery_rights -v
           python -m unittest training.test_provenance -v
           python -m pip install --only-binary=:all: 'Pillow>=10,<13'
           python -m unittest training.test_import_authorized_images -v
