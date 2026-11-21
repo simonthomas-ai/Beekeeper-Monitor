@@ -3,13 +3,39 @@
 Run from the repository root:
 
 ```sh
-python training/discover_inaturalist_candidates.py --per-species 20
+python training/discover_inaturalist_candidates.py --target 1000 --max-pages 12
 ```
 
 This uses the public iNaturalist observations API to find recent research-grade
 observations of Vespa velutina, Vespa crabro and Vespula vulgaris, then filters
 **each photo's** license code to CC0 or CC BY. It writes a CSV review queue,
 not an approved training manifest. It does not download images.
+
+## Balanced 1,000-candidate target
+
+The default research intake is balanced across five review groups, with a target
+of **200 independent observations per group**:
+
+| Dataset group | Scientific taxa retained in the CSV | Target |
+|---|---|---:|
+| Asian hornet | Vespa velutina | 200 |
+| European hornet | Vespa crabro | 200 |
+| Honey bee | Apis mellifera | 200 |
+| Bumblebees | Bombus terrestris; Bombus lapidarius | 200 |
+| Wasps | Vespula vulgaris; Vespula germanica | 200 |
+
+For the two multi-taxon groups, the initial target is split 100/100 between the
+scientific taxa. If one taxon has too few eligible observations, the remaining
+quota is backfilled from the other taxon in the same group only. The exact
+species name remains in `species_candidate`; `dataset_group` is a separate
+sampling and review field and never replaces the taxonomic identification.
+
+If sources do not provide enough suitable, independently observed, licensed
+photos, the workflow reports a shortfall instead of duplicating images,
+weakening license checks or inventing records. All records remain
+`UNREVIEWED`; this is a candidate pool, not 1,000 approved training images.
+The workflow also generates `training/inaturalist-review-gallery.html` with
+a filter for the five groups.
 
 ## Image resolution
 
