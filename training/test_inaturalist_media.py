@@ -55,7 +55,7 @@ class INaturalistMediaTests(unittest.TestCase):
         for filename in gallery_names:
             with self.subTest(gallery=filename):
                 page = (root / "review" / filename).read_text(encoding="utf-8")
-                match = re.search(r"\\bconst\\s+items\\s*=\\s*(\\[.*?\\])\\s*;", page, re.S)
+                match = re.search(r"\bconst\s+items\s*=\s*(\[.*?\])\s*;", page, re.S)
                 self.assertIsNotNone(match, "embedded candidate array missing")
                 items = json.loads(match.group(1))
                 self.assertTrue(items, "published gallery must contain reviewed candidates")
@@ -72,7 +72,7 @@ class INaturalistMediaTests(unittest.TestCase):
                         self.assertIn(filename, ("all.html", "velutina.html"))
                         self.assertRegex(
                             image_url,
-                            rf"^images/velutina/{re.escape(photo_id)}\\.(?:jpe?g|png|webp)$",
+                            rf"^images/velutina/{re.escape(photo_id)}\.(?:jpe?g|png|webp)$",
                         )
                         self.assertRegex(item.get("original_sha256", ""), r"^[0-9a-f]{64}$")
                     else:
