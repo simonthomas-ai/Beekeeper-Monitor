@@ -55,6 +55,8 @@ jobs:
           # Fail closed rather than silently publishing a missing review link.
           test -s _site/review/all.html
           grep -q "vespaguard-unverified-mobile-review-v1" _site/review/all.html
+          grep -q 'id="projektleistung"' _site/index.html
+          grep -q '44842498223' _site/index.html
           test -s _site/datenschutz.html
           test -s _site/impressum.html
           touch _site/.nojekyll
@@ -92,7 +94,7 @@ jobs:
 
           base = "https://simonthomas-ai.github.io/Beekeeper-Monitor/"
           checks = {
-              "": "Beekeeper Monitor",
+              "": "id=\"projektleistung\"",
               "impressum.html": "[VOLLSTÄNDIGER NAME ODER ORGANISATION]",
               "datenschutz.html": "[VERANTWORTLICHE PERSON / ORGANISATION]",
               "wissen/wissenschaft-hornissen-bienen.html": "Forschung und Fachquellen aus Asien",
