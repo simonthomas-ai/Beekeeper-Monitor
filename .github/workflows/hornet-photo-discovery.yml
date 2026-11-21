@@ -7,6 +7,12 @@ on:
     branches: [main]
     paths:
       - 'training/discover_inaturalist_candidates.py'
+      - 'training/inaturalist_media.py'
+      - 'training/test_inaturalist_media.py'
+      - 'training/prepare_visual_review_gallery.py'
+      - 'training/test_prepare_visual_review_gallery.py'
+      - 'training/import_authorized_images.py'
+      - 'training/test_import_authorized_images.py'
       - '.github/workflows/hornet-photo-discovery.yml'
       - 'training/audit_inaturalist_candidates.py'
       - 'training/prepare_species_review.py'
@@ -29,6 +35,13 @@ jobs:
           python-version: '3.12'
       - name: Test safe visual gallery rendering
         run: python -m unittest discover -s training -p 'test_render_hornet_review_gallery.py' -v
+      - name: Test iNaturalist image resolution and importer safeguards
+        run: |
+          python -m unittest discover -s training -p 'test_inaturalist_media.py' -v
+          python -m unittest discover -s training -p 'test_import_authorized_images.py' -v
+          python -m unittest discover -s training -p 'test_audit_inaturalist_candidates.py' -v
+          python -m unittest discover -s training -p 'test_prepare_hornet_visual_review.py' -v
+          python -m unittest discover -s training -p 'test_prepare_visual_review_gallery.py' -v
       - name: Test fail-closed hornet license audit
         run: python -m unittest discover -s training -p 'test_hornet_license_audit.py' -v
       - name: Search up to 1000 licensed insect photo candidates
