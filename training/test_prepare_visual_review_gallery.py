@@ -39,7 +39,7 @@ class VisualReviewGalleryTests(unittest.TestCase):
             self.assertIn("items[i].dataset_group===filter", result)
             self.assertIn("label+\": \"+items.filter", result)
             self.assertNotIn(" / 200", result)
-            self.assertIn("Bilddatei in Originalgröße öffnen", result)
+            self.assertIn("Unveränderte Originaldatei öffnen", result)
             self.assertIn('"dataset_group": "asian_hornet"', result)
 
 
