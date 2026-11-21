@@ -11,7 +11,7 @@ sw=(root/"sw.js").read_text()
 manifest=json.loads((root/"manifest.webmanifest").read_text())
 catalog=json.loads((root/"sources/catalog.json").read_text())
 assert "<html lang=\"de\">" in html
-for path in ("app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
+for path in ("backup-contract.js","app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
     assert (root/path).is_file(),path
 assert "capture=\"environment\"" in html
 for legal in ("datenschutz.html", "impressum.html"):
@@ -21,6 +21,10 @@ for legal in ("datenschutz.html", "impressum.html"):
 assert "§ 5 DDG" in (root/"impressum.html").read_text()
 assert "IndexedDB" in (root/"datenschutz.html").read_text()
 assert "indexedDB.open" in app
+backup_contract=(root/"backup-contract.js").read_text()
+assert "parseBackupText" in backup_contract
+assert "restoreMissing" in app
+assert "tx.onabort" in app
 assert "navigator.geolocation.getCurrentPosition" in app
 assert "crypto.randomUUID()" in app
 assert "addEventListener('fetch'" in sw
@@ -29,7 +33,9 @@ assert manifest["start_url"]=="./"
 assert set(["hornet","varroa","brood","pollen","swarm","queen"]) <= set(sum((s["modules"] for s in catalog["sources"]),[]))
 assert "noch nicht validiert" in html
 assert 'id="import"' in html
-assert "validObservation" in app
+assert "validObservation" in backup_contract
+assert "./backup-contract.js" in sw
+assert 'src="./backup-contract.js" defer' in html
 assert "async function remove(id)" in app
 assert re.search(r"beekeeper-shell-v\d+", sw)
 assert "./wissen/wissenschaft-hornissen-bienen.html" in sw
@@ -48,7 +54,7 @@ assert "./live-media.js" in sw
 assert "SHELL.has(url.href)" in sw
 pages=(root/".github/workflows/pages.yml").read_text()
 assert "path: _site" in pages
-assert "cp index.html datenschutz.html impressum.html style.css app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/" in pages
+assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/" in pages
 assert "cp wissen/wissenschaft-hornissen-bienen.html _site/wissen/" in pages
 assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
 import subprocess
