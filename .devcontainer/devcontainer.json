@@ -10,7 +10,7 @@
       "protocol": "http"
     }
   },
-  "postStartCommand": "python3 -m http.server 8000 --bind 0.0.0.0",
+  "postStartCommand": "nohup python3 -m http.server 8000 --bind 0.0.0.0 > /tmp/vespaguard-preview.log 2>&1 < /dev/null &",
   "customizations": {
     "codespaces": {
       "openFiles": ["index.html"]
