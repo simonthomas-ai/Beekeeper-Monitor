@@ -4,6 +4,8 @@ Uses synthetic metadata only; does not claim a working camera or model.
 """
 import http.client
 import json
+import subprocess
+from datetime import datetime, timezone
 import tempfile
 import threading
 import unittest
@@ -45,7 +47,7 @@ class ExternalDetectorHTTPTests(unittest.TestCase):
     def test_detector_to_http_sqlite_api_with_replay_and_privacy(self):
         event = adapt_detection({
             "taxon": "vespa_velutina", "confidence": 0.93,
-            "timestamp": "2026-11-21T18:30:00Z", "event_id": "external-cam-001",
+            "timestamp": datetime.now(timezone.utc).isoformat(), "event_id": "external-cam-001",
         }, device_id="station_01", source="external_camera")
         body = event.to_json()
         status, _ = self.request("POST", "/api/v1/events", body, token="wrong")
@@ -64,6 +66,24 @@ class ExternalDetectorHTTPTests(unittest.TestCase):
         self.assertEqual(row["event"]["payload"]["origin_event_id"], "external-cam-001")
         self.assertNotIn("image", json.dumps(row))
         self.assertNotIn("gps", json.dumps(row))
+        script = """
+const fs=require('node:fs');
+const rules=require('./alert-rules.js');
+const row=JSON.parse(fs.readFileSync(0,'utf8'));
+const cfg={enabled:true,thresholdPercent:90,cooldownSeconds:0};
+const first=rules.selectAlerts([row],cfg,new Set(),Date.now());
+if(first.alerts.length!==1)process.exit(11);
+if(!rules.describe(first.alerts[0]).includes('unbestätigt'))process.exit(12);
+if(rules.selectAlerts([row],cfg,new Set([row.event_id]),Date.now()).alerts.length)process.exit(13);
+if(rules.selectAlerts([row],{enabled:false},new Set(),Date.now()).alerts.length)process.exit(14);
+"""
+        result = subprocess.run(
+            ["node", "-e", script], input=json.dumps(row), text=True,
+            capture_output=True, timeout=10, cwd=Path(__file__).resolve().parents[1],
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
         status, _ = self.request("GET", "/api/v1/events", token="wrong")
         self.assertEqual(status, 401)
         status, response = self.request("DELETE", "/api/v1/events/" + row["event_id"])
