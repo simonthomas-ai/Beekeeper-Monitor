@@ -27,8 +27,12 @@ test('mobile gallery: review persists when switching images',async({page})=>{
   const data=JSON.parse(localStorage.getItem('vespaguard-review-v1-Vespa velutina')||'{}');
   return data['101']?.decision;
  })).toBe('LIKELY');
+ // Verify that navigation really changed the selected photo. A single WebKit
+ // run previously remained on photo 101 despite the click (CI run 44920952042).
  await page.locator('#next').click();
  await expect(page.locator('#counter')).toContainText('2/2');
+ await expect(page.locator('#counter')).toContainText('Foto 102');
+ await expect(page.locator('#decision')).toHaveValue('PENDING');
  await page.locator('#decision').selectOption('REJECT');
  await expect.poll(async()=>page.evaluate(()=>{
   const data=JSON.parse(localStorage.getItem('vespaguard-review-v1-Vespa velutina')||'{}');
@@ -36,6 +40,7 @@ test('mobile gallery: review persists when switching images',async({page})=>{
  })).toBe('REJECT');
  await page.locator('#prev').click();
  await expect(page.locator('#counter')).toContainText('1/2');
+ await expect(page.locator('#counter')).toContainText('Foto 101');
  await expect(page.locator('#decision')).toHaveValue('LIKELY');
  await expect(page.locator('#state')).toContainText('KEINE Trainingsfreigabe');
 });
