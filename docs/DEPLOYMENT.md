@@ -7,7 +7,7 @@ Die GitHub-Pages-URL ist die vorgesehene öffentliche Adresse, aber die Veröffe
 **Diese Sperre nicht umgehen und keine Betreiber- oder Rechtsdaten erfinden.** Erst nach Eintragung und Prüfung der echten Angaben darf ein Pages-Deployment erfolgreich sein. Ein früherer erfolgreicher Pages-Lauf belegt nicht, dass der aktuelle Stand veröffentlicht ist.
 
 ## Automatische Abläufe
-- Jeder Push auf `main` startet `.github/workflows/pages.yml` zur Prüfung und Veröffentlichung der statischen PWA.
+- **Aktueller Stand:** `.github/workflows/pages.yml` ist ausschließlich manuell auslösbar und der Job `deploy` hat `if: ${{ false }}`. Weder Push noch manueller Start veröffentlichen die Website. Der öffentliche Link darf nicht als aktuell funktionsfähig beworben werden.\n- Jeder Push auf `main` startet lediglich den privaten PWA-Artefakt-Build und den Gesamttest; diese veröffentlichen keine Website.
 - Der Pages-Build übernimmt die lokalen Originalbilder aus dem neuesten erfolgreichen Lauf von `.github/workflows/ki-cc0-quellen.yml`; bei einem `workflow_run` wird exakt das Artefakt des auslösenden erfolgreichen Laufs verwendet.
 - Das Artefakt enthält nur `velutina-original-images-manifest.csv` und `images/velutina/`. Fehlerberichte und temporäre Prüfdaten werden nicht veröffentlicht. Bei normalem Push oder manueller Ausführung wird die jüngste erfolgreiche CC0-Ausführung auf `main` ausgewählt.
 - Vor dem Pages-Upload prüft `scripts/audit_gallery_rights.py` sämtliche sechs Galerie-JSONs, Quellen-/Urhebermetadaten, Manifestbindung, Pfadgrenzen, Symlinks, Dateigrößen und SHA-256 der tatsächlichen Originalbytes. `velutina.html` und `all.html` müssen exakt dieselbe lokale Bildmenge wie das Manifest referenzieren; fehlende, veränderte oder zusätzliche Dateien brechen den Build ab.
@@ -30,8 +30,7 @@ Die bestehenden Sperren für unvollständige Impressums- und Datenschutzhinweise
 ## Einmalige GitHub-Einstellung
 Unter **Settings > Pages > Build and deployment > Source** muss **GitHub Actions** ausgewählt sein. Der Workflow kann diese Einstellung nicht garantieren. Veröffentlichungsfehler unter **Actions** prüfen.
 
-## Öffentliche Adresse
-https://simonthomas-ai.github.io/Beekeeper-Monitor/
+## Öffentliche Adresse (derzeit NICHT als erreichbar bestätigt)\nhttps://simonthomas-ai.github.io/Beekeeper-Monitor/\n\nDie Unterseite `/varroa.html` ist im Repository und im privaten Build vorhanden, aber öffentlich erst nach einem erfolgreichen Pages-Deployment erreichbar. Ein HTTP-404 ist bis dahin erwartbar. Vor einem öffentlichen Testbetrieb müssen die tatsächlichen Betreiber-/Kontaktangaben und Datenschutzhinweise geprüft und ergänzt werden. Danach kann der Pages-Workflow kontrolliert wieder aktiviert werden.
 
 ## Funktionsgrenzen
 Diese Veröffentlichung ist eine **PWA zur manuellen Beobachtung**, keine fertig trainierte KI. Zeitgesteuerte GitHub Actions laufen nach bestem Bemühen und ersetzen keinen dauerhaft laufenden Rechner. Kamera, Standortzugriff, Offline-Neustart und Sicherungsimport müssen auf echten iPhones geprüft werden. Automatische SMS, Server-Push, Triangulation, Unterstützung aller 24 EU-Sprachen, Modellinferenz und eine validierte Erkennungsgenauigkeit von 99 % sind noch nicht implementiert.
