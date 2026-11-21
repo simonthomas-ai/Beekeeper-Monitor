@@ -1,4 +1,10 @@
-# Beekeeper Monitor
+# Biene & Schnecke – Natur der Dinge
+
+**Projektinitiative und Leitbild des Vorhabens.** Die technischen Komponenten heißen weiterhin Beekeeper Monitor und BeeKeeper3000 und bilden gemeinsam das VespaGuard-System.
+
+Der Name „Biene & Schnecke – Natur der Dinge“ ist eine Projekt-/Markenbezeichnung. Er ist keine eigenständige juristische Person und ersetzt weder den tatsächlichen Diensteanbieter noch den datenschutzrechtlich Verantwortlichen. Diese Rollen müssen vor einem öffentlichen Betrieb separat mit zutreffenden Angaben benannt werden.
+
+## Beekeeper Monitor
 
 Offline-fähige Beobachtungs-PWA für Imker zur Erfassung und Sichtung von Hinweisen auf die Asiatische Hornisse (*Vespa velutina*). Teil des gemeinsamen VespaGuard-Systems zusammen mit [BeeKeeper3000](https://github.com/simonthomas-ai/BeeKeeper3000).
 
