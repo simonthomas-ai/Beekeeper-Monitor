@@ -28,8 +28,10 @@ jobs:
         run: python3 -m pip install --only-binary=:all: 'Pillow>=10,<13'
       - name: Offline-Test der Bildqualitaetspruefung
         run: python3 -m unittest training.test_screen_inaturalist_image_quality -v
-      - name: Offline-Test der paginierten Bildrecherche
+      - name: Offline-Test der paginierten Bildrecherche und Bildquellen-Normalisierung
         run: python3 -m unittest training.test_discover_cc0_candidates -v
+      - name: Offline-Test der sicheren Galeriegenerierung
+        run: python3 -m unittest training.test_prepare_visual_review_gallery -v
       - name: iNaturalist CC0-Metadaten recherchieren (100 Kandidaten je Art, keine KI-Freigabe)
         run: python3 training/discover_cc0_candidates.py --per-species 100
       - name: Lizenz- und Dublettenpruefung
@@ -37,11 +39,9 @@ jobs:
       - name: Artenpruefung vorbereiten
         run: python3 training/prepare_species_review.py --input training/inaturalist-review-queue.csv --output training/inaturalist-species-review.csv
       - name: Hornissen-Fotometadaten einzeln gegen iNaturalist pruefen
-        run: python3 training/verify_inaturalist_photo_metadata.py --input training/inaturalist-review-queue.csv --output training/velutina-photo-verification.csv --species 'Vespa velutina' --limit 50
+        run: python3 training/verify_inaturalist_photo_metadata.py --input training/inaturalist-review-queue.csv --output training/velutina-photo-verification.csv --species 'Vespa velutina' --limit 100
       - name: Originalbild-Dateien temporaer auf Groesse und Lesbarkeit pruefen
         run: python3 training/screen_inaturalist_image_quality.py --input training/inaturalist-review-queue.csv --output training/inaturalist-quality-screen.csv --pause 0.15 --timeout 15
-      - name: Visuelle Pruefgalerie nur aus bestandenen Bilddatei-Pruefungen erstellen
-        run: python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/velutina-visual-review.html
       - name: Pruefgalerie fuer alle fuenf Arten erstellen
         run: |
           python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/velutina-visual-review.html --species 'Vespa velutina'
@@ -94,19 +94,28 @@ jobs:
           fi
           if [ -f training/inaturalist-quality-screen.csv ]; then
             python3 - <<'PY'
-          import csv, collections
-          rows=list(csv.DictReader(open('training/inaturalist-quality-screen.csv', encoding='utf-8', newline='')))
-          passed=sum(r.get('image_quality_status')=='PASS' for r in rows)
-          print(f'Original image file checks: {passed}/{len(rows)} passed dimensions and decoding; photos were not persisted.')
-          for species, group in sorted(collections.defaultdict(list, ((s, [r for r in rows if r.get('species_candidate') == s]) for s in {r.get('species_candidate','') for r in rows})).items()):
-              print(f'{species}: {sum(r.get("image_quality_status")=="PASS" for r in group)}/{len(group)} passed')
+          import csv, os
+          from collections import Counter
+          with open('training/inaturalist-quality-screen.csv', encoding='utf-8', newline='') as stream:
+              rows = list(csv.DictReader(stream))
+          by_species = {}
+          for species in sorted({row.get('species_candidate', '') for row in rows}):
+              part = [row for row in rows if row.get('species_candidate') == species]
+              by_species[species] = (sum(row.get('image_quality_status') == 'PASS' for row in part), len(part))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
+              passed = sum(row.get('image_quality_status') == 'PASS' for row in rows)
+              summary.write(f'\n### Technischer Bilddatei-Vorfilter\n\n{passed}/{len(rows)} Dateien decodierbar und Mindestpixelmaße erfüllt.\n\n')
+              summary.write('| Art | bestanden / geprüft |\n|---|---:|\n')
+              for species, (count, total) in by_species.items():
+                  summary.write(f'| {species} | {count}/{total} |\n')
+              summary.write('\nBildbytes wurden nur temporär im Arbeitsspeicher verarbeitet und nicht gespeichert. Detailwert ist nur Sortierung, keine Schärfe- oder Artfreigabe.\n')
           PY
           fi
           if [ -f training/velutina-photo-verification.csv ]; then
             echo '### Einzelpruefung Asiatische Hornisse' >> "$GITHUB_STEP_SUMMARY"
             python3 -c 'import csv; p="training/velutina-photo-verification.csv"; r=list(csv.DictReader(open(p))); ok=sum(x["api_photo_found"]=="YES" and x["license_metadata_match"]=="YES" and x["api_taxon"]=="Vespa velutina" and x["api_quality_grade"]=="research" for x in r); print(f"API-Metadaten bestaetigt: {ok}/{len(r)}; visuelle Artenpruefung weiterhin offen")' >> "$GITHUB_STEP_SUMMARY"
           fi
-          echo 'Keine Bilder heruntergeladen. Keine Artenbestimmung fachlich verifiziert. Keine Annotationen erzeugt. 0 freigegebene Trainingsbilder; keine gemessene Modellgenauigkeit.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Bilddateien nur temporär im Arbeitsspeicher geprüft, keine Bildbytes gespeichert. Keine Artbestimmung fachlich verifiziert. Keine Annotationen erzeugt. 0 freigegebene Trainingsbilder; keine gemessene Modellgenauigkeit.' >> "$GITHUB_STEP_SUMMARY"
       - name: Metadaten und Prueflisten bereitstellen
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
