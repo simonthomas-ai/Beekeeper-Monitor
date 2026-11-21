@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Test human-reviewed annotation class schema and per-class evaluation evidence
-        run: python -m unittest training.test_validate_reviewed_annotations training.test_evaluation -v
+        run: python -m unittest training.test_validate_reviewed_annotations training.test_evaluation training.test_provenance -v
       - name: Inventory real train, validation and test files (no mock data)
         run: python scripts/model_readiness.py
       - name: Validate real labels if the complete dataset is present
