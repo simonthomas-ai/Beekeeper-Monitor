@@ -192,6 +192,11 @@ jobs:
           ref: 267c7b07970c632d3f51b1171dc0fd0f62afd137
           path: beekeeper3000
           persist-credentials: false
+      - name: Beekeeper-Monitor fuer repo-uebergreifenden Vertrag auschecken
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: monitor
+          persist-credentials: false
       - name: Node.js einrichten
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -211,7 +216,7 @@ jobs:
           import { spawnSync } from 'node:child_process';
           import { createHash } from 'node:crypto';
           const require = createRequire(import.meta.url);
-          const rules = require('./alert-rules.js');
+          const rules = require('./monitor/alert-rules.js');
           const timestamp = new Date().toISOString();
           const event = toMonitorEvent({
             id: 'cross-repo-velutina-1', observed_at: timestamp,
@@ -222,7 +227,7 @@ jobs:
           if (!event) throw new Error('Bridge rejected source event');
           const check = spawnSync('python3', ['-c',
             'import sys; from integrations.event_contracts import HiveEvent; HiveEvent.from_json(sys.stdin.read())'
-          ], { input: JSON.stringify(event), encoding: 'utf8' });
+          ], { input: JSON.stringify(event), encoding: 'utf8', cwd: 'monitor' });
           if (check.status !== 0) throw new Error('Monitor contract rejected bridge output: ' + check.stderr);
           const id = createHash('sha256').update(JSON.stringify(event)).digest('hex');
           const row = { event_id: id, received_at: timestamp, event };
