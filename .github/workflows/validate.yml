@@ -14,3 +14,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - run: python3 scripts/check_sources.py
       - run: python3 scripts/test_static.py
+      - run: python3 scripts/check_pwa_deployment_contract.py
+      - run: node --check app.js
+      - run: node --check alert-rules.js
+      - run: node --test tests/alert-rules.test.cjs
+      - run: python3 -m unittest discover -s integrations -p 'test_*.py' -v
