@@ -4,7 +4,7 @@ import json
 import unittest
 from unittest.mock import patch
 from verify_inaturalist_photo_metadata import verify
-from prepare_hornet_visual_review import large_url
+from prepare_hornet_visual_review import original_url
 
 
 class _Response:
@@ -36,6 +36,7 @@ class HornetLicenseAuditTests(unittest.TestCase):
                    return_value=_Response(self.payload)):
             result = verify(self.row)
         self.assertEqual(result["license_metadata_match"], "YES")
+        self.assertEqual(result["api_photo_url"], "https://static.inaturalist.org/photos/456/original.jpg")
         self.assertEqual(result["review_status"], "UNREVIEWED")
         self.assertNotIn("training_approved", result)
 
@@ -61,12 +62,12 @@ class HornetLicenseAuditTests(unittest.TestCase):
         call.assert_not_called()
         self.assertEqual(result["license_metadata_match"], "NO")
 
-    def test_large_url_rejects_external_hosts(self):
-        self.assertEqual(large_url("https://evil.example/photos/456/square.jpg"), "")
+    def test_original_url_rejects_external_hosts(self):
+        self.assertEqual(original_url("https://evil.example/photos/456/square.jpg"), "")
         self.assertEqual(large_url("https://static.inaturalist.org.evil.example/photos/456/square.jpg"), "")
         self.assertEqual(large_url("http://static.inaturalist.org/photos/456/square.jpg"), "")
         self.assertEqual(large_url("https://static.inaturalist.org/photos/456/square.jpg"),
-                         "https://static.inaturalist.org/photos/456/large.jpg")
+                         "https://static.inaturalist.org/photos/456/original.jpg")
 
 
 if __name__ == "__main__":
