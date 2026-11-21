@@ -63,6 +63,15 @@ def inspect(download=False, inspect_graph=False, run_inference=False):
             output = session.run(["output0"], {"images": frame})[0]
             if output.shape != (1, 9, 8400) or not np.isfinite(output).all():
                 raise ValueError("Unexpected or non-finite inference output")
+            from scripts.hornet3000_decode import decode_raw
+            decoded = decode_raw(output, confidence=0.5)
+            graph["synthetic_decoder"] = {
+                "status": "passed",
+                "unverified_candidate_count": len(decoded),
+                "unverified_velutina_candidates": sum(x["class_id"] == 3 for x in decoded),
+                "real_image_tested": False,
+                "validated_species_detection": False,
+            }
             graph["synthetic_inference"] = {"status": "passed", "input": [1, 3, 640, 640],
                 "output": list(output.shape), "finite": True, "real_image_tested": False,
                 "accuracy_validated": False, "camera_connected": False}
