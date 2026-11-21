@@ -15,6 +15,17 @@ Diese Liste unterscheidet automatisiert geprüfte Software-Eigenschaften von noc
 - [ ] Backups auf einem zweiten realen Gerät wiederherstellen und Wiederherstellungsprotokoll ablegen.
 - [ ] Modellgewichte, Bilddatensätze, Lizenzbedingungen, Provenienz und getrennte Validierungsdaten unabhängig prüfen; Erkennungsqualität mit belastbaren Kennzahlen und Fehlerraten belegen. Bis dahin: **keine validierte automatische Vespa-velutina-Erkennung**.
 
+### KI-Daten- und Modellstatus – geprüft am 21.11.2026
+
+- [x] Die Trainingspipeline und die sieben Klassen sind im Quellcode nachvollzogen: [training/train.py](../training/train.py), [scripts/model_readiness.py](../scripts/model_readiness.py).
+- [x] Die dokumentierte Datenhärtung bindet Bilder und Annotationen über separate SHA-256-Werte: [Datensatz-Härtung](DATASET-HARDENING-2026-11-21.md).
+- [ ] Echte, lizenzrechtlich freigegebene Bilddaten und menschlich bestätigte YOLO-Boxen für alle sieben Klassen vollständig nachweisen.
+- [ ] Unabhängige Split-/Duplikatprüfung und ausreichende Klassenabdeckung anhand echter Datensätze nachweisen.
+- [ ] Trainierte Gewichte und Modellmanifest mit bestätigter Lizenz und reproduzierbarer Herkunft nachweisen.
+- [ ] Pro-Klasse-Metriken, Konfidenzintervalle, Fehlalarmrate und unabhängige Feldtests auf realen Zielgeräten nachweisen.
+
+**KI-Freigabe: BLOCKIERT.** Vorhandene Skripte, Kandidatenlisten und erfolgreiche Unit-Tests ersetzen keine Daten, trainierten Gewichte oder Feldvalidierung. Es wird keine 99-Prozent-Genauigkeit behauptet.
+
 ## 2. Verantwortlichkeit und Recht
 
 - [ ] Verantwortliche natürliche oder juristische Person sowie zuständige Kontaktstelle verbindlich bestimmen.
