@@ -15,7 +15,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
-API = "https://api.inaturalist.org/v1/photos/"
+API = "https://api.inaturalist.org/v1/observations/"
 def candidates():
     content = (ROOT / "review/all.html").read_text(encoding="utf-8")
     match = re.search(r"const items=(\[.*?\]);", content, re.S)
@@ -24,26 +24,40 @@ def candidates():
     items = json.loads(match.group(1))
     return {str(i["photo_id"]): i for i in items}
 
-def check(photo_id, item):
-    request = Request(API + photo_id, headers={"User-Agent": "VespaGuardLicenseAudit/1.0 (github.com/simonthomas-ai/Beekeeper-Monitor)", "Accept": "application/json"})
+def check_batch(batch):
+    """Fetch observations in a single supported API call, then match exact photo IDs."""
+    ids = sorted({str(item["observation_id"]) for _, item in batch})
+    request = Request(API + ",".join(ids), headers={
+        "User-Agent": "VespaGuardLicenseAudit/1.1 (github.com/simonthomas-ai/Beekeeper-Monitor)",
+        "Accept": "application/json",
+    })
     try:
-        with urlopen(request, timeout=15) as response:
+        with urlopen(request, timeout=30) as response:
             payload = json.load(response)
-    except (HTTPError, URLError, TimeoutError, ValueError) as exc:
-        return {"photo_id": photo_id, "status": "UNRESOLVED", "reason": type(exc).__name__}
-    photos = payload.get("results", [])
-    if not isinstance(photos, list) or len(photos) != 1:
-        return {"photo_id": photo_id, "status": "UNRESOLVED", "reason": "photo not uniquely returned"}
-    remote = photos[0]
-    remote_license = str(remote.get("license_code") or "").strip().lower()
-    local_license = str(item.get("license") or "").strip().lower()
-    # iNaturalist uses cc0 while embedded gallery uses CC0-1.0.
-    aliases = {"cc0-1.0": "cc0", "cc0": "cc0"}
-    if not remote_license:
-        return {"photo_id": photo_id, "status": "UNRESOLVED", "reason": "no live license metadata"}
-    if aliases.get(remote_license, remote_license) != aliases.get(local_license, local_license):
-        return {"photo_id": photo_id, "status": "MISMATCH", "reason": "license changed or differs", "embedded_license": local_license, "live_license": remote_license}
-    return {"photo_id": photo_id, "status": "MATCHED_METADATA", "license": remote_license}
+        observations = {str(o["id"]): o for o in payload.get("results", [])}
+    except (HTTPError, URLError, TimeoutError, ValueError, KeyError) as exc:
+        reason = f"API {getattr(exc, 'code', type(exc).__name__)}"
+        return [{"photo_id": pid, "status": "UNRESOLVED", "reason": reason} for pid, _ in batch]
+    results = []
+    for pid, item in batch:
+        observation = observations.get(str(item["observation_id"]))
+        if observation is None:
+            results.append({"photo_id": pid, "status": "UNRESOLVED", "reason": "observation missing"})
+            continue
+        photos = [p for p in observation.get("photos", []) if str(p.get("id")) == pid]
+        if len(photos) != 1:
+            results.append({"photo_id": pid, "status": "UNRESOLVED", "reason": "photo missing or ambiguous"})
+            continue
+        remote_license = str(photos[0].get("license_code") or "").strip().lower()
+        local_license = str(item.get("license") or "").strip().lower()
+        aliases = {"cc0-1.0": "cc0"}
+        if not remote_license:
+            results.append({"photo_id": pid, "status": "UNRESOLVED", "reason": "no live photo license"})
+        elif aliases.get(remote_license, remote_license) != aliases.get(local_license, local_license):
+            results.append({"photo_id": pid, "status": "MISMATCH", "reason": "license changed or differs", "embedded_license": local_license, "live_license": remote_license})
+        else:
+            results.append({"photo_id": pid, "status": "MATCHED_METADATA", "license": remote_license})
+    return results
 
 def main():
     parser = argparse.ArgumentParser()
@@ -55,10 +69,11 @@ def main():
         parser.error("invalid limit/delay")
     items = candidates()
     results = []
-    for n, (photo_id, item) in enumerate(sorted(items.items())[:args.limit], 1):
-        results.append(check(photo_id, item))
-        if n < min(len(items), args.limit):
-            time.sleep(args.delay)
+    selected = sorted(items.items())[:args.limit]
+    for offset in range(0, len(selected), 20):
+        results.extend(check_batch(selected[offset:offset + 20]))
+        if offset + 20 < len(selected):
+            time.sleep(max(args.delay, 1.0))
     counts = dict(Counter(r["status"] for r in results))
     report = {"generated_utc": datetime.now(timezone.utc).isoformat(), "unique_gallery_candidates": len(items), "checked": len(results), "counts": counts, "results": results, "limitations": "API metadata comparison only; no proof of rights, author identity or training permission. Unchecked photos remain unresolved."}
     Path(args.output).write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
