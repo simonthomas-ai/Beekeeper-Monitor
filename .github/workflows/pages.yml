@@ -35,7 +35,7 @@ jobs:
           node --check integrations-ui.js
           node --check alert-rules.js
           node --check alert-ui.js
-          node --test tests/alert-rules.test.cjs
+          node --test tests/alert-rules.test.cjs tests/backup-contract.test.cjs
           node --check sw.js
       - name: Stage public PWA files only
         run: |
