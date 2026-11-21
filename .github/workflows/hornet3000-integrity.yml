@@ -1,4 +1,4 @@
-name: Hornet3000 ONNX Integritaet (isoliert, keine Inferenz)
+name: Hornet3000 ONNX Integritaet und isolierte Inferenz
 on:
   workflow_dispatch:
 permissions:
@@ -12,9 +12,9 @@ jobs:
         with:
           persist-credentials: false
       - name: ONNX-Parser fuer statische Graphpruefung
-        run: python3 -m pip install --disable-pip-version-check 'onnx==1.19.1'
+        run: python3 -m pip install --disable-pip-version-check 'onnx==1.19.1' 'onnxruntime==1.23.2'
       - name: Gepinnte ONNX-Datei herunterladen und Byte-Identitaet pruefen
-        run: python3 scripts/verify_hornet3000_onnx.py --download --inspect-graph
+        run: python3 scripts/verify_hornet3000_onnx.py --download --inspect-graph --synthetic-inference
       - name: Freigabe bleibt gesperrt
         run: |
-          echo 'Nur Datei-Integritaet. Keine Lizenz-, Modell-, Inferenz- oder Feldfreigabe.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Nur isolierte CPU-Inferenz auf synthetischem Nullbild. Keine Lizenz-, Genauigkeits-, Kamera- oder Feldfreigabe.' >> "$GITHUB_STEP_SUMMARY"
