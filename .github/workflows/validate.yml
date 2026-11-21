@@ -30,3 +30,9 @@ jobs:
         run: PYTHONPATH=BeeKeeper3000 python3 -m unittest discover -s BeeKeeper3000/camera -p 'test_outbox.py' -v
       - name: HTTP Wiederherstellung mit lokalem Testserver
         run: PYTHONPATH=BeeKeeper3000 python3 -m unittest discover -s BeeKeeper3000/camera -p 'test_offline_http_recovery.py' -v
+      - name: BeeKeeper3000 Bridge Vertrag und Unit Tests
+        run: npm --prefix BeeKeeper3000/monitor-bridge test
+      - name: Monitor Integration mit echter Bridge testen
+        env:
+          BEEKEEPER_BRIDGE_ENTRY: ${{ github.workspace }}/BeeKeeper3000/monitor-bridge/bridge.mjs
+        run: python3 -m unittest discover -s integrations -p 'test_*.py' -v
