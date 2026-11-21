@@ -132,6 +132,11 @@ jobs:
           if [ "$TRAINING" != success ] || [ "$ANNOTATIONS" != success ]; then
             echo '### KI-STATUS: BLOCKIERT – keine freigegebenen Trainingsdaten/Annotationen; keine einsatzfähige automatische Erkennung.' >> "$GITHUB_STEP_SUMMARY"
           fi
+          if [ "$TRAINING" = success ] && [ "$ANNOTATIONS" = success ]; then
+            echo 'KI-DATENSTATUS: Daten- und Annotationsprüfungen erfolgreich; dies ist KEINE Modell- oder Feldfreigabe.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'KI-DATENSTATUS: BLOCKIERT; keine Modell- oder Feldfreigabe.' >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo 'Fehlende Trainingsdaten blockieren die Modellfreigabe. Eine erfolgreiche Inventur belegt keine KI-Genauigkeit, SMS-Zustellung oder Hardwarefunktion.' >> "$GITHUB_STEP_SUMMARY"
       - name: Browser-Testartefakte
         if: always()
