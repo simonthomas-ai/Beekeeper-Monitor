@@ -132,11 +132,10 @@ class DownloadOriginalTests(unittest.TestCase):
             redirect = "https://static.inaturalist.org/photos/42/square.jpg"
             with patch("training.download_original_inaturalist_images.urllib.request.urlopen",
                        return_value=FakeResponse(jpeg_bytes(), redirect)):
-                result = download_originals(input_csv, verification_csv, "Vespa velutina",
-                                            root / "images", root / "manifest.csv", pause=0)
-            self.assertEqual(result, [])
+                with self.assertRaisesRegex(RuntimeError, "No original files"):
+                    download_originals(input_csv, verification_csv, "Vespa velutina",
+                                       root / "images", root / "manifest.csv", pause=0)
             self.assertEqual(list((root / "images").iterdir()), [])
-            self.assertEqual(result, [])
 
 
 if __name__ == "__main__":
