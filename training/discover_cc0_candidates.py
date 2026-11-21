@@ -12,11 +12,18 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+try:
+    from training.dataset_groups import SPECIES_TO_GROUP
+    from training.inaturalist_media import original_image_url
+except ModuleNotFoundError:
+    from dataset_groups import SPECIES_TO_GROUP
+    from inaturalist_media import original_image_url
+
 SPECIES = ("Vespa velutina", "Vespa crabro", "Apis mellifera",
            "Bombus terrestris", "Vespula vulgaris")
 FIELDS = ("source_id", "source_url", "image_url", "creator", "license",
           "license_url", "attribution", "observation_id", "photo_id",
-          "species_candidate", "review_status")
+          "species_candidate", "dataset_group", "review_status")
 API = "https://api.inaturalist.org/v1/observations"
 
 def get_json(url):
@@ -62,7 +69,11 @@ def discover(per_species, max_pages=10):
                         continue
                     pid = str(photo.get("id", ""))
                     url = photo.get("url") or ""
-                    if not pid.isdecimal() or pid in seen_photos or not url.startswith("https://"):
+                    if not pid.isdecimal() or pid in seen_photos:
+                        continue
+                    try:
+                        url = original_image_url(url, pid)
+                    except ValueError:
                         continue
                     oid = str(obs.get("id", ""))
                     if not oid.isdecimal():
@@ -77,7 +88,8 @@ def discover(per_species, max_pages=10):
                         "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
                         "attribution": photo.get("attribution") or "CC0; verify creator",
                         "observation_id": oid, "photo_id": pid,
-                        "species_candidate": species, "review_status": "UNREVIEWED"})
+                        "species_candidate": species, "dataset_group": SPECIES_TO_GROUP[species],
+                        "review_status": "UNREVIEWED"})
                     count += 1
                     break
             print(species, "page", page, "candidates", count, flush=True)
