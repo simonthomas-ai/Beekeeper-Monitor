@@ -52,8 +52,25 @@ console.log(JSON.stringify({first,replay}));
                     data = json.load(response)
                 self.assertEqual(data["count"], 1, "Replay must not create duplicate records")
                 self.assertEqual(len(data["events"]), 1)
+                self.assertEqual(store.count(), 1)
+                event = data["events"][0]["event"]
+                self.assertEqual(event["kind"], "camera_detection")
+                self.assertEqual(event["payload"]["verification_status"], "unverified")
+                self.assertTrue(event["payload"]["label"].startswith("unverified_candidate:"))
                 self.assertNotIn("image", json.dumps(data))
                 self.assertNotIn("latitude", json.dumps(data))
+                with self.assertRaises(HTTPError) as unauthorized:
+                    urlopen(Request(url + "?limit=10"), timeout=5)
+                self.assertEqual(unauthorized.exception.code, 401)
+                unauthorized.exception.close()
+                malicious = dict(event)
+                malicious["payload"] = dict(event["payload"], latitude=51.2)
+                bad_request = Request(url, data=json.dumps(malicious).encode("utf-8"), method="POST", headers={"Authorization": "Bearer " + TOKEN, "Content-Type": "application/json"})
+                with self.assertRaises(HTTPError) as invalid:
+                    urlopen(bad_request, timeout=5)
+                self.assertEqual(invalid.exception.code, 400)
+                invalid.exception.close()
+                self.assertEqual(store.count(), 1, "Rejected payload must not alter durable storage")
             finally:
                 server.shutdown()
                 server.server_close()
