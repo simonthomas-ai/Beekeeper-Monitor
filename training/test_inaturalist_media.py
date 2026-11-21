@@ -57,7 +57,7 @@ class INaturalistMediaTests(unittest.TestCase):
             with self.subTest(gallery=filename):
                 page = (root / "review" / filename).read_text(encoding="utf-8")
                 urls = re.findall(
-                    r"https://(?:inaturalist-open-data\\.s3\\.amazonaws\\.com|static\\.inaturalist\\.org)/photos/[0-9]+/([a-z]+)\\.(?:jpe?g|png|webp)",
+                    r"https://(?:inaturalist-open-data\.s3\.amazonaws\.com|static\.inaturalist\.org)/photos/[0-9]+/([a-z]+)\.(?:jpe?g|png|webp)",
                     page,
                 )
                 self.assertEqual(len(urls), expected)
