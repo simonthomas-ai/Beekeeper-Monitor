@@ -181,7 +181,7 @@ class GalleryRightsAuditTests(unittest.TestCase):
         self._write_galleries(all_items=self.local_items() + [remote_item])
         (self.review / "crabro.html").write_text(
             "<script>const items=" + json.dumps([remote_item]) + ";</script>", encoding="utf-8")
-        with self.assertRaisesRegex(AuditError, "original derivative"):
+        with self.assertRaisesRegex(AuditError, "allowlisted HTTPS iNaturalist original"):
             audit(self.root)
 
     def test_rejects_remote_image_from_unapproved_host(self):
