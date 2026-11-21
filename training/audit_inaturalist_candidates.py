@@ -8,13 +8,18 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 try:
+    from training.dataset_groups import SPECIES_TO_GROUP
+except ModuleNotFoundError:
+    from dataset_groups import SPECIES_TO_GROUP
+
+try:
     from training.inaturalist_media import ALLOWED_HOSTS, is_original_image_url
 except ModuleNotFoundError:
     from inaturalist_media import ALLOWED_HOSTS, is_original_image_url
 
 REQUIRED = ("source_id", "source_url", "image_url", "creator", "license",
             "license_url", "attribution", "observation_id", "photo_id",
-            "species_candidate", "review_status")
+            "species_candidate", "dataset_group", "review_status")
 ALLOWED = {"CC0-1.0", "CC-BY-VERSION-UNVERIFIED"}
 
 def audit(path):
@@ -25,10 +30,11 @@ def audit(path):
         rows = list(reader)
     seen_photos, seen_observations, seen_image_urls, problems = set(), set(), set(), []
     by_species = Counter()
+    by_group = Counter()
     for i, row in enumerate(rows, start=2):
         errors = []
         if any(not (row.get(k) or "").strip() for k in ("source_id", "source_url",
-                "image_url", "creator", "attribution", "observation_id", "photo_id", "species_candidate")):
+                "image_url", "creator", "attribution", "observation_id", "photo_id", "species_candidate", "dataset_group")):
             errors.append("missing_required_value")
         if row.get("license") not in ALLOWED:
             errors.append("unapproved_license_code")
@@ -36,6 +42,9 @@ def audit(path):
             errors.append("incorrect_cc0_reference")
         if row.get("review_status") != "UNREVIEWED":
             errors.append("unverified_approval_status")
+        expected_group = SPECIES_TO_GROUP.get(row.get("species_candidate") or "")
+        if not expected_group or row.get("dataset_group") != expected_group:
+            errors.append("dataset_group_species_mismatch")
         for key in ("source_url", "image_url"):
             u = urlparse(row.get(key) or "")
             if u.scheme != "https" or not u.netloc or u.username or u.password:
@@ -51,9 +60,11 @@ def audit(path):
         seen_photos.add(row.get("photo_id"))
         seen_observations.add(row.get("observation_id"))
         by_species[row.get("species_candidate") or "UNKNOWN"] += 1
+        by_group[row.get("dataset_group") or "UNKNOWN"] += 1
         if errors:
             problems.append({"csv_line": i, "errors": sorted(set(errors))})
     return {"candidates": len(rows), "by_species": dict(sorted(by_species.items())),
+            "by_group": dict(sorted(by_group.items())),
             "metadata_errors": problems, "requires_human_review": True,
             "approved_training_images": 0,
             "note": "Metadata validation cannot establish species identity, actual license version, image quality, bounding boxes, or model accuracy."}
