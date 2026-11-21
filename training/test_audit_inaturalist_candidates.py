@@ -37,6 +37,7 @@ class CandidateAuditTests(unittest.TestCase):
     def test_duplicate_image_url_detected(self):
         duplicate = dict(BASE, source_id="inat:2:22", observation_id="2", photo_id="22")
         report = self.check_rows([BASE, duplicate])
+        self.assertEqual(report["candidates"], 2)
         self.assertTrue(any("duplicate_image_url" in item["errors"] for item in report["metadata_errors"]))
 
     def test_embedded_url_credentials_rejected(self):
