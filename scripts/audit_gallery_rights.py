@@ -83,7 +83,8 @@ def _safe_local_path(value: object, photo_id: str, image_format: str) -> PurePos
         raise AuditError("local_image_path is not a safe POSIX-relative path")
     relative = PurePosixPath(value)
     if (
-        relative.is_absolute()
+        relative.as_posix() != value
+        or relative.is_absolute()
         or len(relative.parts) != 3
         or relative.parts[0:2] != ("images", "velutina")
         or any(part in ("", ".", "..") for part in relative.parts)
@@ -238,6 +239,8 @@ def audit(root: Path) -> tuple[int, int]:
             image_url = item.get("image_url")
             delivery = item.get("image_delivery")
             if delivery == "LOCAL_UNMODIFIED_ORIGINAL" or (isinstance(image_url, str) and not urlsplit(image_url).scheme):
+                if gallery_name not in ("velutina", "all"):
+                    raise AuditError(f"{prefix}: local Velutina originals are not allowed in this gallery")
                 if delivery != "LOCAL_UNMODIFIED_ORIGINAL":
                     raise AuditError(f"{prefix}: local image path lacks explicit local-original delivery marker")
                 if not isinstance(image_url, str):
@@ -275,10 +278,14 @@ def audit(root: Path) -> tuple[int, int]:
             _resolve_verified_asset(review_root, asset)
             expected = {
                 "observation_id": asset["observation_id"],
+                "species_candidate": asset["species_candidate"],
                 "source_url": asset["source_url"],
                 "license": asset["license"],
                 "creator": asset["creator"],
                 "image_url": asset["local_image_path"],
+                "image_width": int(asset["image_width"]),
+                "image_height": int(asset["image_height"]),
+                "image_bytes": int(asset["image_bytes"]),
                 "original_sha256": asset["sha256"],
                 "original_file_bytes": int(asset["image_bytes"]),
                 "original_file_format": asset["image_format"].upper(),
