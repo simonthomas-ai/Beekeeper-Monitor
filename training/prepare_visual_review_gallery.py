@@ -48,7 +48,7 @@ def gallery(source, output, species="Vespa velutina"):
 <style>body{font:17px system-ui;margin:0 auto;padding:1rem;max-width:750px;background:#f7f8fa;color:#19232c}h1{font-size:1.5rem}button,select,input{font:inherit;min-height:44px}button{padding:.6rem;border-radius:9px;border:1px solid #777;background:white}button:focus{outline:3px solid #1469aa}.actions{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0}.viewer{position:relative;background:#ddd;touch-action:none;min-height:240px}.viewer img{display:block;width:100%;height:auto;max-height:65vh;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}.viewer svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.viewer rect{fill:#22aaff33;stroke:#0674ae;stroke-width:2}small{color:#555}a{overflow-wrap:anywhere}#state{font-weight:600}</style>
 <h1>Beekeeper Monitor – Bildprüfung: __SPECIES__</h1>
 <p><strong>Keine automatische Freigabe.</strong> Bilder werden von iNaturalist geladen; ohne Internet sind sie eventuell nicht sichtbar. Prüfentscheidungen bleiben auf diesem Gerät, bis du sie exportierst. Markierungen sind nur Vorschläge und müssen fachlich bestätigt werden.</p>
-<div id="unified-controls" hidden><label for="species-filter">Bildgruppe auswählen</label> <select id="species-filter"><option value="ALL">Alle fünf Bildgruppen</option><option value="asian_hornet">Asiatische Hornisse</option><option value="european_hornet">Europäische Hornisse</option><option value="honey_bee">Honigbiene</option><option value="bumblebees">Hummeln</option><option value="wasps">Wespen</option></select><p id="progress" role="status"></p><progress id="progress-bar" max="100" value="0" style="width:100%"></progress></div>
+<div id="unified-controls" hidden><label for="species-filter">Bildgruppe auswählen</label> <select id="species-filter"><option value="ALL">Alle fünf Bildgruppen</option><option value="asian_hornet">Asiatische Hornisse</option><option value="european_hornet">Europäische Hornisse</option><option value="honey_bee">Honigbiene</option><option value="bumblebees">Hummeln</option><option value="wasps">Wespen</option></select><p id="group-counts" role="status"></p><p id="progress" role="status"></p><progress id="progress-bar" max="100" value="0" style="width:100%"></progress></div>
 <p id="counter"></p><p id="image-meta" role="status">Bildabmessungen werden nach dem Laden angezeigt.</p><div class="viewer" id="viewer"><img id="photo" alt="Ungeprüftes Insektenfoto"><svg id="overlay" viewBox="0 0 1000 1000" preserveAspectRatio="none"></svg></div>
 <p><a id="source" target="_blank" rel="noopener noreferrer">Originalbeobachtung ansehen</a></p>
 <p id="state"></p>
@@ -67,6 +67,7 @@ let index=0,start=null,activePointerId=null;
 let visible=items.map((_,i)=>i);
 if(unified){
   $("unified-controls").hidden=false;
+  updateGroupCounts();
   for(const species of ["Vespa velutina","Vespa crabro","Apis mellifera","Bombus terrestris","Bombus lapidarius","Vespula vulgaris","Vespula germanica"]){
     const oldKey="vespaguard-review-v1-"+species;
     try{
@@ -86,6 +87,10 @@ function refreshFilter(){
   visible=items.map((_,i)=>i).filter(i=>filter==="ALL"||items[i].dataset_group===filter);
   index=0;render();
 }
+function updateGroupCounts(){
+  const groups=[["asian_hornet","Asiatische Hornisse"],["european_hornet","Europäische Hornisse"],["honey_bee","Honigbiene"],["bumblebees","Hummeln"],["wasps","Wespen"]];
+  $("group-counts").textContent=groups.map(([key,label])=>label+": "+items.filter(item=>item.dataset_group===key).length+" / 200").join(" · ");
+}
 function updateProgress(){
   if(!unified)return;
   const done=items.filter(item=>saved[item.photo_id]&&["LIKELY","REJECT"].includes(saved[item.photo_id].decision)).length;
@@ -97,7 +102,7 @@ function current(){const item=selected();return saved[item.photo_id]||{decision:
 function persist(v){saved[selected().photo_id]=v;try{localStorage.setItem(key,JSON.stringify(saved))}catch(e){$("state").textContent="Speichern nicht möglich – bitte JSON exportieren."}}
 $("photo").onload=()=>{$("image-meta").textContent="Geladene Bildgröße: "+$("photo").naturalWidth+" × "+$("photo").naturalHeight+" Pixel · iNaturalist-Variante original (maximal 2048 px Kantenlänge; nicht zwingend Kamera-Original)."};
 $("photo").onerror=()=>{$("image-meta").textContent="Bild konnte nicht geladen werden; bitte Originalquelle prüfen."};
-function render(){const item=selected(),v=current();$("counter").textContent=(index+1)+"/"+visible.length+" – "+item.species_candidate+" – Foto "+item.photo_id;updateProgress();$("image-meta").textContent="Bild wird geladen …";$("photo").src=item.image_url;$("source").href=item.source_url;$("decision").value=v.decision;$("state").textContent="Status: "+v.decision+" · Markierungen: "+v.boxes.length+" · KEINE Trainingsfreigabe";$("overlay").replaceChildren();for(const b of v.boxes){const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");rect.setAttribute("x",(b.x-b.width/2)*1000);rect.setAttribute("y",(b.y-b.height/2)*1000);rect.setAttribute("width",b.width*1000);rect.setAttribute("height",b.height*1000);$("overlay").append(rect)}}
+function render(){const item=selected(),v=current();$("counter").textContent=(index+1)+"/"+visible.length+" – "+item.species_candidate+" · "+item.dataset_group+" – Foto "+item.photo_id;updateProgress();$("image-meta").textContent="Bild wird geladen …";$("photo").src=item.image_url;$("source").href=item.source_url;$("decision").value=v.decision;$("state").textContent="Status: "+v.decision+" · Markierungen: "+v.boxes.length+" · KEINE Trainingsfreigabe";$("overlay").replaceChildren();for(const b of v.boxes){const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");rect.setAttribute("x",(b.x-b.width/2)*1000);rect.setAttribute("y",(b.y-b.height/2)*1000);rect.setAttribute("width",b.width*1000);rect.setAttribute("height",b.height*1000);$("overlay").append(rect)}}
 $("species-filter").onchange=refreshFilter;
 $("decision").onchange=()=>{const v=current();v.decision=$("decision").value;persist(v);render()};
 $("prev").onclick=()=>{index=(index-1+visible.length)%visible.length;render()};
