@@ -5,14 +5,16 @@ import csv
 import html
 from pathlib import Path
 
+from inaturalist_media import is_original_image_url
+
 def render(rows):
     cards = []
     for row in rows:
         if row.get("training_approved") != "NO":
             continue
-        image_url = row.get("large_review_url", "")
-        if not image_url.startswith("https://static.inaturalist.org/") and not image_url.startswith("https://inaturalist.org/"):
-            # The URL is a review hint, not a validated image.
+        image_url = row.get("original_review_url", "")
+        if not is_original_image_url(image_url, row.get("photo_id", "")):
+            # Never render a thumbnail or an unverified image host for quality review.
             image_url = ""
         photo = ('<img loading="lazy" referrerpolicy="no-referrer" alt="Unverified hornet photo candidate" src="' +
                  html.escape(image_url, quote=True) + '">' if image_url else '<p>Image URL unavailable</p>')
