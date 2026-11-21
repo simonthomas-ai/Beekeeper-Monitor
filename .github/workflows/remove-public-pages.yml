@@ -17,11 +17,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          status="$(curl --silent --show-error --output /tmp/pages-delete-response --write-out '%{http_code}' \\
-            -X DELETE \\
-            -H 'Accept: application/vnd.github+json' \\
-            -H 'X-GitHub-Api-Version: 2022-11-28' \\
-            -H "Authorization: Bearer ${GH_TOKEN}" \\
+          status="$(curl --silent --show-error --output /tmp/pages-delete-response --write-out '%{http_code}' \
+            -X DELETE \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages")"
           if [[ "$status" == "204" ]]; then
             echo 'Bestehende GitHub-Pages-Site erfolgreich entfernt.'
@@ -37,10 +37,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          status="$(curl --silent --show-error --output /tmp/pages-check-response --write-out '%{http_code}' \\
-            -H 'Accept: application/vnd.github+json' \\
-            -H 'X-GitHub-Api-Version: 2022-11-28' \\
-            -H "Authorization: Bearer ${GH_TOKEN}" \\
+          status="$(curl --silent --show-error --output /tmp/pages-check-response --write-out '%{http_code}' \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages")"
           if [[ "$status" == "404" ]]; then
             echo 'Verifiziert: GitHub Pages ist nicht konfiguriert.'
