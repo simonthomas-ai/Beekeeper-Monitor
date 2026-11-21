@@ -49,3 +49,12 @@ individuell geprüft sind. Es wurden keine KI-Gewichte trainiert oder freigegebe
 - Review-Galerie-Ausgabe darf keine iNaturalist-square-URL enthalten.
 - Import manifestiert Quelle und tatsächliche Pixelabmessungen.
 - Candidate audit meldet niedrige iNaturalist-Varianten als Fehler.
+
+
+## Ergänzende Bilddatei-Prüfung (21.11.2026)
+
+Die öffentliche CC0-Galerie wird jetzt zusätzlich durch `training/screen_inaturalist_image_quality.py` gespeist. Der Runner lädt die iNaturalist-Originalvariante nur temporär in den Arbeitsspeicher, prüft JPEG/PNG/WebP-Decodierbarkeit und Mindestabmessungen (960 px lange Kante, 480 px kurze Kante, 0,45 MP) und speichert ausschließlich Messwerte. Defekte, nicht verfügbare oder zu kleine Bilder gelangen nicht mehr in die Galerie. Bestandene Bilder werden pro Art nach einem einfachen Kanten-Detailindikator sortiert. Dieser Wert ist nicht kalibriert und weder Schärfe- noch Artbestimmungsnachweis; die Sichtprüfung bleibt zwingend. Die Seite bietet zusätzlich einen direkten Link zur Bilddatei in Originalgröße.
+
+`review/velutina.html` wird durch `.github/workflows/ki-cc0-quellen.yml` erzeugt. Diese Veröffentlichungskette führt jetzt die Datei-Prüfung vor dem Rendern aus und validiert die Gruppenzuordnung des CC0-Imports. Siehe `docs/INATURALIST-IMAGE-QUALITY-SCREENING-2026-11-21.md`.
+
+Keine Bilddateien werden dauerhaft in das Repository übernommen. Es werden weiterhin null Datensätze automatisch für Modelltraining freigegeben.
