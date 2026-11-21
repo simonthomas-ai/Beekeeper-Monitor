@@ -7,7 +7,7 @@
   const MAX_BACKUP_BYTES = 30 * 1024 * 1024;
   const MAX_OBSERVATIONS = 10000;
   const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
-  const MAX_PHOTO_DATA_LENGTH = 12000000;
+  const MAX_PHOTO_BASE64_LENGTH = Math.ceil(MAX_PHOTO_BYTES / 3) * 4;
   const TYPES = new Set([
     'Asiatische Hornisse', 'Varroa', 'Drohnenbrut',
     'Pollen', 'Schwarm', 'Königin'
@@ -33,9 +33,13 @@
       if (!photo || typeof photo !== 'object' || Array.isArray(photo)) return false;
       if (typeof photo.name !== 'string' || !photo.name || photo.name.length > 255) return false;
       if (!isSupportedImageType(photo.type)) return false;
-      if (typeof photo.content !== 'string' || photo.content.length > MAX_PHOTO_DATA_LENGTH) return false;
+      if (typeof photo.content !== 'string' || photo.content.length > MAX_PHOTO_BASE64_LENGTH + 32) return false;
       const match = DATA_URL.exec(photo.content);
       if (!match || match[1].toLowerCase() !== photo.type.toLowerCase() || match[2].length % 4 !== 0) return false;
+      const base64 = match[2];
+      const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+      const decodedBytes = (base64.length / 4) * 3 - padding;
+      if (decodedBytes > MAX_PHOTO_BYTES) return false;
     }
 
     if (item.location !== undefined) {
