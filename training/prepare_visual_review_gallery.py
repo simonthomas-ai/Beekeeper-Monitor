@@ -15,7 +15,21 @@ except ModuleNotFoundError:
     from dataset_groups import SPECIES_TO_GROUP
     from inaturalist_media import normalize_if_inaturalist
 
+def _json_for_inline_script(value):
+    """Serialize JSON so untrusted metadata cannot terminate an HTML script element."""
+    return (
+        json.dumps(value, ensure_ascii=False)
+        .replace("&", "\\u0026")
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
+
+
 def gallery(source, output, species="Vespa velutina", images_manifest=None):
+    if species != "ALL" and species not in SPECIES_TO_GROUP:
+        raise ValueError("Unsupported species filter")
     with open(source, newline="", encoding="utf-8-sig") as f:
         rows = [r for r in csv.DictReader(f) if species == "ALL" or r.get("species_candidate") == species]
     local_assets = {}
@@ -87,7 +101,7 @@ def gallery(source, output, species="Vespa velutina", images_manifest=None):
         })
     if len({item["photo_id"] for item in items}) != len(items):
         raise ValueError("Duplicate photo IDs across species")
-    data = json.dumps(items, ensure_ascii=False).replace("<", "\\u003c")
+    data = _json_for_inline_script(items)
     title = html.escape(species)
     page = """<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Beekeeper Monitor – mobile Bildprüfung</title>
@@ -242,7 +256,7 @@ $("restore").onchange=async()=>{
 };
 render();
 </script></html>"""
-    page = page.replace("__SPECIES__", title).replace("__SPECIES_JSON__", json.dumps(species)).replace("__DATA__", data).replace("__SLUG__", json.dumps(species.lower().replace(" ", "-")))
+    page = page.replace("__SPECIES__", title).replace("__SPECIES_JSON__", _json_for_inline_script(species)).replace("__DATA__", data).replace("__SLUG__", _json_for_inline_script(species.lower().replace(" ", "-")))
     dest = Path(output)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(page, encoding="utf-8")
