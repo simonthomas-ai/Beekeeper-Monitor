@@ -60,7 +60,18 @@ def validate_image_file(path):
 def validate(root):
     root=Path(root).resolve()
     config=yaml.safe_load((root/'training/data.yaml').read_text(encoding='utf-8'))
-    dataset_path = root / config['path']
+    configured_path = config.get('path')
+    if not isinstance(configured_path, str) or not configured_path.strip():
+        raise ValueError('Dataset path must be a non-empty relative path')
+    relative_dataset_path = Path(configured_path)
+    if relative_dataset_path.is_absolute() or any(part in {'', '.', '..'} for part in relative_dataset_path.parts):
+        raise ValueError('Dataset path must be a clean relative path inside the repository')
+    dataset_path = root / relative_dataset_path
+    cursor = root
+    for part in relative_dataset_path.parts:
+        cursor = cursor / part
+        if cursor.is_symlink():
+            raise ValueError('Dataset path must not contain symbolic links')
     if not dataset_path.is_dir():
         raise FileNotFoundError(
             'Real training dataset directory is missing: %s. '

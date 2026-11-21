@@ -73,7 +73,18 @@ def _reject_duplicate_keys(pairs):
 
 
 def validate_provenance(dataset_root: str | Path, *, expected_splits=SPLITS) -> dict:
-    root = Path(dataset_root).expanduser().resolve(strict=True)
+    requested_root = Path(dataset_root).expanduser()
+    if not requested_root.is_absolute():
+        requested_root = Path.cwd() / requested_root
+    # Inspect the unresolved path component-by-component. Resolving first would
+    # erase evidence that the dataset root or one of its parent directories
+    # was a symbolic alias.
+    cursor = Path(requested_root.anchor)
+    for part in requested_root.parts[1:]:
+        cursor = cursor / part
+        if cursor.is_symlink():
+            raise DatasetProvenanceError("dataset root path must not contain symbolic links")
+    root = requested_root.resolve(strict=True)
     if not root.is_dir():
         raise DatasetProvenanceError("dataset root must be a directory")
     manifest = root / "provenance.jsonl"

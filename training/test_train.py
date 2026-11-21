@@ -45,6 +45,37 @@ class TrainingImageValidationTests(unittest.TestCase):
                 validate_image_file(tiny)
 
 
+    def test_rejects_dataset_root_symlink(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            training = root / "training"
+            training.mkdir()
+            data_yaml = "\n".join([
+                "path: datasets/beekeeper",
+                "train: images/train",
+                "val: images/val",
+                "test: images/test",
+                "names:",
+                "  0: vespa_velutina",
+                "  1: vespa_crabro",
+                "  2: other_vespidae",
+                "  3: apis_mellifera",
+                "  4: bombus_spp",
+                "  5: syrphidae",
+                "  6: other_insect",
+            ]) + "\n"
+            (training / "data.yaml").write_text(data_yaml, encoding="utf-8")
+            actual = root / "actual-dataset"
+            actual.mkdir()
+            target = root / "datasets" / "beekeeper"
+            target.parent.mkdir()
+            try:
+                target.symlink_to(actual, target_is_directory=True)
+            except (OSError, NotImplementedError) as exc:
+                self.skipTest(f"symbolic links are unavailable: {exc}")
+            with self.assertRaisesRegex(ValueError, "Dataset path must not contain symbolic links"):
+                validate(root)
+
     def test_missing_real_dataset_has_actionable_error(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
