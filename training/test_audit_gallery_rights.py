@@ -47,6 +47,9 @@ class GalleryRightsAuditTests(unittest.TestCase):
             "source_url": self.asset["source_url"],
             "license": "CC0-1.0",
             "creator": "Example photographer",
+            "image_width": 1920,
+            "image_height": 1080,
+            "image_bytes": len(self.body),
             "original_sha256": self.sha,
             "original_file_bytes": len(self.body),
             "original_file_format": "JPEG",
@@ -150,6 +153,18 @@ class GalleryRightsAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(AuditError, "invalid iNaturalist original-image URL"):
             audit(self.root)
 
+
+    def test_rejects_unmanifested_extra_image(self):
+        (self.image_dir / "999.jpg").write_bytes(b"unlisted")
+        with self.assertRaisesRegex(AuditError, "unmanifested or missing files"):
+            audit(self.root)
+
+    def test_rejects_gallery_resolution_metadata_mismatch(self):
+        item = self.local_items()[0]
+        item["image_width"] = 640
+        self._write_galleries([item], [item])
+        with self.assertRaisesRegex(AuditError, "image_width differs from manifest"):
+            audit(self.root)
 
 if __name__ == "__main__":
     unittest.main()
