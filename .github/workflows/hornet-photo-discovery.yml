@@ -7,9 +7,14 @@ on:
     branches: [main]
     paths:
       - 'training/discover_inaturalist_candidates.py'
+      - 'training/dataset_groups.py'
+      - 'training/test_discovery_species.py'
+      - 'training/test_prepare_species_review.py'
       - 'training/inaturalist_media.py'
       - 'training/test_inaturalist_media.py'
       - 'training/prepare_visual_review_gallery.py'
+      - 'training/test_prepare_visual_review_gallery.py'
+      - 'training/prepare_annotation_tasks.py'
       - 'training/test_prepare_visual_review_gallery.py'
       - 'training/import_authorized_images.py'
       - 'training/test_import_authorized_images.py'
@@ -45,9 +50,11 @@ jobs:
           python -m unittest discover -s training -p 'test_audit_inaturalist_candidates.py' -v
           python -m unittest discover -s training -p 'test_prepare_hornet_visual_review.py' -v
           python -m unittest discover -s training -p 'test_prepare_visual_review_gallery.py' -v
+          python -m unittest discover -s training -p 'test_discovery_species.py' -v
+          python -m unittest discover -s training -p 'test_prepare_species_review.py' -v
       - name: Test fail-closed hornet license audit
         run: python -m unittest discover -s training -p 'test_hornet_license_audit.py' -v
-      - name: Search up to 1000 licensed insect photo candidates
+      - name: Search up to 1000 licensed insect photo candidates (200 per group)
         run: python training/discover_inaturalist_candidates.py --target 1000 --max-pages 12
       - name: Audit candidate metadata quality
         run: python training/audit_inaturalist_candidates.py
@@ -55,6 +62,12 @@ jobs:
         run: python training/prepare_species_review.py
       - name: Generate traceable annotation tasks for human review
         run: python training/prepare_annotation_tasks.py
+      - name: Generate mobile review gallery for all five groups
+        run: |
+          python training/prepare_visual_review_gallery.py \\
+            --input training/inaturalist-review-queue.csv \\
+            --output training/inaturalist-review-gallery.html \\
+            --species ALL
       - name: Recheck CC0 Vespa velutina photo metadata at iNaturalist
         run: |
           python training/verify_inaturalist_photo_metadata.py \
@@ -88,6 +101,19 @@ jobs:
                   with path.open(newline="", encoding="utf-8") as stream:
                       rows = list(csv.DictReader(stream))
                   out.write(f"**{len(rows)} / 1000 UNREVIEWED candidates** (one per observation). No images downloaded or trained.\n\n")
+                  group_labels = {
+                      "asian_hornet": "Asiatische Hornisse",
+                      "european_hornet": "Europäische Hornisse",
+                      "honey_bee": "Honigbiene",
+                      "bumblebees": "Hummeln",
+                      "wasps": "Wespen",
+                  }
+                  group_counts = Counter(row.get("dataset_group", "UNKNOWN") for row in rows)
+                  out.write("### Gruppenverteilung (Ziel: jeweils 200)\n\n")
+                  for group, label in group_labels.items():
+                      count = group_counts[group]
+                      out.write(f"- {label}: {count} / 200\n")
+                  out.write("\n### Wissenschaftliche Taxa\n\n")
                   for name, count in sorted(Counter(row["species_candidate"] for row in rows).items()):
                       out.write(f"- {name}: {count}\n")
                   out.write("\nCC BY versions require verification. The CSV is a review queue, not approved training data.\n")
@@ -113,6 +139,7 @@ jobs:
             training/inaturalist-species-review.json
             training/inaturalist-annotation-tasks.csv
             training/inaturalist-annotation-tasks.json
+            training/inaturalist-review-gallery.html
             training/vespa-velutina-cc0-source-audit.csv
             training/vespa-velutina-visual-review.csv
             training/vespa-velutina-review-gallery.html
