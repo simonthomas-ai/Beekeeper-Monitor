@@ -66,7 +66,7 @@ jobs:
           # Do not publish template legal notices as if they were complete.
           # Reject any remaining template field, not just the first known marker.
           # The pages must be reviewed separately before a public release.
-          if grep -Eq '\\[[^]]+\\]' _site/impressum.html _site/datenschutz.html || \
+          if grep -Eq '\[[^]]+\]' _site/impressum.html _site/datenschutz.html || \
              grep -Eiq 'MUSTER[[:space:]]*/[[:space:]]*PLATZHALTER|Angaben noch unvollständig|Angaben sind derzeit unvollständig' _site/impressum.html _site/datenschutz.html; then
             echo "::error::Rechtstexte enthalten noch Platzhalter; Deployment gesperrt."
             exit 1
