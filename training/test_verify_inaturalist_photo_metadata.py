@@ -75,7 +75,7 @@ class ObserverAttributionTests(unittest.TestCase):
             result = verify(self.row)
         self.assertEqual(result["api_observer_login"], "different-user")
         self.assertIn("differs from discovery metadata", result["error"])
-        self.assertEqual(result["license_metadata_match"], "NO" if result["license_metadata_match"] == "NO" else "YES")
+        self.assertEqual(result["license_metadata_match"], "NO")
 
 
 if __name__ == "__main__":
