@@ -64,9 +64,9 @@ class HornetLicenseAuditTests(unittest.TestCase):
 
     def test_original_url_rejects_external_hosts(self):
         self.assertEqual(original_url("https://evil.example/photos/456/square.jpg"), "")
-        self.assertEqual(large_url("https://static.inaturalist.org.evil.example/photos/456/square.jpg"), "")
-        self.assertEqual(large_url("http://static.inaturalist.org/photos/456/square.jpg"), "")
-        self.assertEqual(large_url("https://static.inaturalist.org/photos/456/square.jpg"),
+        self.assertEqual(original_url("https://static.inaturalist.org.evil.example/photos/456/square.jpg"), "")
+        self.assertEqual(original_url("http://static.inaturalist.org/photos/456/square.jpg"), "")
+        self.assertEqual(original_url("https://static.inaturalist.org/photos/456/square.jpg"),
                          "https://static.inaturalist.org/photos/456/original.jpg")
 
 
