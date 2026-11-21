@@ -7,21 +7,19 @@ for availability, content, identity or copyright. No training approvals.
 import argparse
 import csv
 from pathlib import Path
-from urllib.parse import urlsplit, urlunsplit
+from inaturalist_media import original_image_url
 
 FIELDS = ["observation_id", "photo_id", "api_taxon", "api_quality_grade",
           "api_photo_license", "api_attribution", "source_url", "api_photo_url",
-          "large_review_url", "license_metadata_match", "visual_species_verified",
+          "original_review_url", "license_metadata_match", "visual_species_verified",
           "image_quality_verified", "rights_verified", "reviewer", "review_notes",
           "training_approved"]
 
-def large_url(url):
-    p = urlsplit(url)
-    if (p.scheme != "https" or p.username or p.password or p.port not in (None, 443)
-            or not p.hostname or not p.hostname.endswith(".inaturalist.org")
-            or not p.path.endswith("/square.jpg")):
+def original_url(url, photo_id=""):
+    try:
+        return original_image_url(url, photo_id or None)
+    except ValueError:
         return ""
-    return urlunsplit((p.scheme, p.netloc, p.path[:-len("square.jpg")] + "large.jpg", "", ""))
 
 def main():
     ap = argparse.ArgumentParser()
@@ -42,7 +40,7 @@ def main():
                     row.get("api_taxon") != "Vespa velutina" or row.get("error")):
                 continue
             record = {k: row.get(k, "") for k in FIELDS}
-            record.update(large_review_url=large_url(row.get("api_photo_url", "")),
+            record.update(original_review_url=original_url(row.get("api_photo_url", ""), row.get("photo_id", "")),
                           visual_species_verified="NO", image_quality_verified="NO",
                           rights_verified="NO", reviewer="", review_notes="",
                           training_approved="NO")
