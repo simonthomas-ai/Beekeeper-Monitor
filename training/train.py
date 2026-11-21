@@ -8,11 +8,12 @@ import json
 import re
 from pathlib import Path
 import yaml
-from provenance import validate_provenance
 try:
+    from .provenance import validate_provenance
     from .class_schema import CLASS_NAMES
     from .evaluation import validate_per_class_summary
 except ImportError:  # Supports direct execution: python training/train.py
+    from provenance import validate_provenance
     from class_schema import CLASS_NAMES
     from evaluation import validate_per_class_summary
 
