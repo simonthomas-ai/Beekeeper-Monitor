@@ -147,7 +147,7 @@ jobs:
       - name: Freigabebericht (CI-Ergebnisse getrennt von rechtlicher Freigabe)
         if: always()
         env:
-          OVERALL_STATUS: ${{ steps.browser.outcome }}
+          BROWSER_STATUS: ${{ steps.browser.outcome }}
         run: python3 scripts/release_gate_report.py
       - name: Browser-Testartefakte
         if: always()
