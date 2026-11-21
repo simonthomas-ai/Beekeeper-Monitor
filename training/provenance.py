@@ -137,7 +137,7 @@ def validate_provenance(dataset_root: str | Path, *, expected_splits=SPLITS) -> 
         expected_label = (
             Path("labels") / path.parts[1] / Path(*path.parts[2:])
         ).with_suffix(".txt")
-        label = _required_text(row, "label_path", 1024).replace("\\\\", "/")
+        label = _required_text(row, "label_path", 1024).replace("\\", "/")
         if label != expected_label.as_posix():
             raise DatasetProvenanceError(
                 f"label_path must match the image split/stem exactly: {image}"
