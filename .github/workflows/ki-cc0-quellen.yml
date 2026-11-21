@@ -7,6 +7,9 @@ on:
       - 'training/discover_cc0_candidates.py'
       - 'training/test_discover_cc0_candidates.py'
       - 'training/prepare_visual_review_gallery.py'
+      - 'training/screen_inaturalist_image_quality.py'
+      - 'training/test_screen_inaturalist_image_quality.py'
+      - 'training/test_prepare_visual_review_gallery.py'
       - '.github/workflows/ki-cc0-quellen.yml'
   schedule:
     - cron: '17 6 * * 1'
@@ -15,32 +18,38 @@ permissions:
 jobs:
   candidates:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
+      - name: Install Pillow for transient in-memory image inspection
+        run: python3 -m pip install --only-binary=:all: 'Pillow>=10,<13'
+      - name: Offline-Test der Bildqualitaetspruefung
+        run: python3 -m unittest training.test_screen_inaturalist_image_quality -v
       - name: Offline-Test der paginierten Bildrecherche
         run: python3 -m unittest training.test_discover_cc0_candidates -v
-      - name: iNaturalist CC0-Metadaten recherchieren (keine KI-Freigabe)
-        run: python3 training/discover_cc0_candidates.py --per-species 50
+      - name: iNaturalist CC0-Metadaten recherchieren (100 Kandidaten je Art, keine KI-Freigabe)
+        run: python3 training/discover_cc0_candidates.py --per-species 100
       - name: Lizenz- und Dublettenpruefung
         run: python3 training/audit_inaturalist_candidates.py --input training/inaturalist-review-queue.csv --output training/inaturalist-metadata-audit.json
       - name: Artenpruefung vorbereiten
         run: python3 training/prepare_species_review.py --input training/inaturalist-review-queue.csv --output training/inaturalist-species-review.csv
       - name: Hornissen-Fotometadaten einzeln gegen iNaturalist pruefen
         run: python3 training/verify_inaturalist_photo_metadata.py --input training/inaturalist-review-queue.csv --output training/velutina-photo-verification.csv --species 'Vespa velutina' --limit 50
-      - name: Visuelle Pruefgalerie fuer echte Hornissenbilder erstellen
-        run: python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/velutina-visual-review.html
+      - name: Originalbild-Dateien temporaer auf Groesse und Lesbarkeit pruefen
+        run: python3 training/screen_inaturalist_image_quality.py --input training/inaturalist-review-queue.csv --output training/inaturalist-quality-screen.csv --pause 0.15 --timeout 15
+      - name: Visuelle Pruefgalerie nur aus bestandenen Bilddatei-Pruefungen erstellen
+        run: python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/velutina-visual-review.html
       - name: Pruefgalerie fuer alle fuenf Arten erstellen
         run: |
-          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/velutina-visual-review.html --species 'Vespa velutina'
-          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/crabro-visual-review.html --species 'Vespa crabro'
-          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/apis-visual-review.html --species 'Apis mellifera'
-          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/bombus-visual-review.html --species 'Bombus terrestris'
-          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/vespula-visual-review.html --species 'Vespula vulgaris'
-          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-review-queue.csv --output training/all-visual-review.html --species ALL
+          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/velutina-visual-review.html --species 'Vespa velutina'
+          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/crabro-visual-review.html --species 'Vespa crabro'
+          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/apis-visual-review.html --species 'Apis mellifera'
+          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/bombus-visual-review.html --species 'Bombus terrestris'
+          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/vespula-visual-review.html --species 'Vespula vulgaris'
+          python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/all-visual-review.html --species ALL
       - name: Mobile Bildpruefung auf GitHub Pages bereitstellen
         if: success()
         run: |
@@ -83,6 +92,16 @@ jobs:
           if [ -f training/inaturalist-review-queue.csv ]; then
             echo "Ungepruefte CC0-Fotokandidaten: $(($(wc -l < training/inaturalist-review-queue.csv)-1))" >> "$GITHUB_STEP_SUMMARY"
           fi
+          if [ -f training/inaturalist-quality-screen.csv ]; then
+            python3 - <<'PY'
+          import csv, collections
+          rows=list(csv.DictReader(open('training/inaturalist-quality-screen.csv', encoding='utf-8', newline='')))
+          passed=sum(r.get('image_quality_status')=='PASS' for r in rows)
+          print(f'Original image file checks: {passed}/{len(rows)} passed dimensions and decoding; photos were not persisted.')
+          for species, group in sorted(collections.defaultdict(list, ((s, [r for r in rows if r.get('species_candidate') == s]) for s in {r.get('species_candidate','') for r in rows})).items()):
+              print(f'{species}: {sum(r.get("image_quality_status")=="PASS" for r in group)}/{len(group)} passed')
+          PY
+          fi
           if [ -f training/velutina-photo-verification.csv ]; then
             echo '### Einzelpruefung Asiatische Hornisse' >> "$GITHUB_STEP_SUMMARY"
             python3 -c 'import csv; p="training/velutina-photo-verification.csv"; r=list(csv.DictReader(open(p))); ok=sum(x["api_photo_found"]=="YES" and x["license_metadata_match"]=="YES" and x["api_taxon"]=="Vespa velutina" and x["api_quality_grade"]=="research" for x in r); print(f"API-Metadaten bestaetigt: {ok}/{len(r)}; visuelle Artenpruefung weiterhin offen")' >> "$GITHUB_STEP_SUMMARY"
@@ -95,6 +114,7 @@ jobs:
           name: ki-cc0-quellen-prueflisten
           path: |
             training/inaturalist-review-queue.csv
+            training/inaturalist-quality-screen.csv
             training/inaturalist-metadata-audit.json
             training/inaturalist-species-review.csv
             training/inaturalist-species-review.json
