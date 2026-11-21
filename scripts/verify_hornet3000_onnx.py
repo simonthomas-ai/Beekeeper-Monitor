@@ -14,7 +14,7 @@ BLOB = "97fb748affc642238c1135768a53098f594de0d1"
 SIZE = 44737849
 URL = "https://raw.githubusercontent.com/vespCV/hornet3000/" + COMMIT + "/" + PATH
 
-def inspect(download=False, inspect_graph=False, run_inference=False):
+def inspect(download=False, inspect_graph=False, run_inference=False, real_cc0=False):
     if not download:
         return {"status": "not_downloaded", "source": URL, "expected_bytes": SIZE}
     req = urllib.request.Request(URL, headers={"User-Agent": "VespaGuard-research-integrity/1"})
@@ -75,6 +75,9 @@ def inspect(download=False, inspect_graph=False, run_inference=False):
             graph["synthetic_inference"] = {"status": "passed", "input": [1, 3, 640, 640],
                 "output": list(output.shape), "finite": True, "real_image_tested": False,
                 "accuracy_validated": False, "camera_connected": False}
+        if real_cc0:
+            from scripts.hornet3000_real_cc0_probe import run
+            graph["real_cc0_probe"] = run(target)
         return {"status": "bytes_verified_not_executed", "source": URL,
                 "bytes": total, "git_blob": git_blob.hexdigest(),
                 "sha256": digest.hexdigest(), "graph": graph, "license_approved": False,
@@ -85,10 +88,11 @@ def main():
     parser.add_argument("--download", action="store_true")
     parser.add_argument("--inspect-graph", action="store_true", help="Read ONNX graph metadata, never run inference")
     parser.add_argument("--synthetic-inference", action="store_true", help="CPU inference on a zero-valued synthetic frame")
+    parser.add_argument("--real-cc0", action="store_true", help="Research-only inference on fresh verified CC0 iNaturalist image")
     args = parser.parse_args()
-    if (args.inspect_graph or args.synthetic_inference) and not args.download:
+    if (args.inspect_graph or args.synthetic_inference or args.real_cc0) and not args.download:
         parser.error("--inspect-graph requires --download")
-    result = inspect(args.download, args.inspect_graph, args.synthetic_inference)
+    result = inspect(args.download, args.inspect_graph, args.synthetic_inference, args.real_cc0)
     if args.synthetic_inference:
         result["status"] = "synthetic_inference_passed_not_validated"
     print(json.dumps(result, indent=2))
