@@ -1,7 +1,10 @@
 """Regression tests for iNaturalist image quality selection."""
 import unittest
 
-from inaturalist_media import original_image_url, is_original_image_url, normalize_if_inaturalist
+try:
+    from training.inaturalist_media import original_image_url, is_original_image_url, normalize_if_inaturalist
+except ModuleNotFoundError:
+    from inaturalist_media import original_image_url, is_original_image_url, normalize_if_inaturalist
 
 
 class INaturalistMediaTests(unittest.TestCase):
