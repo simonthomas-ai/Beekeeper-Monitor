@@ -62,6 +62,12 @@ jobs:
           grep -q '44842498223' _site/index.html
           test -s _site/datenschutz.html
           test -s _site/impressum.html
+          # Do not publish template legal notices as if they were complete.
+          if grep -Fq '[VOLLSTÄNDIGER NAME ODER ORGANISATION]' _site/impressum.html || \
+             grep -Fq '[VERANTWORTLICHE PERSON / ORGANISATION]' _site/datenschutz.html; then
+            echo "::error::Rechtstexte enthalten noch Platzhalter; Deployment gesperrt."
+            exit 1
+          fi
           touch _site/.nojekyll
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
