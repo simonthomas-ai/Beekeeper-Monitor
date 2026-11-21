@@ -45,7 +45,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise ValueError("redirects require manual source review")
 
 
-def sanitize_image(data: bytes, content_type: str) -> tuple[bytes, str, str]:
+def sanitize_image(data: bytes, content_type: str) -> tuple[bytes, str, str, int, int]:
     """Decode, apply EXIF orientation, re-encode pixels and drop copied metadata."""
     if content_type not in MIME_FORMATS:
         raise ValueError("unsupported image MIME type")
