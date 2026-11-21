@@ -45,7 +45,10 @@ def inspect(download=False, inspect_graph=False):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--download", action="store_true")
-    parser.add_argument("--inspect-graph", action="store_true", help="Read ONNX graph metadata, never run inference")\n    args = parser.parse_args()\n    if args.inspect_graph and not args.download:\n        parser.error("--inspect-graph requires --download")
+    parser.add_argument("--inspect-graph", action="store_true", help="Read ONNX graph metadata, never run inference")
+    args = parser.parse_args()
+    if args.inspect_graph and not args.download:
+        parser.error("--inspect-graph requires --download")
     result = inspect(args.download, args.inspect_graph)
     print(json.dumps(result, indent=2))
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -54,7 +57,9 @@ def main():
             out.write("## hornet3000 ONNX-Pruefung\n\n")
             out.write("Status: " + result["status"] + ". Keine Inferenz oder Freigabe.\n\n")
             if result.get("sha256"):
-                out.write("SHA-256: " + result["sha256"] + "\n")\n            if result.get("graph"):\n                out.write("ONNX-Graph (statisch, ohne Inferenz):\\n\\n```json\\n" + json.dumps(result["graph"], indent=2) + "\\n```\\n")
+                out.write("SHA-256: " + result["sha256"] + "\n")
+            if result.get("graph"):
+                out.write("ONNX-Graph (statisch, ohne Inferenz):\\n\\n```json\\n" + json.dumps(result["graph"], indent=2) + "\\n```\\n")
 
 if __name__ == "__main__":
     main()
