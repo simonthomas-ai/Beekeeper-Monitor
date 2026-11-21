@@ -60,7 +60,14 @@ def validate_image_file(path):
 def validate(root):
     root=Path(root).resolve()
     config=yaml.safe_load((root/'training/data.yaml').read_text(encoding='utf-8'))
-    base=(root/config['path']).resolve()
+    dataset_path = root / config['path']
+    if not dataset_path.is_dir():
+        raise FileNotFoundError(
+            'Real training dataset directory is missing: %s. '
+            'Create datasets/beekeeper with train/val/test images, labels and provenance '
+            'after the source rights and expert annotations are approved.' % dataset_path
+        )
+    base=dataset_path.resolve()
     if not base.is_relative_to(root):
         raise ValueError('Dataset path must remain inside repository')
     if [config['names'][i] for i in range(len(CLASSES))]!=CLASSES:
