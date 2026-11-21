@@ -121,6 +121,7 @@ class GalleryRightsAuditTests(unittest.TestCase):
     def test_rejects_gallery_manifest_metadata_mismatch(self):
         item = self.local_items()[0]
         item["creator"] = "Different author"
+        item["attribution"] = "Different author, no rights reserved (CC0)"
         self._write_galleries([item], [item])
         with self.assertRaisesRegex(AuditError, "creator differs from manifest"):
             audit(self.root)
@@ -168,9 +169,13 @@ class GalleryRightsAuditTests(unittest.TestCase):
     def test_rejects_remote_inaturalist_thumbnail(self):
         remote_item = {
             "photo_id": "51", "observation_id": "101",
+            "species_candidate": "Vespa crabro", "dataset_group": "european_hornet",
             "image_url": "https://static.inaturalist.org/photos/51/square.jpg",
             "source_url": "https://www.inaturalist.org/observations/101",
-            "license": "CC-BY-4.0", "creator": "Author",
+            "license": "CC0-1.0", "creator": "Author",
+            "creator_login": "author-login",
+            "attribution": "Author, no rights reserved (CC0)",
+            "license_notice": "no rights reserved",
             "image_delivery": "REMOTE_INATURALIST_ORIGINAL",
         }
         self._write_galleries(all_items=self.local_items() + [remote_item])
