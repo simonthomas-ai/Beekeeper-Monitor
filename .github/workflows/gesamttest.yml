@@ -88,18 +88,17 @@ jobs:
             echo "BLOCKIERT: Keine fachlich freigegebenen Annotationen unter training/reviewed-annotations.json"
             exit 1
           fi
-      - name: Öffentliche Website
+      - name: Lokale PWA-Dateien (ohne öffentliche Veröffentlichung)
         id: site
         continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
-          URL=https://simonthomas-ai.github.io/Beekeeper-Monitor/
-          curl -fLsS --retry 2 --max-time 40 "$URL" -o /tmp/index.html
-          grep -q 'Beekeeper Monitor' /tmp/index.html
-          for asset in app.js live-media.js style.css sw.js manifest.webmanifest icon.svg; do
-            curl -fLsS --retry 2 --max-time 40 "${URL}${asset}" -o /dev/null
+          for asset in index.html app.js live-media.js style.css sw.js manifest.webmanifest icon.svg; do
+            test -s "$asset"
           done
+          grep -q 'Beekeeper Monitor' index.html
+          python3 -m json.tool manifest.webmanifest >/dev/null
       - name: Einheitlicher Ergebnisbericht
         if: always()
         env:
@@ -128,7 +127,7 @@ jobs:
           echo "| Europaeische Taxonomie (Online-API) | $TAXONOMY |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Echte KI-Trainingsdaten und Annotationen | $TRAINING |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Fachlich gepruefte Annotationseintraege | $ANNOTATIONS |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Öffentliche Website | $SITE |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Lokale PWA-Dateien (keine Veröffentlichung) | $SITE |" >> "$GITHUB_STEP_SUMMARY"
           if [ "$TRAINING" != success ] || [ "$ANNOTATIONS" != success ]; then
             echo '### KI-STATUS: BLOCKIERT – keine freigegebenen Trainingsdaten/Annotationen; keine einsatzfähige automatische Erkennung.' >> "$GITHUB_STEP_SUMMARY"
           fi
