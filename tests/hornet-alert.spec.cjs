@@ -60,6 +60,28 @@ test('BeeKeeper3000 bridge candidate reaches the visible warning once',async({pa
  await expect(page.locator('#alert-list li').first()).toContainText('yard_cam_north');
 });
 
+test('reconnect and page reload do not repeat a previously displayed bridge warning',async({page})=>{
+ await page.goto('/');
+ await page.locator('#alert-enabled').check();
+ const create=()=>({
+  event_id:'f'.repeat(64),
+  received_at:new Date().toISOString(),
+  event:{kind:'camera_detection',device_id:'hive_cam_1',
+   timestamp:new Date().toISOString(),source:'hornet3000',schema_version:1,
+   payload:{label:'unverified_candidate:vespa_velutina',
+    confidence:1,verification_status:'unverified',origin_event_id:'restart-001'}}
+ });
+ const event=create();
+ await page.evaluate((row)=>window.BeekeeperAlerts.process([row]),event);
+ await expect(page.locator('#alert-list li')).toHaveCount(1);
+ await page.reload();
+ await expect(page.locator('#alert-enabled')).toBeChecked();
+ // The local receiver may replay the same event after reconnect.
+ await page.evaluate((row)=>window.BeekeeperAlerts.process([row,row]),event);
+ await expect(page.locator('#alert-list li')).toHaveCount(0);
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('beekeeper-alert-seen-v1')).includes('f'.repeat(64)))).toBe(true);
+});
+
 test('disabled alert stays silent for qualifying detections',async({page})=>{
  await page.goto('/');
  const count=await page.evaluate(()=>{
