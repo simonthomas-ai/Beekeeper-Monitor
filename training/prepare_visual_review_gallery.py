@@ -7,7 +7,10 @@ import json
 from pathlib import Path
 from urllib.parse import urlparse
 
-from inaturalist_media import normalize_if_inaturalist
+try:
+    from training.inaturalist_media import normalize_if_inaturalist
+except ModuleNotFoundError:
+    from inaturalist_media import normalize_if_inaturalist
 
 def gallery(source, output, species="Vespa velutina"):
     with open(source, newline="", encoding="utf-8-sig") as f:
