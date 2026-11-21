@@ -48,23 +48,25 @@ The previous mixed hive-inspection classes (Varroa mite counts, brood, pollen lo
 2. Check the **individual image/media license**, not just the dataset/observation license. Reject CC BY-NC, CC BY-ND, unknown, missing, conflicting or unversioned licenses from this initial trainer.
 3. Confirm the source uploader was entitled to grant the license. Preserve source URL, dataset version, creator, rights-holder and original attribution. CC BY 4.0 requires attribution in the provenance record; CC0 remains traceable even when attribution is not a legal condition.
 4. Download only manually approved source images into the private dataset directory. Never commit private image files, RTSP credentials, precise apiary GPS or reviewer personal details to this public repository.
-5. Hash every exact image file with SHA-256 and create one provenance record for each image.
+5. Hash every exact image file and its corresponding YOLO label file with SHA-256. Store both paths and hashes in the same provenance record; the label path must mirror the image split and stem.
 6. Assign an expert-checked species label and bounding boxes in CVAT. Record both review statuses as `verified` only after a human reviewer has checked them; automated labels are suggestions, not accepted ground truth.
 7. Assign groups before splitting: observation, photographer and site must each belong to exactly one of train/val/test. Use stable pseudonymous IDs, not people's names or exact locations. This blocks near-duplicate leakage between splits.
-8. Run the provenance gate, label geometry validator, duplicate checks and image review. Then run FiftyOne QA for duplicate, near-duplicate, lighting, scale, outlier and class imbalance inspection.
+8. Run the provenance gate (image and annotation file hashes), label geometry validator, duplicate checks and image review. Then run FiftyOne QA for duplicate, near-duplicate, lighting, scale, outlier and class imbalance inspection.
 9. Only then train and evaluate. Select thresholds on validation data, never on the final test set. Preserve test metrics, confusion matrices, per-class precision/recall, false-positive events per station-day and confidence intervals.
 10. A separate field capture set from unseen sites/cameras and a human entomology review is required before calling the detector operational.
 
 ## Required provenance manifest
 
-Every dataset root must contain `provenance.jsonl`. Each line corresponds to exactly one image file; the validator rejects unlisted images, duplicate image bytes, bad hashes, unsupported rights, missing attribution, unverified labels, path traversal and split leakage.
+Every dataset root must contain `provenance.jsonl`. Each line binds exactly one image file to exactly one YOLO label file, including their individual SHA-256 values. The label file path must be the same relative stem under `labels/<same split>/`. The validator rejects unlisted images or labels, duplicate image bytes, bad image or label hashes, unsupported rights, missing attribution, unverified labels, path traversal and split leakage. Changing a reviewed label after approval invalidates the provenance record.
 
 Example (replace every value; never use these example IDs as evidence):
 
 ~~~json
 {
   "image_path": "images/train/observation-001-frame-01.jpg",
-  "sha256": "REPLACE_WITH_REAL_64_CHARACTER_SHA256",
+  "sha256": "REPLACE_WITH_REAL_64_CHARACTER_IMAGE_SHA256",
+  "label_path": "labels/train/observation-001-frame-01.txt",
+  "label_sha256": "REPLACE_WITH_REAL_64_CHARACTER_LABEL_SHA256",
   "source_url": "https://example.org/original-image-page",
   "source_dataset": "dataset-name",
   "source_version": "immutable-version-or-release",
@@ -83,7 +85,7 @@ Example (replace every value; never use these example IDs as evidence):
 }
 ~~~
 
-For CC-BY-4.0, `creator` and `attribution_text` must be populated. `source_url` and `license_url` must be HTTPS. The accepted initial SPDX values are deliberately restricted to `CC0-1.0` and `CC-BY-4.0`. CC-BY-SA and public-domain-mark records may be considered only after a separate downstream dataset/model redistribution review.
+For every image, `label_path` and `label_sha256` are mandatory and bind the exact YOLO annotation bytes to the review record. For CC-BY-4.0, `creator` and `attribution_text` must be populated. `source_url` and `license_url` must be HTTPS. The accepted initial SPDX values are deliberately restricted to `CC0-1.0` and `CC-BY-4.0`. CC-BY-SA and public-domain-mark records may be considered only after a separate downstream dataset/model redistribution review.
 
 ## Validation
 

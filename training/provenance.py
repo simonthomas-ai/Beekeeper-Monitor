@@ -59,7 +59,7 @@ def _digest_file(path: Path) -> str:
             for chunk in iter(lambda: handle.read(1024 * 1024), b""):
                 digest.update(chunk)
     except OSError as exc:
-        raise DatasetProvenanceError("cannot read dataset image for SHA-256 verification") from exc
+        raise DatasetProvenanceError("cannot read dataset file for SHA-256 verification") from exc
     return digest.hexdigest()
 
 
@@ -81,7 +81,7 @@ def validate_provenance(dataset_root: str | Path, *, expected_splits=SPLITS) -> 
         raise DatasetProvenanceError("required per-image provenance.jsonl is missing")
 
     rows = []
-    paths, digests = set(), set()
+    paths, digests, label_paths = set(), set(), set()
     group_splits = defaultdict(set)
     observation_splits = defaultdict(set)
     photographer_splits = defaultdict(set)
@@ -131,6 +131,36 @@ def validate_provenance(dataset_root: str | Path, *, expected_splits=SPLITS) -> 
         if _digest_file(full_path) != digest:
             raise DatasetProvenanceError(f"image SHA-256 mismatch: {image}")
 
+        # Bind the exact expert-reviewed YOLO annotation file to the same
+        # split and stem as its image. A status flag alone is not evidence:
+        # the bytes must remain identical after review.
+        expected_label = (
+            Path("labels") / path.parts[1] / Path(*path.parts[2:])
+        ).with_suffix(".txt")
+        label = _required_text(row, "label_path", 1024).replace("\\", "/")
+        if label != expected_label.as_posix():
+            raise DatasetProvenanceError(
+                f"label_path must match the image split/stem exactly: {image}"
+            )
+        label_candidate = root / label
+        if label_candidate.is_symlink():
+            raise DatasetProvenanceError(f"label file must not be a symlink: {label}")
+        label_file = label_candidate.resolve()
+        try:
+            label_file.relative_to(root)
+        except ValueError as exc:
+            raise DatasetProvenanceError("label path resolves outside the dataset directory") from exc
+        if not label_file.is_file():
+            raise DatasetProvenanceError(f"reviewed label file does not exist: {label}")
+        label_digest = _required_text(row, "label_sha256", 64)
+        if not SHA256.fullmatch(label_digest):
+            raise DatasetProvenanceError(f"invalid label_sha256 on line {line_number}")
+        if _digest_file(label_file) != label_digest:
+            raise DatasetProvenanceError(f"label SHA-256 mismatch after review: {label}")
+        if label in label_paths:
+            raise DatasetProvenanceError(f"duplicate label_path in manifest: {label}")
+        label_paths.add(label)
+
         license_id = _required_text(row, "license_spdx", 80)
         if license_id not in ALLOWED_LICENSES:
             raise DatasetProvenanceError(f"license {license_id} is not allowed by current training policy")
@@ -178,6 +208,8 @@ def validate_provenance(dataset_root: str | Path, *, expected_splits=SPLITS) -> 
             "image_path": image,
             "split": split,
             "sha256": digest,
+            "label_path": label,
+            "label_sha256": label_digest,
             "license_spdx": license_id,
             "source_url": source_url,
             "creator": image_creator or "",
@@ -199,6 +231,18 @@ def validate_provenance(dataset_root: str | Path, *, expected_splits=SPLITS) -> 
             "provenance must cover every image exactly once; missing=%d stale=%d"
             % (len(missing), len(stale))
         )
+    actual_labels = {
+        candidate.relative_to(root).as_posix()
+        for candidate in root.joinpath("labels").rglob("*.txt")
+        if candidate.is_file()
+    }
+    if actual_labels != label_paths:
+        missing = sorted(actual_labels - label_paths)
+        stale = sorted(label_paths - actual_labels)
+        raise DatasetProvenanceError(
+            "provenance must bind every YOLO label file exactly once; unbound=%d missing=%d"
+            % (len(missing), len(stale))
+        )
     for key, values in group_splits.items():
         if len(values) > 1:
             raise DatasetProvenanceError(f"data leakage: {key.split(':', 1)[0]} group appears across splits")
@@ -214,5 +258,6 @@ def validate_provenance(dataset_root: str | Path, *, expected_splits=SPLITS) -> 
             "photographers": len(photographer_splits),
             "sites": len(site_splits),
         },
+        "annotation_binding": "label_file_sha256_verified",
         "status": "provenance_verified_not_species_accuracy",
     }
