@@ -68,6 +68,19 @@ class ObserverAttributionTests(unittest.TestCase):
                          "https://static.inaturalist.org/photos/42/original.jpg")
         self.assertEqual(result["error"], "")
 
+    def test_uses_observer_login_when_display_name_is_unavailable(self):
+        response = FakeResponse(observation(name=""))
+        with patch("training.verify_inaturalist_photo_metadata.urllib.request.urlopen",
+                   return_value=response):
+            result = verify(self.row)
+        self.assertEqual(result["api_observer_name"], "")
+        self.assertEqual(result["api_observer_login"], "test-observer")
+        self.assertEqual(
+            result["api_attribution_statement"],
+            "test-observer, no rights reserved (CC0)",
+        )
+        self.assertEqual(result["license_metadata_match"], "YES")
+
     def test_rejects_observer_login_changed_since_discovery(self):
         response = FakeResponse(observation(login="different-user"))
         with patch("training.verify_inaturalist_photo_metadata.urllib.request.urlopen",
