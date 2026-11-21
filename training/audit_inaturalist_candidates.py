@@ -35,7 +35,10 @@ def audit(path):
             u = urlparse(row.get(key) or "")
             if u.scheme != "https" or not u.netloc or u.username or u.password:
                 errors.append("invalid_" + key)
-        if (row.get("image_url") or "").strip() in seen_image_urls:\n            errors.append("duplicate_image_url")\n        seen_image_urls.add((row.get("image_url") or "").strip())\n        if row.get("photo_id") in seen_photos or row.get("observation_id") in seen_observations:
+        if (row.get("image_url") or "").strip() in seen_image_urls:
+            errors.append("duplicate_image_url")
+        seen_image_urls.add((row.get("image_url") or "").strip())
+        if row.get("photo_id") in seen_photos or row.get("observation_id") in seen_observations:
             errors.append("duplicate_photo_or_observation")
         seen_photos.add(row.get("photo_id"))
         seen_observations.add(row.get("observation_id"))
