@@ -15,7 +15,7 @@ BASE = {
     "image_url": "https://example.org/photo1.jpg", "creator": "Photographer",
     "license": "CC0-1.0", "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
     "attribution": "Photographer", "observation_id": "1", "photo_id": "11",
-    "species_candidate": "Vespa velutina", "review_status": "UNREVIEWED",
+    "species_candidate": "Vespa velutina", "dataset_group": "asian_hornet", "review_status": "UNREVIEWED",
 }
 
 class CandidateAuditTests(unittest.TestCase):
@@ -53,6 +53,15 @@ class CandidateAuditTests(unittest.TestCase):
         row = dict(BASE, image_url="https://inaturalist-open-data.s3.amazonaws.com/photos/11/square.jpg")
         report = self.check_rows([row])
         self.assertIn("non_original_inaturalist_image_variant", report["metadata_errors"][0]["errors"])
+
+    def test_wrong_dataset_group_is_rejected(self):
+        report = self.check_rows([dict(BASE, dataset_group="honey_bee")])
+        self.assertIn("dataset_group_species_mismatch", report["metadata_errors"][0]["errors"])
+
+    def test_group_counts_are_reported_separately_from_species(self):
+        report = self.check_rows([BASE])
+        self.assertEqual(report["by_group"], {"asian_hornet": 1})
+        self.assertEqual(report["by_species"], {"Vespa velutina": 1})
 
 if __name__ == "__main__":
     unittest.main()
