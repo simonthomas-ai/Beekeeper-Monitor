@@ -1,0 +1,18 @@
+name: Hornet3000 ONNX Integritaet (isoliert, keine Inferenz)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pruefen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Gepinnte ONNX-Datei herunterladen und Byte-Identitaet pruefen
+        run: python3 scripts/verify_hornet3000_onnx.py --download
+      - name: Freigabe bleibt gesperrt
+        run: |
+          echo 'Nur Datei-Integritaet. Keine Lizenz-, Modell-, Inferenz- oder Feldfreigabe.' >> "$GITHUB_STEP_SUMMARY"
