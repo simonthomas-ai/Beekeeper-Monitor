@@ -28,3 +28,20 @@
 5. Weder produktiven Alarm noch automatisches öffentliches Deployment aktivieren.
 
 **Ergebnis:** ONNX-Binärdatei im Upstream nachgewiesen; Kompatibilität noch nicht bestätigt, Modell nicht importiert.
+
+
+## Verifizierter ONNX-Graph (GitHub Actions, 21.11.2026)
+
+Prueflauf: https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/44937623603
+Status: erfolgreich, SHA-256 `1df95cedd08426dc218f8aa9e02667e068c0bda218c29a44032638fab005276f`.
+Eingabe: `images` FLOAT `[1,3,640,640]`. Ausgabe: `output0` FLOAT `[1,9,8400]`.
+ONNX IR 9, Opset 19, 233 Knoten; keine NMS-Operatoren in der Operatorenliste.
+Metadaten `names`: `{0: 'amel', 1: 'vcra', 2: 'vespsp', 3: 'vvel', 4: 'vzon'}`.
+Damit ist **Vespa velutina Klasse 3** fuer diese konkrete ONNX-Datei, nicht Klasse 0.
+Die neun Ausgabekanaele entsprechen plausibel vier Boxwerten plus fuenf Klassenscores;
+die genaue Dekodierung, Koordinatenbehandlung, Schwellwerte und NMS muessen anhand
+einer kontrollierten Inferenz geprueft werden. Keine reale Erkennungsleistung nachgewiesen.
+
+Die ONNX-Metadaten nennen `AGPL-3.0 License` (Ultralytics). Das ersetzt keine
+Lizenz- und Herkunftspruefung des konkreten Gewichtsartefakts. Kein Produktivbetrieb
+oder oeffentlicher Modellvertrieb freigegeben.
