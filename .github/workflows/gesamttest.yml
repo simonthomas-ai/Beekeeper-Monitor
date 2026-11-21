@@ -31,6 +31,7 @@ jobs:
           python3 -m json.tool manifest.webmanifest >/dev/null
           python3 scripts/check_sources.py
           python3 scripts/test_static.py
+          python3 -m py_compile scripts/model_readiness.py
           node --check app.js
           node --check sw.js
       - name: Browser-Integrationstests
