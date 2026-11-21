@@ -20,3 +20,7 @@ jobs:
       - run: python3 scripts/quality_report.py
       - run: python3 -m unittest training.test_audit_gallery_rights -v
       - run: python3 -m unittest training.test_provenance -v
+      - name: iNaturalist Metadaten und CC0 Kandidaten pruefen
+        run: python3 -m unittest training.test_verify_inaturalist_photo_metadata training.test_discover_cc0_candidates training.test_audit_inaturalist_candidates -v
+      - name: Originalbild-Download und Review-Galerie pruefen
+        run: python3 -m unittest training.test_download_original_inaturalist_images training.test_prepare_visual_review_gallery -v
