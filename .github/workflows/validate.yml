@@ -19,3 +19,14 @@ jobs:
       - run: node --check alert-rules.js
       - run: node --test tests/alert-rules.test.cjs
       - run: python3 -m unittest discover -s integrations -p 'test_*.py' -v
+      - name: BeeKeeper3000 in fester Version auschecken
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: simonthomas-ai/BeeKeeper3000
+          ref: 8eba14db628a5b5d8672bcbab9b078f0e7977799
+          path: BeeKeeper3000
+          persist-credentials: false
+      - name: Offline Outbox und Neustart
+        run: PYTHONPATH=BeeKeeper3000 python3 -m unittest discover -s BeeKeeper3000/camera -p 'test_outbox.py' -v
+      - name: HTTP Wiederherstellung mit lokalem Testserver
+        run: PYTHONPATH=BeeKeeper3000 python3 -m unittest discover -s BeeKeeper3000/camera -p 'test_offline_http_recovery.py' -v
