@@ -47,9 +47,12 @@ def render(source: str, checks: dict[str, str]) -> str:
 def main() -> None:
     source = CHECKLIST.read_text(encoding="utf-8")
     checks = {
-        "Qualitätsprüfung": os.environ.get("QUALITY_STATUS", "unknown"),
-        "Validierung": os.environ.get("VALIDATION_STATUS", "unknown"),
-        "Browser-Integration im Gesamttest": os.environ.get("BROWSER_STATUS", "unknown"),
+        "PWA und Quellcode": os.environ.get("STATIC_STATUS", "unknown"),
+        "Warnregeln": os.environ.get("ALERT_STATUS", "unknown"),
+        "Browser-Integration": os.environ.get("BROWSER_STATUS", "unknown"),
+        "Safari WebKit": os.environ.get("WEBKIT_STATUS", "unknown"),
+        "iPhone-WebKit-Emulation": os.environ.get("IPHONE_STATUS", "unknown"),
+        "Lokaler PWA-Vertrag": os.environ.get("SITE_STATUS", "unknown"),
     }
     result = render(source, checks)
     print(result)
