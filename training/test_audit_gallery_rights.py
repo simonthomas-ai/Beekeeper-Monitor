@@ -29,6 +29,9 @@ class GalleryRightsAuditTests(unittest.TestCase):
             "source_url": "https://www.inaturalist.org/observations/99",
             "license": "CC0-1.0",
             "creator": "Example photographer",
+            "creator_login": "example-photographer",
+            "attribution": "Example photographer, no rights reserved (CC0)",
+            "license_notice": "no rights reserved",
             "source_image_url": "https://static.inaturalist.org/photos/42/original.jpg",
             "local_image_path": "images/velutina/42.jpg",
             "image_format": "JPEG",
@@ -47,6 +50,9 @@ class GalleryRightsAuditTests(unittest.TestCase):
             "source_url": self.asset["source_url"],
             "license": "CC0-1.0",
             "creator": "Example photographer",
+            "creator_login": "example-photographer",
+            "attribution": "Example photographer, no rights reserved (CC0)",
+            "license_notice": "no rights reserved",
             "image_width": 1920,
             "image_height": 1080,
             "image_bytes": len(self.body),
@@ -136,24 +142,28 @@ class GalleryRightsAuditTests(unittest.TestCase):
         with self.assertRaisesRegex(AuditError, "all gallery and manifest differ"):
             audit(self.root)
 
-    def test_accepts_https_remote_gallery_without_local_manifest(self):
+    def test_accepts_remote_species_original_with_local_velutina_manifest(self):
         remote_item = {
             "photo_id": "51", "observation_id": "101",
+            "species_candidate": "Vespa crabro", "dataset_group": "european_hornet",
             "image_url": "https://static.inaturalist.org/photos/51/original.jpg",
             "source_url": "https://www.inaturalist.org/observations/101",
-            "license": "CC-BY-4.0", "creator": "Author",
+            "license": "CC0-1.0", "creator": "Author",
+            "creator_login": "author-login",
+            "attribution": "Author, no rights reserved (CC0)",
+            "license_notice": "no rights reserved",
             "image_delivery": "REMOTE_INATURALIST_ORIGINAL",
         }
-        (self.review / "velutina-original-images-manifest.csv").unlink()
-        pages = {"all": [remote_item], "velutina": [remote_item],
-                 "crabro": [], "apis": [], "bombus": [], "vespula": []}
-        for name, items in pages.items():
-            (self.review / f"{name}.html").write_text(
-                "<script>const items=" + json.dumps(items) + ";</script>", encoding="utf-8")
-        self.image.unlink()
-        self.image_dir.rmdir()
-        (self.review / "images").rmdir()
-        self.assertEqual(audit(self.root), (6, 2))
+        self._write_galleries(
+            all_items=self.local_items() + [remote_item],
+        )
+        crabro = self.review / "crabro.html"
+        crabro.write_text(
+            "<script>const items=" + json.dumps([remote_item]) + ";</script>",
+            encoding="utf-8",
+        )
+        self.assertEqual(audit(self.root), (6, 4))
+
 
     def test_rejects_remote_inaturalist_thumbnail(self):
         remote_item = {
@@ -163,16 +173,26 @@ class GalleryRightsAuditTests(unittest.TestCase):
             "license": "CC-BY-4.0", "creator": "Author",
             "image_delivery": "REMOTE_INATURALIST_ORIGINAL",
         }
-        (self.review / "velutina-original-images-manifest.csv").unlink()
-        pages = {"all": [remote_item], "velutina": [remote_item],
-                 "crabro": [], "apis": [], "bombus": [], "vespula": []}
-        for name, items in pages.items():
-            (self.review / f"{name}.html").write_text(
-                "<script>const items=" + json.dumps(items) + ";</script>", encoding="utf-8")
-        self.image.unlink()
-        self.image_dir.rmdir()
-        (self.review / "images").rmdir()
+        self._write_galleries(all_items=self.local_items() + [remote_item])
+        (self.review / "crabro.html").write_text(
+            "<script>const items=" + json.dumps([remote_item]) + ";</script>", encoding="utf-8")
         with self.assertRaisesRegex(AuditError, "original derivative"):
+            audit(self.root)
+
+    def test_rejects_velutina_remote_fallback(self):
+        remote_item = {
+            "photo_id": "51", "observation_id": "101",
+            "species_candidate": "Vespa velutina", "dataset_group": "asian_hornet",
+            "image_url": "https://static.inaturalist.org/photos/51/original.jpg",
+            "source_url": "https://www.inaturalist.org/observations/101",
+            "license": "CC0-1.0", "creator": "Author",
+            "creator_login": "author-login",
+            "attribution": "Author, no rights reserved (CC0)",
+            "license_notice": "no rights reserved",
+            "image_delivery": "REMOTE_INATURALIST_ORIGINAL",
+        }
+        self._write_galleries([remote_item], [remote_item])
+        with self.assertRaisesRegex(AuditError, "remote fallback is forbidden"):
             audit(self.root)
 
     def test_rejects_manifest_with_wrong_photo_url_host(self):
@@ -185,6 +205,12 @@ class GalleryRightsAuditTests(unittest.TestCase):
     def test_rejects_unmanifested_extra_image(self):
         (self.image_dir / "999.jpg").write_bytes(b"unlisted")
         with self.assertRaisesRegex(AuditError, "unmanifested or missing files"):
+            audit(self.root)
+
+    def test_rejects_creator_field_that_contains_only_licence_notice(self):
+        self.asset["creator"] = "no rights reserved"
+        self._write_manifest([self.asset])
+        with self.assertRaisesRegex(AuditError, "photographer/observer identity"):
             audit(self.root)
 
     def test_rejects_gallery_resolution_metadata_mismatch(self):
