@@ -4,7 +4,7 @@ from render_hornet_review_gallery import render
 class ReviewGalleryTests(unittest.TestCase):
     def test_unreviewed_only_and_escape_metadata(self):
         rows = [
-            {"training_approved": "NO", "large_review_url": "https://static.inaturalist.org/photos/123/large.jpg", "source_url": "https://www.inaturalist.org/observations/42", "api_taxon": "<script>alert(1)</script>", "observation_id": "42", "photo_id": "123", "api_photo_license": "cc0", "api_attribution": "A & B"},
+            {"training_approved": "NO", "original_review_url": "https://static.inaturalist.org/photos/123/original.jpg", "source_url": "https://www.inaturalist.org/observations/42", "api_taxon": "<script>alert(1)</script>", "observation_id": "42", "photo_id": "123", "api_photo_license": "cc0", "api_attribution": "A & B"},
             {"training_approved": "YES", "api_taxon": "must not appear"},
         ]
         page = render(rows)
@@ -14,7 +14,7 @@ class ReviewGalleryTests(unittest.TestCase):
         self.assertEqual(page.count("<script>"), 1)
         self.assertNotIn("must not appear", page)
         self.assertIn("UNREVIEWED", page)
-        self.assertIn("https://static.inaturalist.org/photos/123/large.jpg", page)
+        self.assertIn("https://static.inaturalist.org/photos/123/original.jpg", page)
 
     def test_manual_review_export_never_approves_training(self):
         page = render([{"training_approved": "NO", "observation_id": "12", "photo_id": "34"}])
@@ -27,10 +27,16 @@ class ReviewGalleryTests(unittest.TestCase):
         self.assertIn("vespa-velutina-manual-review.csv", page)
 
     def test_rejects_external_image_and_source(self):
-        page = render([{"training_approved": "NO", "large_review_url": "https://evil.example/pic.jpg", "source_url": "javascript:alert(1)"}])
+        page = render([{"training_approved": "NO", "original_review_url": "https://evil.example/pic.jpg", "source_url": "javascript:alert(1)"}])
         self.assertNotIn("evil.example", page)
         self.assertNotIn("javascript:", page)
         self.assertIn("Image URL unavailable", page)
+
+    def test_rejects_thumbnail_even_on_trusted_inaturalist_host(self):
+        page = render([{"training_approved": "NO", "photo_id": "123",
+                        "original_review_url": "https://static.inaturalist.org/photos/123/square.jpg"}])
+        self.assertIn("Image URL unavailable", page)
+        self.assertNotIn("square.jpg", page)
 
 if __name__ == "__main__":
     unittest.main()
