@@ -37,6 +37,8 @@ class VisualReviewGalleryTests(unittest.TestCase):
             self.assertIn('option value="bumblebees"', result)
             self.assertIn('option value="wasps"', result)
             self.assertIn("items[i].dataset_group===filter", result)
+            self.assertIn("Asiatische Hornisse: \"+items.filter", result)
+            self.assertIn(" / 200", result)
             self.assertIn('"dataset_group": "asian_hornet"', result)
 
 
