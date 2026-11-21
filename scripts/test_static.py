@@ -59,9 +59,8 @@ assert re.search(r"\[[^]]+\]", "[MISSING OPERATOR DETAILS]")
 assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js sw.js manifest.webmanifest icon.svg _site/" in pages
 assert "cp wissen/wissenschaft-hornissen-bienen.html _site/wissen/" in pages
 assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
-import subprocess
-import sys
-subprocess.run([sys.executable, str(root/"scripts/audit_gallery_rights.py")], cwd=root, check=True)
+# Local original-image byte verification runs only after Pages stages the
+# artifact into _site/review; this source-only static test has no binary assets.
 print("Static PWA and research catalog checks passed; real-device and AI tests remain outstanding.")
 for asset in ("alert-rules.js","alert-ui.js"):
     assert f'./{asset}' in sw,asset
