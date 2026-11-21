@@ -4,6 +4,7 @@ Run from the repository root:
 
 ```sh
 python training/discover_inaturalist_candidates.py --target 1000 --max-pages 12
+python training/screen_inaturalist_image_quality.py --input training/inaturalist-review-queue.csv --output training/inaturalist-quality-screen.csv
 ```
 
 This uses the public iNaturalist observations API to find recent research-grade
