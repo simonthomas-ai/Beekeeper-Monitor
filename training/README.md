@@ -19,7 +19,11 @@ Der Vergleich von Ein-Stufen-YOLO und einer möglichen zweistufigen Detektor-/Cr
 ```sh
 python -m pip install -r training/requirements-training.txt
 python training/train.py --validate-only
-python training/train.py --epochs 60 --device 0 --batch 16 --workers 4 --seed 42
+
+# Erst nach Rechteprüfung von Trainer, Checkpoint und Daten sowie einer
+# bestätigten vollständigen Datensatzvalidierung:
+Get-FileHash .\models\yolo11n.pt -Algorithm SHA256
+python training/train.py --pretrained-model .\models\yolo11n.pt --pretrained-model-sha256 <64-stellige-kleingeschriebene-SHA256> --pretrained-model-source-url https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt --accept-agpl --epochs 60 --device 0 --batch 16 --workers 4 --seed 42
 ```
 
 Fehlen echte Bilder, passende Labeldateien oder stimmen deren gespeicherte SHA-256-Werte nicht, schlägt die Prüfung absichtlich fehl. Es werden weder erfundene Bilder noch Platzhaltergewichte, angebliche 99 % Erkennungsgenauigkeit oder fingierte Testberichte erzeugt.
