@@ -12,6 +12,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from inaturalist_media import original_image_url
+
 FIELDS = ["observation_id", "photo_id", "species_candidate", "license", "source_url",
           "api_photo_found", "api_photo_license", "api_attribution",
           "api_taxon", "api_quality_grade", "api_photo_url",
@@ -47,7 +49,11 @@ def verify(row, timeout=15):
         out["api_photo_found"] = "YES"
         out["api_photo_license"] = p.get("license_code") or ""
         out["api_attribution"] = p.get("attribution") or ""
-        out["api_photo_url"] = p.get("url") or ""
+        try:
+            out["api_photo_url"] = original_image_url(p.get("url") or "", photo)
+        except ValueError as exc:
+            out["error"] = "unsupported image URL: " + str(exc)
+            return out
         expected = {"CC0-1.0": "cc0", "CC-BY-VERSION-UNVERIFIED": "cc-by"}
         out["license_metadata_match"] = ("YES" if expected.get(row.get("license")) == str(p.get("license_code", "")).lower() else "NO")
     except (OSError, ValueError, KeyError, TypeError) as exc:
