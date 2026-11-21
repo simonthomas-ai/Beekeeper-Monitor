@@ -19,7 +19,7 @@ Die GitHub-Pages-URL ist die vorgesehene öffentliche Adresse, aber die Veröffe
 
 ## Originalbild-Deployment und Integritätsprüfung
 
-Die Originalbilddateien werden im CC0-Rechercheworkflow bytegenau geladen und in einem Manifest mit Photo-ID, Beobachtungs-ID, Quellen-URL, Creator, Lizenzmetadaten, Dateiformat, Abmessungen, Bytezahl und SHA-256 dokumentiert. Die Galerie verweist für diese Bilder auf relative lokale Pfade unter `review/images/velutina/`; bei fehlgeschlagenem Download gibt es für diese Kandidaten keinen stillen Remote-Fallback.
+Die Originalbilddateien werden im CC0-Rechercheworkflow bytegenau geladen und in einem Manifest mit Photo-ID, Beobachtungs-ID, Quellen-URL, iNaturalist-Beobachtername und -Login, separatem CC0-Attributionssatz, rohem Lizenzhinweis, Lizenzmetadaten, Dateiformat, Abmessungen, Bytezahl und SHA-256 dokumentiert. Der Beobachter wird aus dem Beobachtungsdatensatz übernommen und beim CC0-Einzelabgleich erneut anhand des Logins gebunden; der Text `no rights reserved` wird nicht als Fotografenname verwendet. Die Galerie verweist für diese Bilder auf relative lokale Pfade unter `review/images/velutina/`; bei fehlgeschlagenem Download gibt es für diese Kandidaten keinen stillen Remote-Fallback.
 
 Der Pages-Workflow lädt die zugehörige erfolgreiche Actions-Artefaktversion und führt denselben Audit gegen das fertig gestagte `_site` aus. Damit reicht nicht nur ein gültiger Hash im CSV: die tatsächlich publizierte Datei muss dieselbe Bytezahl und denselben SHA-256 besitzen, und beide Galerien müssen die Manifestdaten exakt widerspiegeln. Ein fehlender oder abgelaufener Artefaktnachweis sperrt die Veröffentlichung bei lokalen Bildreferenzen, statt eine fehlerhafte oder uneinheitliche Galerie auszuliefern.
 
