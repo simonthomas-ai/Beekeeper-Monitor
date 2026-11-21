@@ -1,11 +1,8 @@
 name: Deploy PWA to GitHub Pages
+# Public deployment intentionally disabled for private development.
+# Re-enable only after explicit approval and legal review.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
-  workflow_run:
-    workflows: ["Echte CC0-Bildquellen fuer KI pruefen"]
-    types: [completed]
 permissions:
   contents: read
   actions: read
@@ -16,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   deploy:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ false }} # Explicitly disabled: never publish from this workflow
     runs-on: ubuntu-latest
     environment:
       name: github-pages
