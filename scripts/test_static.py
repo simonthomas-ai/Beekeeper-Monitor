@@ -56,7 +56,7 @@ pages=(root/".github/workflows/pages.yml").read_text()
 assert "path: _site" in pages
 assert r"grep -Eq '\[[^]]+\]'" in pages
 assert re.search(r"\[[^]]+\]", "[MISSING OPERATOR DETAILS]")
-assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js hornet-onnx-decoder.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg _site/" in pages
+assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js hornet-onnx-decoder.js camera-onnx-runtime.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg _site/" in pages
 assert "cp wissen/wissenschaft-hornissen-bienen.html _site/wissen/" in pages
 assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
 # Local original-image byte verification runs only after Pages stages the
@@ -83,3 +83,7 @@ assert 'NICHT AKTIV' in media and 'modelSelect.addEventListener' in media
 assert (root/'hornet-onnx-decoder.js').is_file()
 assert 'src="./hornet-onnx-decoder.js"' in html
 assert './hornet-onnx-decoder.js' in sw
+
+assert (root/'camera-onnx-runtime.js').is_file()
+assert 'src="./camera-onnx-runtime.js"' in html
+assert './camera-onnx-runtime.js' in sw
