@@ -5,7 +5,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import prepare_hornet_visual_review as review
+try:
+    from training import prepare_hornet_visual_review as review
+except ImportError:
+    import prepare_hornet_visual_review as review
 
 
 class ReviewQueueTests(unittest.TestCase):
