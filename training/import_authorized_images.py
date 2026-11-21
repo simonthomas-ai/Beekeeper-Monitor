@@ -4,13 +4,15 @@ from __future__ import annotations
 import argparse, csv, hashlib, io, ipaddress, os, socket, urllib.error, urllib.parse, urllib.request
 from pathlib import Path
 
+from inaturalist_media import normalize_if_inaturalist
+
 LICENSE_URLS = {
     "CC0-1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
     "CC-BY-4.0": "https://creativecommons.org/licenses/by/4.0/",
 }
 ALLOWED = set(LICENSE_URLS)
 FIELDS = ["source_id", "source_url", "image_url", "creator", "license", "license_url", "attribution"]
-OUTPUT = FIELDS + ["image_path", "source_sha256", "sha256", "image_format", "exif_removed"]
+OUTPUT = FIELDS + ["requested_image_url", "image_path", "source_sha256", "sha256", "image_format", "width", "height", "exif_removed"]
 MAX_DOWNLOAD_BYTES = 10 * 1024 * 1024
 MAX_IMAGE_PIXELS = 30_000_000
 MIME_FORMATS = {"image/jpeg": ("JPEG", ".jpg"), "image/png": ("PNG", ".png"), "image/webp": ("WEBP", ".webp")}
@@ -83,7 +85,7 @@ def sanitize_image(data: bytes, content_type: str) -> tuple[bytes, str, str]:
         raise ValueError("image exceeds Pillow decompression safety limits") from None
     except (OSError, SyntaxError) as exc:
         raise ValueError("image content is corrupt or cannot be decoded") from exc
-    return sanitized, suffix, expected_format
+    return sanitized, suffix, expected_format, clean.width, clean.height
 
 
 def validate_rows(rows: list[dict]) -> list[dict]:
@@ -110,6 +112,11 @@ def validate_rows(rows: list[dict]) -> list[dict]:
             raise ValueError("license URL does not match declared license; manual review required")
         for key in ("source_url", "image_url", "license_url"):
             public_https(normalized[key])
+        requested_url = normalized["image_url"]
+        normalized["image_url"] = normalize_if_inaturalist(requested_url)
+        normalized["requested_image_url"] = requested_url
+        # Validate the exact URL that will actually be downloaded.
+        public_https(normalized["image_url"])
         prepared.append(normalized)
     return prepared
 
@@ -157,7 +164,7 @@ def import_candidates(input_path: str | Path, output_root: str | Path, *, limit:
     try:
         for row in prepared:
             source_bytes, mime = _download(opener, row["image_url"])
-            clean_bytes, suffix, image_format = sanitize_image(source_bytes, mime)
+            clean_bytes, suffix, image_format, width, height = sanitize_image(source_bytes, mime)
             source_digest = hashlib.sha256(source_bytes).hexdigest()
             digest = hashlib.sha256(clean_bytes).hexdigest()
             if digest in seen_content:
@@ -184,7 +191,8 @@ def import_candidates(input_path: str | Path, output_root: str | Path, *, limit:
             accepted.append({
                 **row, "image_path": "unreviewed/" + destination.name,
                 "source_sha256": source_digest, "sha256": digest,
-                "image_format": image_format, "exif_removed": "true",
+                "image_format": image_format, "width": width, "height": height,
+                "exif_removed": "true",
             })
         try:
             with manifest.open("x", newline="", encoding="utf-8") as stream:
