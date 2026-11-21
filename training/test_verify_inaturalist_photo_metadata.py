@@ -17,7 +17,7 @@ class FakeResponse:
         return False
 
     def read(self, limit=-1):
-        return self.payload[:limit]
+        return self.payload if limit is None or limit < 0 else self.payload[:limit]
 
 
 def observation(login="test-observer", name="Test Observer"):
