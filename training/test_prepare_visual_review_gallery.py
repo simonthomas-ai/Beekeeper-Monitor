@@ -26,7 +26,7 @@ class VisualReviewGalleryTests(unittest.TestCase):
                 writer = csv.DictWriter(stream, fieldnames=fields)
                 writer.writeheader()
                 writer.writerow(row)
-            gallery(source, output)
+            gallery(source, output, species="ALL")
             result = output.read_text(encoding="utf-8")
             self.assertIn("/photos/763034625/original.jpg", result)
             self.assertNotIn("/photos/763034625/square.jpg", result)
@@ -37,7 +37,7 @@ class VisualReviewGalleryTests(unittest.TestCase):
             self.assertIn('option value="bumblebees"', result)
             self.assertIn('option value="wasps"', result)
             self.assertIn("items[i].dataset_group===filter", result)
-            self.assertIn("Asiatische Hornisse: \"+items.filter", result)
+            self.assertIn("label+\": \"+items.filter", result)
             self.assertIn(" / 200", result)
             self.assertIn('"dataset_group": "asian_hornet"', result)
 
