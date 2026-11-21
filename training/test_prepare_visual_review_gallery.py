@@ -41,11 +41,48 @@ class VisualReviewGalleryTests(unittest.TestCase):
             self.assertIn('option value="bumblebees"', result)
             self.assertIn('option value="wasps"', result)
             self.assertIn("items[i].dataset_group===filter", result)
+            self.assertIn("iNaturalist-Beobachter / Attributionsbasis", result)
             self.assertIn("label+\": \"+items.filter", result)
             self.assertNotIn(" / 200", result)
             self.assertIn("Unveränderte Originaldatei öffnen", result)
             self.assertIn('"dataset_group": "asian_hornet"', result)
 
+
+    def test_untrusted_species_filter_is_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with self.assertRaisesRegex(ValueError, "Unsupported species filter"):
+                gallery(
+                    Path(folder) / "missing.csv",
+                    Path(folder) / "gallery.html",
+                    species="ALL</script><script>alert(1)</script>",
+                )
+
+    def test_external_creator_metadata_cannot_close_inline_script(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "in.csv"
+            output = Path(folder) / "gallery.html"
+            hostile = "</script><script>alert('xss')</script>"
+            fields = ["photo_id", "observation_id", "species_candidate", "image_url",
+                      "source_url", "license", "creator", "creator_login",
+                      "attribution", "license_notice"]
+            row = {
+                "photo_id": "763034625",
+                "observation_id": "414481366",
+                "species_candidate": "Vespa velutina",
+                "image_url": "https://static.inaturalist.org/photos/763034625/original.jpg",
+                "source_url": "https://www.inaturalist.org/observations/414481366",
+                "license": "CC0-1.0",
+                "creator": hostile,
+                "creator_login": "untrusted-login",
+                "attribution": hostile + ", no rights reserved (CC0)",
+                "license_notice": "no rights reserved",
+            }
+            self.write_rows(source, fields, [row])
+            gallery(source, output, species="ALL")
+            page = output.read_text(encoding="utf-8")
+            self.assertIn(r"\u003c/script>", page)
+            self.assertNotIn(hostile, page)
+            self.assertEqual(page.count("</script>"), 1)
 
     def test_quality_screen_rejects_small_images_and_shows_metrics(self):
         with tempfile.TemporaryDirectory() as folder:

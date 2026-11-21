@@ -24,11 +24,13 @@ class HornetLicenseAuditTests(unittest.TestCase):
             "observation_id": "123", "photo_id": "456",
             "species_candidate": "Vespa velutina", "license": "CC0-1.0",
             "source_url": "https://www.inaturalist.org/observations/123",
+            "creator": "Author", "creator_login": "author-login",
         }
         self.payload = {"results": [{
             "taxon": {"name": "Vespa velutina"}, "quality_grade": "research",
+            "user": {"login": "author-login", "name": "Author"},
             "photos": [{"id": 456, "license_code": "cc0",
-                        "attribution": "Author", "url": "https://static.inaturalist.org/photos/456/square.jpg"}],
+                        "attribution": "no rights reserved", "url": "https://static.inaturalist.org/photos/456/square.jpg"}],
         }]}
 
     def test_matching_cc0_is_only_metadata_not_approval(self):
@@ -36,6 +38,9 @@ class HornetLicenseAuditTests(unittest.TestCase):
                    return_value=_Response(self.payload)):
             result = verify(self.row)
         self.assertEqual(result["license_metadata_match"], "YES")
+        self.assertEqual(result["api_observer_login"], "author-login")
+        self.assertEqual(result["api_attribution"], "no rights reserved")
+        self.assertEqual(result["api_attribution_statement"], "Author, no rights reserved (CC0)")
         self.assertEqual(result["api_photo_url"], "https://static.inaturalist.org/photos/456/original.jpg")
         self.assertEqual(result["review_status"], "UNREVIEWED")
         self.assertNotIn("training_approved", result)

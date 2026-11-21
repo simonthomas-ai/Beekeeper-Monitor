@@ -277,11 +277,11 @@ def audit(root: Path) -> tuple[int, int]:
                     raise AuditError(f"{prefix}: unknown image-delivery mode")
                 if not isinstance(image_url, str):
                     raise AuditError(f"{prefix}: image URL missing")
-                parsed = urlsplit(image_url)
-                if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
-                    raise AuditError(f"{prefix}: remote image URL must use HTTPS")
-                if (parsed.hostname or "").lower() in IMAGE_HOSTS and not _is_original_image_url(image_url, photo_id):
-                    raise AuditError(f"{prefix}: iNaturalist image URL must reference the original derivative")
+                if not _is_original_image_url(image_url, photo_id):
+                    raise AuditError(
+                        f"{prefix}: remote image must use an allowlisted HTTPS iNaturalist original URL "
+                        "bound to this photo ID"
+                    )
 
     all_local_ids = set().union(*(set(items) for items in local_references.values())) if local_references else set()
     manifest_path = review_root / MANIFEST_RELATIVE_PATH.name

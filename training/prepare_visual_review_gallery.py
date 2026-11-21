@@ -15,7 +15,21 @@ except ModuleNotFoundError:
     from dataset_groups import SPECIES_TO_GROUP
     from inaturalist_media import normalize_if_inaturalist
 
+def _json_for_inline_script(value):
+    """Serialize JSON so untrusted metadata cannot terminate an HTML script element."""
+    return (
+        json.dumps(value, ensure_ascii=False)
+        .replace("&", "\\u0026")
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
+
+
 def gallery(source, output, species="Vespa velutina", images_manifest=None):
+    if species != "ALL" and species not in SPECIES_TO_GROUP:
+        raise ValueError("Unsupported species filter")
     with open(source, newline="", encoding="utf-8-sig") as f:
         rows = [r for r in csv.DictReader(f) if species == "ALL" or r.get("species_candidate") == species]
     local_assets = {}
@@ -87,7 +101,7 @@ def gallery(source, output, species="Vespa velutina", images_manifest=None):
         })
     if len({item["photo_id"] for item in items}) != len(items):
         raise ValueError("Duplicate photo IDs across species")
-    data = json.dumps(items, ensure_ascii=False).replace("<", "\\u003c")
+    data = _json_for_inline_script(items)
     title = html.escape(species)
     page = """<!doctype html><html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Beekeeper Monitor – mobile Bildprüfung</title>
@@ -148,7 +162,7 @@ function current(){const item=selected();return saved[item.photo_id]||{decision:
 function persist(v){saved[selected().photo_id]=v;try{localStorage.setItem(key,JSON.stringify(saved))}catch(e){$("state").textContent="Speichern nicht möglich – bitte JSON exportieren."}}
 $("photo").onload=()=>{const item=selected();const measured=item.image_width&&item.image_height?" · Vorabmessung: "+item.image_width+" × "+item.image_height+" px ("+item.image_megapixels+" MP)":" · keine Vorabmessung";const sharp=item.sharpness_score?" · Detailindikator: "+item.sharpness_score+" (nur Sortierung)":" ";const mode=item.image_delivery==="LOCAL_UNMODIFIED_ORIGINAL"?" · lokal gespeicherte Originaldatei (Bytes unverändert)":" · iNaturalist-Originalvariante";$("image-meta").textContent="Bildgröße: "+$("photo").naturalWidth+" × "+$("photo").naturalHeight+" Pixel"+mode+measured+sharp;};
 $("photo").onerror=()=>{$("image-meta").textContent="Bild konnte nicht geladen werden; bitte Originalquelle oder Bilddatei direkt öffnen."};
-function render(){if(!visible.length){$("counter").textContent="Keine Kandidaten erfüllen den aktuellen Bilddatei-Vorfilter."; $("image-meta").textContent="Für diese Gruppe wurden keine ausreichend großen und lesbaren Bilddateien gefunden. Bitte später erneut recherchieren oder andere Quellen nutzen."; $("photo").removeAttribute("src"); $("source").removeAttribute("href"); $("image-original").removeAttribute("href"); $("state").textContent="Keine Bewertungen oder Trainingsfreigaben vorhanden."; $("decision").disabled=true; $("prev").disabled=true; $("next").disabled=true; $("clear").disabled=true; $("overlay").replaceChildren(); updateProgress(); return;} $("decision").disabled=false; $("prev").disabled=false; $("next").disabled=false; $("clear").disabled=false; const item=selected(),v=current();$("counter").textContent=(index+1)+"/"+visible.length+" – "+item.species_candidate+" · "+item.dataset_group+" – Foto "+item.photo_id;updateProgress();$("image-meta").textContent="Bild wird geladen …";$("photo").src=item.image_url;$("source").href=item.source_url;$("image-original").href=item.image_url;$("image-provenance").textContent="Fotograf/Beobachter: "+(item.creator||"nicht verifiziert")+(item.creator_login?" (@"+item.creator_login+")":"")+" · "+(item.attribution||"Attributionsangabe fehlt")+" · Lizenz: "+(item.license||"unbekannt")+(item.original_sha256?" · SHA-256: "+item.original_sha256:"");$("decision").value=v.decision;$("state").textContent="Status: "+v.decision+" · Markierungen: "+v.boxes.length+" · KEINE Trainingsfreigabe";$("overlay").replaceChildren();for(const b of v.boxes){const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");rect.setAttribute("x",(b.x-b.width/2)*1000);rect.setAttribute("y",(b.y-b.height/2)*1000);rect.setAttribute("width",b.width*1000);rect.setAttribute("height",b.height*1000);$("overlay").append(rect)}}
+function render(){if(!visible.length){$("counter").textContent="Keine Kandidaten erfüllen den aktuellen Bilddatei-Vorfilter."; $("image-meta").textContent="Für diese Gruppe wurden keine ausreichend großen und lesbaren Bilddateien gefunden. Bitte später erneut recherchieren oder andere Quellen nutzen."; $("photo").removeAttribute("src"); $("source").removeAttribute("href"); $("image-original").removeAttribute("href"); $("state").textContent="Keine Bewertungen oder Trainingsfreigaben vorhanden."; $("decision").disabled=true; $("prev").disabled=true; $("next").disabled=true; $("clear").disabled=true; $("overlay").replaceChildren(); updateProgress(); return;} $("decision").disabled=false; $("prev").disabled=false; $("next").disabled=false; $("clear").disabled=false; const item=selected(),v=current();$("counter").textContent=(index+1)+"/"+visible.length+" – "+item.species_candidate+" · "+item.dataset_group+" – Foto "+item.photo_id;updateProgress();$("image-meta").textContent="Bild wird geladen …";$("photo").src=item.image_url;$("source").href=item.source_url;$("image-original").href=item.image_url;$("image-provenance").textContent="iNaturalist-Beobachter / Attributionsbasis: "+(item.creator||"nicht verifiziert")+(item.creator_login?" (@"+item.creator_login+")":"")+" · "+(item.attribution||"Attributionsangabe fehlt")+" · Lizenz: "+(item.license||"unbekannt")+(item.original_sha256?" · SHA-256: "+item.original_sha256:"");$("decision").value=v.decision;$("state").textContent="Status: "+v.decision+" · Markierungen: "+v.boxes.length+" · KEINE Trainingsfreigabe";$("overlay").replaceChildren();for(const b of v.boxes){const rect=document.createElementNS("http://www.w3.org/2000/svg","rect");rect.setAttribute("x",(b.x-b.width/2)*1000);rect.setAttribute("y",(b.y-b.height/2)*1000);rect.setAttribute("width",b.width*1000);rect.setAttribute("height",b.height*1000);$("overlay").append(rect)}}
 $("species-filter").onchange=refreshFilter;
 $("decision").onchange=()=>{const v=current();v.decision=$("decision").value;persist(v);render()};
 $("prev").onclick=()=>{index=(index-1+visible.length)%visible.length;render()};
@@ -242,7 +256,7 @@ $("restore").onchange=async()=>{
 };
 render();
 </script></html>"""
-    page = page.replace("__SPECIES__", title).replace("__SPECIES_JSON__", json.dumps(species)).replace("__DATA__", data).replace("__SLUG__", json.dumps(species.lower().replace(" ", "-")))
+    page = page.replace("__SPECIES__", title).replace("__SPECIES_JSON__", _json_for_inline_script(species)).replace("__DATA__", data).replace("__SLUG__", _json_for_inline_script(species.lower().replace(" ", "-")))
     dest = Path(output)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(page, encoding="utf-8")
