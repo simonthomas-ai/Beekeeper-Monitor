@@ -50,16 +50,21 @@ class TrainingImageValidationTests(unittest.TestCase):
             root = Path(tmp)
             training = root / "training"
             training.mkdir()
-            (training / "data.yaml").write_text(
-                "path: datasets/beekeeper\\n"
-                "train: images/train\\n"
-                "val: images/val\\n"
-                "test: images/test\\n"
-                "names:\\n  0: vespa_velutina\\n  1: vespa_crabro\\n"
-                "  2: other_vespidae\\n  3: apis_mellifera\\n"
-                "  4: bombus_spp\\n  5: syrphidae\\n  6: other_insect\\n",
-                encoding="utf-8",
-            )
+            data_yaml = "\\n".join([
+                "path: datasets/beekeeper",
+                "train: images/train",
+                "val: images/val",
+                "test: images/test",
+                "names:",
+                "  0: vespa_velutina",
+                "  1: vespa_crabro",
+                "  2: other_vespidae",
+                "  3: apis_mellifera",
+                "  4: bombus_spp",
+                "  5: syrphidae",
+                "  6: other_insect",
+            ]) + "\\n"
+            (training / "data.yaml").write_text(data_yaml, encoding="utf-8")
             actual = root / "actual-dataset"
             actual.mkdir()
             target = root / "datasets" / "beekeeper"
