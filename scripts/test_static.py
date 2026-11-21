@@ -79,3 +79,7 @@ assert 'id="camera-model"' in html
 assert all('value="'+key+'"' in html for key in ('none','hornet3000','varroa-board','varroa-bee'))
 media=(root/'live-media.js').read_text()
 assert 'NICHT AKTIV' in media and 'modelSelect.addEventListener' in media
+
+assert (root/'hornet-onnx-decoder.js').is_file()
+assert 'src="./hornet-onnx-decoder.js"' in html
+assert './hornet-onnx-decoder.js' in sw
