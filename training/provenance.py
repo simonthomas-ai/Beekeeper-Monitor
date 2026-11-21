@@ -59,7 +59,7 @@ def _digest_file(path: Path) -> str:
             for chunk in iter(lambda: handle.read(1024 * 1024), b""):
                 digest.update(chunk)
     except OSError as exc:
-        raise DatasetProvenanceError("cannot read dataset image for SHA-256 verification") from exc
+        raise DatasetProvenanceError("cannot read dataset file for SHA-256 verification") from exc
     return digest.hexdigest()
 
 
