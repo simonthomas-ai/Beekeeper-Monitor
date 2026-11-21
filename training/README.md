@@ -12,6 +12,7 @@ Der Vergleich von Ein-Stufen-YOLO und einer möglichen zweistufigen Detektor-/Cr
 - Getrennte Trainings-, Validierungs- und Testdaten, möglichst nach Bienenstand, Datum und Kamera getrennt, um Datenüberschneidungen zu vermeiden.
 - Jede Quelldatei wird vor dem Training auf tatsächliches JPEG-/PNG-/WebP-Format, vollständige Dekodierbarkeit, Einzelbildinhalt und sichere Bildabmessungen geprüft.
 - iNaturalist-Bildquellen werden für die Sichtprüfung auf die größte gehostete Original-Variante normalisiert (maximal 2048 px Kantenlänge; nicht zwingend das Kamera-Original). Die tatsächlichen Pixelmaße werden in der Prüfoberfläche angezeigt und beim autorisierten Import protokolliert. Quadratische 75-px-Thumbnails werden nicht als Trainingsbilder akzeptiert.
+- Die iNaturalist-Kandidatenaufnahme strebt 1.000 unterschiedliche Beobachtungen an: jeweils 200 für Asiatische Hornisse, Europäische Hornisse, Honigbiene, Hummeln und Wespen. Bei Hummeln und Wespen bleiben beide wissenschaftlichen Taxa getrennt; die Gruppen-Zuordnung dient ausschließlich der balancierten Stichprobenplanung. Nicht erreichbare Quoten werden als Datenlücke ausgewiesen.
 - Der Trainingslauf protokolliert feste Seed-, Determinismus-, Batch-, Worker- und Early-Stopping-Einstellungen zur Reproduzierbarkeit.
 - Genügend Beispiele je Klasse zur Leistungsbewertung. Das Skript prüft lediglich eine minimale, nicht leere Datenabdeckung – **keine wissenschaftlich ausreichende Datenmenge**.
 - Ausreichende Rechenleistung. Kostenlose GitHub-Actions-Runner sind **kein verlässlicher Ersatz für GPU-Training**.
