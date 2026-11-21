@@ -24,7 +24,9 @@ jobs:
         run: python3 -m scripts.verify_hornet3000_onnx --download --inspect-graph --synthetic-inference
       - name: Echtes CC0-Foto mit frischer Lizenzkontrolle isoliert pruefen
         if: inputs.real_cc0_photo == true
-        run: python3 -m scripts.verify_hornet3000_onnx --download --real-cc0
+        run: |
+          python3 -m pip install --only-binary=:all: 'Pillow>=10,<13'
+          python3 -m scripts.verify_hornet3000_onnx --download --real-cc0
       - name: Freigabe bleibt gesperrt
         run: |
           echo 'Nur isolierte CPU-Inferenz auf synthetischem Nullbild. Keine Lizenz-, Genauigkeits-, Kamera- oder Feldfreigabe.' >> "$GITHUB_STEP_SUMMARY"
