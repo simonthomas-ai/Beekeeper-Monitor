@@ -72,6 +72,16 @@ test('other bridge species and misleading prefixes never trigger velutina warnin
   }
 });
 
+test('duplicate IDs within one API batch trigger only one warning even without cooldown', () => {
+  const candidate = row('a', {}, { label: 'unverified_candidate:vespa_velutina' });
+  const other = row('b');
+  const out = rules.selectAlerts(
+    [candidate, candidate, other, candidate, other],
+    on({ cooldownSeconds: 0 }), new Set(), NOW
+  );
+  assert.deepEqual(out.alerts.map((alert) => alert.id), [hex('a'), hex('b')]);
+});
+
 test('already seen, stale, future and malformed events are ignored', () => {
   const rows = [
     row('a'),
