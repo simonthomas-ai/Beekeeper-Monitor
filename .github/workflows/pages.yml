@@ -72,6 +72,45 @@ jobs:
             exit 1
           fi
           touch _site/.nojekyll
+      - name: Download unchanged original Vespa velutina images from CC0 discovery run
+        if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' }}
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+        with:
+          name: original-velutina-images
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+          path: _site/review
+      - name: Verify original-image bytes and gallery links before publishing
+        if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' }}
+        run: |
+          python - <<'PY'
+          import csv
+          import hashlib
+          from pathlib import Path
+          root = Path("_site/review")
+          manifest = root / "velutina-original-images-manifest.csv"
+          if not manifest.is_file():
+              raise SystemExit("Original image manifest missing; refusing Pages publication")
+          with manifest.open(newline="", encoding="utf-8") as stream:
+              rows = list(csv.DictReader(stream))
+          if not rows:
+              raise SystemExit("Original image manifest is empty; refusing Pages publication")
+          page = (root / "velutina.html").read_text(encoding="utf-8")
+          for row in rows:
+              relative = Path(row["local_image_path"])
+              if relative.is_absolute() or ".." in relative.parts:
+                  raise SystemExit("Unsafe local image path in manifest")
+              image = root / relative
+              if not image.is_file():
+                  raise SystemExit(f"Original image missing: {relative}")
+              digest = hashlib.sha256(image.read_bytes()).hexdigest()
+              if digest != row["sha256"]:
+                  raise SystemExit(f"Original image bytes changed: {relative}")
+              if row["local_image_path"] not in page:
+                  raise SystemExit(f"Gallery does not reference original image: {relative}")
+          print(f"Verified {len(rows)} unchanged original CC0 image files by SHA-256.")
+          PY
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
