@@ -1,9 +1,7 @@
 name: Project quality snapshot
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  # Der Gesamttest prueft Push und PR; diesen erweiterten Audit
+  # gezielt manuell oder woechentlich ausfuehren, ohne doppelte CI.
   workflow_dispatch:
   schedule:
     - cron: '11 9 * * 1'
