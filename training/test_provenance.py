@@ -157,6 +157,36 @@ class ProvenanceTests(unittest.TestCase):
                 validate_provenance(root)
 
 
+    def test_rejects_dataset_root_symlink(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            actual = parent / "actual-dataset"
+            actual.mkdir()
+            self._dataset(actual)
+            alias = parent / "dataset-alias"
+            try:
+                alias.symlink_to(actual, target_is_directory=True)
+            except (OSError, NotImplementedError) as exc:
+                self.skipTest(f"symbolic links are unavailable: {exc}")
+            with self.assertRaisesRegex(DatasetProvenanceError, "dataset root path must not contain symbolic links"):
+                validate_provenance(alias)
+
+    def test_rejects_symlinked_parent_of_dataset_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            parent = Path(tmp)
+            actual_parent = parent / "real-parent"
+            actual_parent.mkdir()
+            actual = actual_parent / "dataset"
+            actual.mkdir()
+            self._dataset(actual)
+            alias_parent = parent / "alias-parent"
+            try:
+                alias_parent.symlink_to(actual_parent, target_is_directory=True)
+            except (OSError, NotImplementedError) as exc:
+                self.skipTest(f"symbolic links are unavailable: {exc}")
+            with self.assertRaisesRegex(DatasetProvenanceError, "dataset root path must not contain symbolic links"):
+                validate_provenance(alias_parent / "dataset")
+
     def test_rejects_symlinked_image_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             root, rows = self._dataset(tmp)
