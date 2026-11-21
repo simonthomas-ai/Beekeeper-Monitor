@@ -136,7 +136,11 @@ class DownloadOriginalTests(unittest.TestCase):
                 "photo_id": "42", "observation_id": "99",
                 "source_url": candidate["source_url"], "api_photo_found": "YES",
                 "license_metadata_match": "YES", "api_photo_license": "cc0",
-                "api_taxon": "Vespa velutina", "api_quality_grade": "research", "error": "",
+                "api_taxon": "Vespa velutina", "api_quality_grade": "research",
+                "api_observer_name": "Test photographer", "api_observer_login": "test-photographer",
+                "api_attribution": "no rights reserved",
+                "api_attribution_statement": "Test photographer, no rights reserved (CC0)",
+                "error": "",
             }
             input_csv, verification_csv = root / "q.csv", root / "v.csv"
             self.write_csv(input_csv, list(candidate), [candidate])
