@@ -7,7 +7,10 @@ for availability, content, identity or copyright. No training approvals.
 import argparse
 import csv
 from pathlib import Path
-from inaturalist_media import original_image_url
+try:
+    from training.inaturalist_media import original_image_url
+except ModuleNotFoundError:
+    from inaturalist_media import original_image_url
 
 FIELDS = ["observation_id", "photo_id", "api_taxon", "api_quality_grade",
           "api_photo_license", "api_attribution", "source_url", "api_photo_url",
