@@ -16,14 +16,20 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     container:
-      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Install deterministic dependencies and audit npm advisories
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm audit --audit-level=high
+      - name: Validate immutable GitHub Actions and container pins
+        run: |
+          python3 -m unittest scripts.test_audit_workflow_action_pins -v
+          python3 scripts/audit_workflow_action_pins.py
       - name: Validate static app
         id: static
         continue-on-error: true
