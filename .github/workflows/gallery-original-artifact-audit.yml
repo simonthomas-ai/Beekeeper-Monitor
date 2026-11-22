@@ -9,6 +9,10 @@ on:
       - '.github/workflows/ki-cc0-quellen.yml'
       - 'scripts/audit_gallery_rights.py'
       - 'training/test_audit_gallery_rights.py'
+      - 'scripts/verify_mobile_original_stager.py'
+      - 'scripts/test_verify_mobile_original_stager.py'
+      - 'training/stage_mobile_reviews.py'
+      - 'training/test_stage_mobile_reviews.py'
       - 'review/*.html'
   push:
     branches: [main]
@@ -73,6 +77,10 @@ jobs:
           echo "Manifest rows: $(($(wc -l < _gallery_audit/review/velutina-original-images-manifest.csv)-1))"
       - name: Verify every original byte, SHA-256, manifest and both gallery references
         run: python3 scripts/audit_gallery_rights.py --root _gallery_audit
+      - name: Test mobile review staging against all real local original files
+        run: |
+          python3 -m unittest training.test_stage_mobile_reviews scripts.test_verify_mobile_original_stager -v
+          python3 scripts/verify_mobile_original_stager.py --gallery review/velutina.html --asset-root _gallery_audit/review --expected-count 94
       - name: Record artifact identity and audit result
         if: always()
         env:
