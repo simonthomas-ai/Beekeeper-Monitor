@@ -63,7 +63,7 @@ jobs:
                   "python", "training/prepare_gbif_review_gallery.py",
                   "--input", "training/gbif-media-review-queue.csv",
                   "--output", "training/gbif-media-review-gallery.html",
-              ], check=True)
+              ], check=True, stdout=open("training/gbif-media-review-gallery-summary.json", "w", encoding="utf-8"))
           else:
               print("No GBIF metadata candidates; mobile review gallery not created.")
           PY
@@ -102,8 +102,19 @@ jobs:
                       f"occurrence licences: {json.dumps(stats.get('occurrence_license_values', {}), ensure_ascii=False)}; "
                       f"media types: {json.dumps(stats.get('media_type_values', {}), ensure_ascii=False)}"
                   )
+          gallery_summary_path = Path("training/gbif-media-review-gallery-summary.json")
+          if gallery_summary_path.is_file():
+              gallery_summary = json.loads(gallery_summary_path.read_text(encoding="utf-8"))
+              lines.extend([
+                  "",
+                  "### Mobile human-review gallery",
+                  f"- GBIF records: **{gallery_summary.get('records', 0)}**",
+                  f"- Original URLs embedded from allowlisted iNaturalist hosts: **{gallery_summary.get('inline_originals', 0)}**",
+                  f"- External or unverified hosts not auto-embedded: **{gallery_summary.get('external_or_unverified_hosts', 0)}**",
+                  "- Image bytes embedded in gallery/artifact: **0**",
+                  "- Review annotations or approvals created: **0**",
+              ])
           lines.extend([
-
               "- Model training performed: **No**",
               "- Candidate rights and image identification: **Not yet reviewed**",
           ])
@@ -119,5 +130,6 @@ jobs:
             training/gbif-media-review-queue.csv
             training/gbif-media-discovery-status.json
             training/gbif-media-review-gallery.html
+            training/gbif-media-review-gallery-summary.json
           if-no-files-found: ignore
           retention-days: 14
