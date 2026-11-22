@@ -159,6 +159,10 @@ jobs:
           WEBKIT_STATUS: ${{ steps.webkit.outcome }}
           IPHONE_STATUS: ${{ steps.iphone.outcome }}
           SITE_STATUS: ${{ steps.site.outcome }}
+          MODEL_STATUS: ${{ steps.model.outcome }}
+          IMPORT_STATUS: ${{ steps.importtests.outcome }}
+          TRAINING_STATUS: ${{ steps.training.outcome }}
+          ANNOTATIONS_STATUS: ${{ steps.annotations.outcome }}
         run: python3 scripts/release_gate_report.py
       - name: Browser-Testartefakte
         if: always()
