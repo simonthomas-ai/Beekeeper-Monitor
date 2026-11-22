@@ -126,7 +126,7 @@ class GbifReviewImportTests(unittest.TestCase):
 
     def test_rejects_image_url_or_host_policy_tampering(self):
         payload = self.export()
-        payload["records"][0]["inline_allowed"] = True
+        payload["records"][0]["inline_allowed"] = False
         with self.assertRaisesRegex(ValueError, "inline_allowed differs"):
             self.validate(payload)
 
