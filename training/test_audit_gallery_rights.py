@@ -96,7 +96,7 @@ class GalleryRightsAuditTests(unittest.TestCase):
         path = self.review / "velutina-original-images-manifest.csv"
         fields = list(self.asset)
         fields[-1] = fields[0]
-        path.write_text(",".join(fields) + "\\n", encoding="utf-8")
+        path.write_text(",".join(fields) + "\n", encoding="utf-8")
         with self.assertRaisesRegex(AuditError, "duplicate column names"):
             audit(self.root)
 
