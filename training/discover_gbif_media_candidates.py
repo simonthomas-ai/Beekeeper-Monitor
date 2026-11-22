@@ -169,8 +169,11 @@ def discover(target=1000, max_pages=3, limit=100, pause=1.0, fetch=fetch_json):
             for page in range(max_pages):
                 if counts[species] >= quota or len(rows) >= target:
                     break
+                # GBIF's public Occurrence API uses camelCase parameter names.
+                # Unknown snake_case names are not equivalent and may yield an
+                # unfiltered result set that the exact species guard then rejects.
                 query = urllib.parse.urlencode({
-                    "taxon_key": taxon_key, "media_type": "StillImage",
+                    "taxonKey": taxon_key, "mediaType": "StillImage",
                     "limit": limit, "offset": page * limit,
                 })
                 payload = fetch(BASE + "/occurrence/search?" + query)
@@ -197,7 +200,7 @@ def discover(target=1000, max_pages=3, limit=100, pause=1.0, fetch=fetch_json):
                     time.sleep(pause)
         except Exception as exc:
             errors.append("%s: %s" % (species, type(exc).__name__))
-    status = "complete" if not errors else ("partial" if rows else "unavailable")
+    status = "complete" if rows and not errors else ("empty" if not rows and not errors else ("partial" if rows else "unavailable"))
     return rows, {"status": status, "requested": target, "found": len(rows),
                   "counts_by_species": counts, "errors": errors,
                   "media_downloaded": False, "training_performed": False}
