@@ -36,10 +36,20 @@ def image_bytes(size=(1200, 900), color=(120, 30, 200)):
 class ImageQualityScreenTests(unittest.TestCase):
     def row(self, photo_id="42", url=None):
         return {
+            "source_id": f"inaturalist-photo-{photo_id}",
+            "source_url": "https://www.inaturalist.org/observations/99",
             "photo_id": photo_id,
             "observation_id": "99",
             "species_candidate": "Vespa velutina",
+            "dataset_group": "asian_hornet",
             "image_url": url or f"https://static.inaturalist.org/photos/{photo_id}/square.jpg",
+            "creator": "Test Observer",
+            "creator_login": "test-observer",
+            "license": "CC0-1.0",
+            "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "license_notice": "no rights reserved",
+            "attribution": "Test Observer, no rights reserved (CC0)",
+            "review_status": "UNREVIEWED",
         }
 
     def test_original_is_downloaded_and_dimensions_are_recorded(self):
@@ -74,6 +84,25 @@ class ImageQualityScreenTests(unittest.TestCase):
             result = screen.inspect_candidate(self.row())
         self.assertEqual(result["image_quality_status"], "REJECT_LOW_RESOLUTION")
         self.assertEqual(result["quality_rank"], "")
+
+    def test_unverified_cc_by_license_fails_closed_without_network(self):
+        row = self.row()
+        row["license"] = "CC-BY-VERSION-UNVERIFIED"
+        row["license_url"] = ""
+        with patch.object(screen.urllib.request, "urlopen") as mocked:
+            result = screen.inspect_candidate(row)
+        mocked.assert_not_called()
+        self.assertEqual(result["image_quality_status"], "UNAVAILABLE")
+        self.assertIn("version-unverified", result["quality_reason"])
+
+    def test_missing_creator_provenance_fails_closed_without_network(self):
+        row = self.row()
+        row["creator_login"] = ""
+        with patch.object(screen.urllib.request, "urlopen") as mocked:
+            result = screen.inspect_candidate(row)
+        mocked.assert_not_called()
+        self.assertEqual(result["image_quality_status"], "UNAVAILABLE")
+        self.assertIn("rights provenance", result["quality_reason"])
 
     def test_bad_host_or_photo_id_fails_closed_without_network(self):
         row = self.row(url="https://example.org/photos/42/original.jpg")
