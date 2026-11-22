@@ -1,6 +1,6 @@
 # VespaGuard: zwei Repositories, ein System
 
-Stand: 20.11.2026. Dies ist eine **Integrationslandkarte**, keine Behauptung einer vollständig betriebsbereiten Hornissenerkennung.
+Stand: 22.11.2026. Geprüfter BeeKeeper3000-Partnerstand für den Cross-Repository-Workflow: `f0d6aa150725ae33c2ad06c726289751c3c0a880` (nach Quality-Gates auf `main` erfolgreich). Änderungen am Partnerstand werden bewusst per Workflow-Änderung übernommen. Dies ist eine **Integrationslandkarte**, keine Behauptung einer vollständig betriebsbereiten Hornissenerkennung.
 
 ## Kanonische Rollen
 
@@ -31,6 +31,8 @@ Die Bridge überträgt nur minimierte Ereignismetadaten; keine Bild-/Audio-Rohda
 - Vor jeder Veröffentlichung eines gemeinsamen Pakets müssen die Urheber-/Lizenzrechte der betroffenen Komponenten, Daten und Modellgewichte separat geklärt werden. Fehlende Root-Lizenzen sind keine Erlaubnis zur beliebigen Weiterverbreitung.
 
 ## Einheitliche technische Freigabe
+
+- Der BeeKeeper3000-Hauptzweig enthält zusätzlich den gemeinsamen Adapter-Lifecycle mit Pflichtprüfungen für Discovery, Fähigkeiten, Berechtigungen, begrenzte Aufrufe, sauberes Stoppen und Wiederverbindung. PR [#99](https://github.com/simonthomas-ai/BeeKeeper3000/pull/99) ergänzt die fail-closed Sperre für sensible camelCase-/Trennzeichen-Aliase (z. B. `apiKey`, `privateKey`, `imageUrl`, `gpsCoordinates`, `streamUrl`) und ist in den Hauptzweig übernommen. Dies stärkt die Metadaten-Grenze, ersetzt aber keine reale Datenschutz- oder Feldabnahme.
 
 1. Beekeeper-Monitor: Ein-Klick-Gesamttest, Browser/WebKit, lokale Integration und GitHub-Pages-Deployment prüfen.
 2. BeeKeeper3000: Quality Gates, CodeQL, Supply-Chain/SBOM und Stations-/Bridge-Tests prüfen.
