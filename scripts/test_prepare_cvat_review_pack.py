@@ -5,6 +5,7 @@ import json
 import tempfile
 import unittest
 import zipfile
+from unittest.mock import patch
 from pathlib import Path
 
 from training.class_schema import CLASS_NAMES
@@ -102,10 +103,31 @@ class CvatReviewPackTests(unittest.TestCase):
             root = Path(tmp) / "artifact"
             root.mkdir()
             queue, image, _, _ = make_verified_queue(root)
-            image.write_bytes(b"tampered-after-queue-staging")
-            with self.assertRaisesRegex(ValueError, "byte count changed|SHA-256 changed"):
-                build_cvat_review_pack(queue, root, Path(tmp) / "pack")
+            import scripts.prepare_cvat_review_pack as module
+            real_stage = module.stage
+
+            def stage_then_tamper(payload, *, asset_root):
+                verified = real_stage(payload, asset_root=asset_root)
+                image.write_bytes(b"tampered-after-queue-staging")
+                return verified
+
+            with patch("scripts.prepare_cvat_review_pack.stage", side_effect=stage_then_tamper):
+                with self.assertRaisesRegex(ValueError, "byte count changed|SHA-256 changed"):
+                    build_cvat_review_pack(queue, root, Path(tmp) / "pack")
             self.assertFalse((Path(tmp) / "pack").exists())
+
+    def test_resolves_symlinked_output_parent_before_containment_check(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "artifact"
+            root.mkdir()
+            queue, _, _, _ = make_verified_queue(root)
+            link = Path(tmp) / "artifact-link"
+            try:
+                link.symlink_to(root, target_is_directory=True)
+            except (OSError, NotImplementedError) as exc:
+                self.skipTest(f"directory symlinks unavailable: {exc}")
+            with self.assertRaisesRegex(ValueError, "outside the original-image"):
+                build_cvat_review_pack(queue, root, link / "pack")
 
     def test_refuses_output_inside_source_asset_root(self):
         with tempfile.TemporaryDirectory() as tmp:
