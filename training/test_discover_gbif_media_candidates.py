@@ -45,7 +45,7 @@ class GBIFMediaCandidateTests(unittest.TestCase):
     def test_cc_by_requires_attribution_identity(self):
         media = {"type":"StillImage", "identifier":"https://images.example/3.jpg",
                  "license":"CC BY 4.0"}
-        occurrence = {"key": 4, "speciesKey": 456, "species": "Apis mellifera"}
+        occurrence = {"key": 4, "speciesKey": 456, "species": "Apis mellifera", "license": "CC0_1_0"}
         self.assertIsNone(media_candidate(media, occurrence, "Apis mellifera", expected_species_key=456))
 
     def test_exact_species_match_required(self):
