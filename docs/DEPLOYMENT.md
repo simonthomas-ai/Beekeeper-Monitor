@@ -17,6 +17,12 @@ Die GitHub-Pages-URL ist die vorgesehene öffentliche Adresse, aber die Veröffe
 - `.github/workflows/sources.yml` prüft wöchentlich den Katalog der Forschungsquellen.
 - `.github/workflows/training-data.yml` schlägt absichtlich fehl, solange echte beschriftete Trainingsbilder fehlen.
 
+## Unveränderliche CI-Container und Action-Pins
+
+Die Browser- und Gesamttests verwenden `@playwright/test` 1.65.1 zusammen mit dem passenden Microsoft-Playwright-Container. Der OCI-Image-Index für `mcr.microsoft.com/playwright:v1.65.1-noble` ist zusätzlich mit dem geprüften Registry-Digest `sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579` fixiert. Dadurch wird nicht nur der Versionsname, sondern genau der registrierte Container-Inhalt verwendet. Quelle: [Microsoft Artifact Registry – Playwright-Tags](https://mcr.microsoft.com/en-us/product/playwright/tags).
+
+Der verpflichtende Workflow-Audit `scripts/audit_workflow_action_pins.py` prüft sowohl externe `uses:`-Referenzen auf vollständige 40-stellige Commit-SHAs als auch Workflow-`image:`-Referenzen auf einen SHA-256-OCI-Digest. Lokale Actions sind zulässig; Docker-Actions müssen ebenfalls Digest-gepinnt sein. Neue Browser-/Build-Container und Dependabot-Änderungen müssen diesen Audit bestehen, bevor sie übernommen werden.
+
 ## Originalbild-Deployment und Integritätsprüfung
 
 Die Originalbilddateien werden im CC0-Rechercheworkflow bytegenau geladen und in einem Manifest mit Photo-ID, Beobachtungs-ID, Quellen-URL, iNaturalist-Beobachtername und -Login, separatem CC0-Attributionssatz, rohem Lizenzhinweis, Lizenzmetadaten, Dateiformat, Abmessungen, Bytezahl und SHA-256 dokumentiert. Der Beobachter wird aus dem Beobachtungsdatensatz übernommen und beim CC0-Einzelabgleich erneut anhand des Logins gebunden; der Text `no rights reserved` wird nicht als Fotografenname verwendet. Die Galerie verweist für diese Bilder auf relative lokale Pfade unter `review/images/velutina/`; bei fehlgeschlagenem Download gibt es für diese Kandidaten keinen stillen Remote-Fallback.
