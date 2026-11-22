@@ -173,13 +173,9 @@ def _read_manifest(review_root: Path) -> dict[str, dict[str, str]]:
     if not manifest_path.is_file() or manifest_path.is_symlink():
         raise AuditError(f"local original-image manifest missing or unsafe: {manifest_path}")
 
-    try:
-        with manifest_path.open("rb") as stream:
-            manifest_bytes = stream.read(MAX_MANIFEST_BYTES + 1)
-    except OSError as exc:
-        raise AuditError(f"cannot read local original-image manifest: {exc}") from exc
-    if len(manifest_bytes) > MAX_MANIFEST_BYTES:
-        raise AuditError(f"manifest exceeds the {MAX_MANIFEST_BYTES}-byte safety limit")
+    manifest_bytes = _read_bounded_regular_file(
+        review_root, PurePosixPath(manifest_path.name), MAX_MANIFEST_BYTES, "manifest"
+    )
     try:
         manifest_text = manifest_bytes.decode("utf-8-sig")
     except UnicodeDecodeError as exc:
@@ -288,6 +284,30 @@ def _open_local_asset(review_root: Path, relative: PurePosixPath) -> int:
     return os.open(resolved_file, os.O_RDONLY | getattr(os, "O_BINARY", 0) | nofollow)
 
 
+def _read_bounded_regular_file(root: Path, relative: PurePosixPath,
+                               max_bytes: int, description: str) -> bytes:
+    try:
+        descriptor = _open_local_asset(root, relative)
+    except OSError as exc:
+        if exc.errno == errno.ELOOP:
+            raise AuditError(f"symbolic link is not allowed for {description}: {relative.as_posix()}") from exc
+        raise AuditError(f"cannot safely open {description}: {relative.as_posix()}: {exc}") from exc
+
+    try:
+        with os.fdopen(descriptor, "rb") as stream:
+            metadata = os.fstat(stream.fileno())
+            if not stat.S_ISREG(metadata.st_mode):
+                raise AuditError(f"{description} is not a regular file: {relative.as_posix()}")
+            if metadata.st_size > max_bytes:
+                raise AuditError(f"{description} exceeds the {max_bytes}-byte safety limit")
+            payload = stream.read(max_bytes + 1)
+    except OSError as exc:
+        raise AuditError(f"cannot read {description}: {relative.as_posix()}: {exc}") from exc
+    if len(payload) > max_bytes:
+        raise AuditError(f"{description} exceeds the {max_bytes}-byte safety limit")
+    return payload
+
+
 def _resolve_verified_asset(review_root: Path, row: dict[str, str]) -> Path:
     photo_id = str(row["photo_id"])
     relative = _safe_local_path(row.get("local_image_path"), photo_id, row.get("image_format", "").upper())
@@ -317,13 +337,9 @@ def _resolve_verified_asset(review_root: Path, row: dict[str, str]) -> Path:
 
 
 def _extract_items(page_path: Path) -> list[dict[str, object]]:
-    try:
-        with page_path.open("rb") as stream:
-            payload = stream.read(MAX_GALLERY_BYTES + 1)
-    except OSError as exc:
-        raise AuditError(f"cannot read gallery: {page_path}: {exc}") from exc
-    if len(payload) > MAX_GALLERY_BYTES:
-        raise AuditError(f"{page_path}: gallery exceeds the {MAX_GALLERY_BYTES}-byte safety limit")
+    payload = _read_bounded_regular_file(
+        page_path.parent, PurePosixPath(page_path.name), MAX_GALLERY_BYTES, f"gallery {page_path}"
+    )
     try:
         content = payload.decode("utf-8")
     except UnicodeDecodeError as exc:
