@@ -26,6 +26,33 @@ Status: internal preparation only. This document does not approve any image or m
 
 These tools do not supply the dataset. The source image's own license, the uploader's rights, privacy restrictions and attribution requirements remain applicable regardless of the tool used.
 
+## Mobile review export → local expert queue
+
+The mobile gallery and the seven-class training intake are deliberately separate. A gallery export is an **unverified visual-review record**, not a YOLO annotation file: its rectangles have no per-object class IDs, and a `LIKELY` decision does not confirm species, image rights or bounding-box correctness.
+
+For the 94 local Velutina originals, the review export uses relative paths such as `images/velutina/622528099.jpg`. The staging tool accepts those local paths only when the original-image artifact is separately extracted and its manifest and bytes are available.
+
+1. Export the review JSON from the mobile gallery. Keep it and the downloaded image artifact on a private local disk; do not commit review exports or image bytes.
+2. Download the successful `original-velutina-images` Actions artifact and extract it into a private directory. That directory must directly contain `velutina-original-images-manifest.csv` and `images/velutina/`.
+3. Stage the JSON without granting approval:
+
+~~~sh
+python training/stage_mobile_reviews.py /secure/review-export.json \
+  --asset-root /secure/original-velutina-artifact \
+  --output /secure/expert-queue.json
+~~~
+
+The stager checks each local path against the photo ID and manifest row, requires CC0-1.0 and the expected source metadata, rejects symlinks/path traversal, and recomputes the actual file byte count and SHA-256. It rejects missing artifacts, altered files and mismatched mobile-export hashes. The output remains `training_eligible: false`; it records no expert signoff and creates no training labels.
+
+4. A qualified reviewer must inspect the actual original pixels and verify species, per-media rights, attribution, image suitability and every proposed box. Use CVAT Community for the actual class-labelled bounding boxes and independent annotation QA. The simple mobile rectangles are suggestions only; they must not be imported directly as class-labelled YOLO ground truth.
+5. Only after review, export CVAT annotations to the expected YOLO structure, create the per-image image/label SHA-256 provenance records, assign observation/photographer/site groups to one split each, and run the provenance and training validators. Keep the source-rights evidence and reviewer signoff under controlled access.
+
+The stager's regression tests include valid local manifest-backed files, missing asset roots, changed bytes, a mobile SHA mismatch, path mismatch, symlink rejection and the non-approval invariant:
+
+~~~sh
+python -m unittest training.test_stage_mobile_reviews -v
+~~~
+
 ## Scope and class policy
 
 The camera-training baseline is a **seven-class insect detector** aimed at the Asian hornet field workflow:
