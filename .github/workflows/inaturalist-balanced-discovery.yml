@@ -54,7 +54,8 @@ jobs:
           python-version: '3.12'
 
       - name: Install Pillow for in-memory image validation tests
-        run: python3 -m pip install --disable-pip-version-check --only-binary=:all: 'Pillow>=10,<13'
+        run: |
+          python3 -m pip install --disable-pip-version-check --only-binary=:all: 'Pillow>=10,<13'
 
       - name: Offline candidate, licence and taxonomy regression tests
         run: |
