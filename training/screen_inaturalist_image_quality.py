@@ -31,6 +31,10 @@ HIGH_QUALITY_LONG_EDGE = 1600
 HIGH_QUALITY_SHORT_EDGE = 900
 HIGH_QUALITY_PIXELS = 1_500_000
 ALLOWED_FORMATS = {"JPEG", "PNG", "WEBP"}
+LICENSE_URLS = {
+    "CC0-1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "CC-BY-4.0": "https://creativecommons.org/licenses/by/4.0/",
+}
 EXTRA_FIELDS = [
     "original_review_url", "image_width", "image_height", "image_megapixels",
     "image_bytes", "sharpness_score", "image_quality_status",
@@ -58,6 +62,47 @@ def _inspect_image(body):
     return width, height, sharpness
 
 
+def _validate_candidate_provenance(row):
+    """Fail closed before any image request unless media rights are explicit."""
+    if not isinstance(row, dict):
+        raise ValueError("candidate row must be an object")
+    license_code = row.get("license")
+    if license_code not in LICENSE_URLS:
+        raise ValueError("media license is missing, non-commercial, or version-unverified")
+    if row.get("license_url") != LICENSE_URLS[license_code]:
+        raise ValueError("media license URL does not match the exact supported license")
+    for field in ("creator", "creator_login", "license_notice", "attribution"):
+        if not str(row.get(field, "")).strip():
+            raise ValueError("required rights provenance missing: " + field)
+    creator = str(row["creator"]).strip()
+    login = str(row["creator_login"]).strip()
+    if creator.casefold() in {"unknown", "no rights reserved", "attribution unavailable"}:
+        raise ValueError("creator identity is missing or mislabelled")
+    if license_code == "CC0-1.0":
+        if row["attribution"] != f"{creator}, no rights reserved (CC0)":
+            raise ValueError("CC0 attribution statement does not match the creator")
+        if "no rights reserved" not in row["license_notice"].casefold():
+            raise ValueError("CC0 source license notice missing")
+    elif creator.casefold() not in row["attribution"].casefold() and login.casefold() not in row["attribution"].casefold():
+        raise ValueError("CC-BY attribution does not identify the creator or observer login")
+
+    if row.get("review_status") != "UNREVIEWED":
+        raise ValueError("quality screening input must remain UNREVIEWED")
+    observation_id = str(row.get("observation_id", "")).strip()
+    if not observation_id.isdecimal():
+        raise ValueError("invalid observation ID")
+    source = urlsplit(str(row.get("source_url", "")))
+    if (
+        source.scheme != "https"
+        or source.hostname != "www.inaturalist.org"
+        or source.username or source.password
+        or source.port not in (None, 443)
+        or source.query or source.fragment
+        or source.path != f"/observations/{observation_id}"
+    ):
+        raise ValueError("source URL does not bind to the observation ID")
+
+
 def inspect_candidate(row, timeout=25):
     photo_id = str(row.get("photo_id", "")).strip()
     raw_url = row.get("image_url", "")
@@ -75,6 +120,7 @@ def inspect_candidate(row, timeout=25):
         "resolution_tier": "UNVERIFIED",
     })
     try:
+        _validate_candidate_provenance(row)
         if not photo_id.isdecimal():
             raise ValueError("invalid photo ID")
         original_url = original_image_url(raw_url, photo_id)
