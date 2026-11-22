@@ -53,6 +53,10 @@ def main() -> None:
         "Safari WebKit": os.environ.get("WEBKIT_STATUS", "unknown"),
         "iPhone-WebKit-Emulation": os.environ.get("IPHONE_STATUS", "unknown"),
         "Lokaler PWA-Vertrag": os.environ.get("SITE_STATUS", "unknown"),
+        "KI-Dateninventur": os.environ.get("MODEL_STATUS", "unknown"),
+        "Bildimport und Herkunftsnachweise": os.environ.get("IMPORT_STATUS", "unknown"),
+        "Echte Trainingsdaten": os.environ.get("TRAINING_STATUS", "unknown"),
+        "Fachlich geprüfte Annotationen": os.environ.get("ANNOTATIONS_STATUS", "unknown"),
     }
     result = render(source, checks)
     print(result)
