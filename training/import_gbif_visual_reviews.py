@@ -86,7 +86,7 @@ def validate_review_export(queue_path: str | Path, export: object, *,
         if not isinstance(review, dict) or set(review) != {"decision"}:
             raise ValueError(f"review record {index}: only a visual decision is allowed; boxes/labels are forbidden")
         decision = review.get("decision")
-        if decision not in DECISIONS:
+        if not isinstance(decision, str) or decision not in DECISIONS:
             raise ValueError(f"review record {index}: unsupported decision")
 
         reviewed.append({
