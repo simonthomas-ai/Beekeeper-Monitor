@@ -9,6 +9,14 @@ on:
       - 'training/OPEN-DATA-SOURCES.md'
       - 'sources/catalog.json'
       - '.github/workflows/gbif-media-discovery.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'training/discover_gbif_media_candidates.py'
+      - 'training/test_discover_gbif_media_candidates.py'
+      - 'training/OPEN-DATA-SOURCES.md'
+      - 'sources/catalog.json'
+      - '.github/workflows/gbif-media-discovery.yml'
   schedule:
     - cron: '37 4 * * 2'
 
