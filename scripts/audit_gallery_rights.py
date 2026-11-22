@@ -36,7 +36,7 @@ FORMAT_EXTENSIONS = {"JPEG": {".jpg", ".jpeg"}, "PNG": {".png"}, "WEBP": {".webp
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 OBSERVATION_PATH_RE = re.compile(r"^/observations/([0-9]+)/?$")
 PHOTO_PATH_RE = re.compile(r"^/photos/([0-9]+)/original\.(jpe?g|png|webp)$", re.IGNORECASE)
-ITEMS_START_RE = re.compile(r"\\bconst\\s+items\\s*=\\s*")
+ITEMS_START_RE = re.compile(r"\bconst\s+items\s*=\s*")
 MAX_MANIFEST_BYTES = 8 * 1024 * 1024
 MAX_GALLERY_BYTES = 32 * 1024 * 1024
 
@@ -69,7 +69,7 @@ def _extract_json_array(content: str, page_path: Path) -> list[dict[str, object]
         if in_string:
             if escaped:
                 escaped = False
-            elif char == "\\\\":
+            elif char == "\\":
                 escaped = True
             elif char == '"':
                 in_string = False
