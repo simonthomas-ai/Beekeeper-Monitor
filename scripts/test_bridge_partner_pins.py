@@ -1,0 +1,39 @@
+"""Prevent accidental drift between the two BeeKeeper3000 CI checkout pins."""
+
+import pathlib
+import re
+import unittest
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+WORKFLOWS = (
+    ROOT / ".github/workflows/gesamttest.yml",
+    ROOT / ".github/workflows/cross-repo-integration.yml",
+)
+PIN = re.compile(r"^\s*ref:\s*([0-9a-f]{40})\s*(?:#.*)?$", re.MULTILINE)
+
+
+def partner_pins(text):
+    # Require the immutable SHA directly after the named partner checkout.
+    matches = re.findall(
+        r"repository:\s*simonthomas-ai/BeeKeeper3000\s*\n"
+        r"(?:(?!\n\s*-\s*name:).)*?\n\s*ref:\s*([^\s#]+)",
+        text,
+        flags=re.DOTALL,
+    )
+    return matches
+
+
+class BridgePartnerPinTests(unittest.TestCase):
+    def test_same_immutable_partner_revision(self):
+        pins = []
+        for path in WORKFLOWS:
+            with self.subTest(workflow=path.name):
+                found = partner_pins(path.read_text(encoding="utf-8"))
+                self.assertEqual(len(found), 1, "Expected exactly one partner checkout")
+                self.assertRegex(found[0], r"^[0-9a-f]{40}$")
+                pins.extend(found)
+        self.assertEqual(pins[0], pins[1], "Bridge partner revisions drifted")
+
+
+if __name__ == "__main__":
+    unittest.main()
