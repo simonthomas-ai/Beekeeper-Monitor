@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import io
 import json
 import re
 from pathlib import Path
@@ -32,6 +33,20 @@ REQUIRED_FIELDS = {
     "species_key", "review_status",
 }
 ORIGINAL_PATH = re.compile(r"^/photos/[0-9]+/original\.(?:jpe?g|png|webp)$", re.I)
+MAX_QUEUE_BYTES = 16 * 1024 * 1024
+
+
+def read_queue_snapshot(source):
+    """Read one bounded byte snapshot so hashing and CSV parsing share exact bytes."""
+    if isinstance(source, (bytes, bytearray, memoryview)):
+        data = bytes(source)
+    else:
+        with Path(source).open("rb") as stream:
+            data = stream.read(MAX_QUEUE_BYTES + 1)
+    if len(data) > MAX_QUEUE_BYTES:
+        raise ValueError(f"GBIF candidate queue exceeds the {MAX_QUEUE_BYTES}-byte safety limit")
+    return data
+
 
 
 def _json_for_inline_script(value):
@@ -74,13 +89,28 @@ def _allowed_inline_image(url, media_format):
 
 
 def prepare_items(source):
-    with Path(source).open(newline="", encoding="utf-8-sig") as stream:
+    queue_bytes = read_queue_snapshot(source)
+    try:
+        queue_text = queue_bytes.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise ValueError("GBIF review queue must be valid UTF-8") from exc
+    with io.StringIO(queue_text, newline="") as stream:
         reader = csv.DictReader(stream)
-        fields = set(reader.fieldnames or ())
+        fieldnames = reader.fieldnames or []
+        if len(fieldnames) != len(set(fieldnames)):
+            raise ValueError("GBIF review queue contains duplicate column names")
+        if any(not name for name in fieldnames):
+            raise ValueError("GBIF review queue contains an empty column name")
+        fields = set(fieldnames)
         missing = sorted(REQUIRED_FIELDS - fields)
         if missing:
             raise ValueError("GBIF review queue missing columns: " + ", ".join(missing))
         rows = list(reader)
+        for line_number, row in enumerate(rows, start=2):
+            if None in row:
+                raise ValueError(f"Row {line_number}: unexpected extra CSV columns")
+            if any(value is None for value in row.values()):
+                raise ValueError(f"Row {line_number}: CSV row has fewer values than its header")
 
     if not rows:
         raise ValueError("GBIF candidate queue is empty")
@@ -145,8 +175,9 @@ def prepare_items(source):
 
 def gallery(source, output):
     source_path = Path(source)
-    items = prepare_items(source_path)
-    source_queue_sha256 = hashlib.sha256(source_path.read_bytes()).hexdigest()
+    source_queue_bytes = read_queue_snapshot(source_path)
+    items = prepare_items(source_queue_bytes)
+    source_queue_sha256 = hashlib.sha256(source_queue_bytes).hexdigest()
     payload = _json_for_inline_script(items)
     page = """<!doctype html>
 <html lang="de">
