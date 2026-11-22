@@ -161,6 +161,7 @@ jobs:
           SITE_STATUS: ${{ steps.site.outcome }}
           MODEL_STATUS: ${{ steps.model.outcome }}
           IMPORT_STATUS: ${{ steps.importtests.outcome }}
+          TAXONOMY_STATUS: ${{ steps.taxonomy.outcome }}
           TRAINING_STATUS: ${{ steps.training.outcome }}
           ANNOTATIONS_STATUS: ${{ steps.annotations.outcome }}
         run: python3 scripts/release_gate_report.py
