@@ -66,7 +66,7 @@ jobs:
           retention-days: 14
       - name: Record failed checks as a GitHub issue
         if: ${{ always() && (steps.static.outcome != 'success' || steps.browser.outcome != 'success' || steps.readiness.outcome != 'success' || steps.discovery.outcome != 'success') }}
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           STATIC_RESULT: ${{ steps.static.outcome }}
           BROWSER_RESULT: ${{ steps.browser.outcome }}
