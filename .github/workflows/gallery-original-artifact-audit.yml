@@ -1,0 +1,87 @@
+name: Verify local original-image artifact against checked-in galleries
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/gallery-original-artifact-audit.yml'
+      - '.github/workflows/pages.yml'
+      - '.github/workflows/ki-cc0-quellen.yml'
+      - 'scripts/audit_gallery_rights.py'
+      - 'training/test_audit_gallery_rights.py'
+      - 'review/*.html'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/gallery-original-artifact-audit.yml'
+      - '.github/workflows/pages.yml'
+      - '.github/workflows/ki-cc0-quellen.yml'
+      - 'scripts/audit_gallery_rights.py'
+      - 'training/test_audit_gallery_rights.py'
+      - 'review/*.html'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: gallery-original-artifact-audit-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify-originals:
+    name: Verify real Actions artifact and gallery contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout current gallery and audit code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Unit-test the fail-closed image rights audit
+        run: python3 -m unittest training.test_audit_gallery_rights -v
+      - name: Resolve latest successful original-image source run
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ki-cc0-quellen.yml/runs?branch=main&status=success&per_page=20" --jq '[.workflow_runs[] | select(.head_branch == "main")][0].id // empty')"
+          if [[ -z "$run_id" ]]; then
+            echo "::error::No successful CC0 original-image run exists on main."
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$run_id" --jq '"Selected source run: " + (.id|tostring) + " at " + .head_sha + " (" + .created_at + ")"'
+      - name: Download exact original-image artifact
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+        with:
+          name: original-velutina-images
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.source.outputs.run_id }}
+          path: _gallery_audit/review
+      - name: Stage checked-in galleries with downloaded originals
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _gallery_audit/review
+          for species in all velutina crabro apis bombus vespula; do
+            test -s "review/${species}.html"
+            cp "review/${species}.html" "_gallery_audit/review/${species}.html"
+          done
+          test -s _gallery_audit/review/velutina-original-images-manifest.csv
+          test -d _gallery_audit/review/images/velutina
+          echo "Downloaded original image files: $(find _gallery_audit/review/images/velutina -maxdepth 1 -type f | wc -l)"
+          echo "Manifest rows: $(($(wc -l < _gallery_audit/review/velutina-original-images-manifest.csv)-1))"
+      - name: Verify every original byte, SHA-256, manifest and both gallery references
+        run: python3 scripts/audit_gallery_rights.py --root _gallery_audit
+      - name: Record artifact identity and audit result
+        if: always()
+        env:
+          SOURCE_RUN_ID: ${{ steps.source.outputs.run_id }}
+        run: |
+          {
+            echo '## Real original-image Actions artifact audit'
+            echo "- Source workflow run: ${SOURCE_RUN_ID:-not-resolved}"
+            echo "- Checked-out commit: ${GITHUB_SHA}"
+            echo '- Public Pages deployment: not performed'
+            echo '- Result is technical byte-integrity and metadata consistency only; not an independent legal review or training approval.'
+          } >> "$GITHUB_STEP_SUMMARY"
