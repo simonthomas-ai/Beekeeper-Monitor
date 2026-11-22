@@ -104,6 +104,37 @@ def _validate_candidate_provenance(row):
         raise ValueError("source URL does not bind to the observation ID")
 
 
+class _OriginalDerivativeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Reject a redirect before urllib sends a request to an unapproved URL."""
+
+    def __init__(self, photo_id: str):
+        super().__init__()
+        self.photo_id = photo_id
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        try:
+            resolved = original_image_url(newurl, self.photo_id)
+            if resolved != newurl:
+                raise ValueError("redirect target is not the original image derivative")
+        except (TypeError, ValueError) as exc:
+            raise HTTPError(
+                newurl,
+                code,
+                "blocked unsafe iNaturalist original-image redirect: " + str(exc),
+                headers,
+                fp,
+            ) from exc
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _open_original_derivative(request, photo_id: str, timeout: int):
+    """Open the image only through a redirect handler that checks every hop."""
+    opener = urllib.request.build_opener(
+        _OriginalDerivativeRedirectHandler(photo_id)
+    )
+    return opener.open(request, timeout=timeout)
+
+
 def inspect_candidate(row, timeout=25):
     photo_id = str(row.get("photo_id", "")).strip()
     raw_url = row.get("image_url", "")
@@ -133,7 +164,7 @@ def inspect_candidate(row, timeout=25):
                 "Accept": "image/jpeg,image/png,image/webp",
             },
         )
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with _open_original_derivative(request, photo_id, timeout=timeout) as response:
             final_url = response.geturl()
             # Redirects must remain on a recognized iNaturalist image host and
             # resolve to this exact photo's original derivative.
