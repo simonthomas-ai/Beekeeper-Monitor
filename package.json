@@ -1,1 +1,1 @@
-{"name":"beekeeper-monitor","version":"0.1.0","private":true,"description":"Offline observation PWA; AI models not yet validated","scripts":{"test:e2e":"playwright test"},"devDependencies":{"@playwright/test":"1.56.1"}}
+{"name":"beekeeper-monitor","version":"0.1.0","private":true,"description":"Offline observation PWA; AI models not yet validated","scripts":{"test:e2e":"playwright test"},"devDependencies":{"@playwright/test":"1.65.1"}}
