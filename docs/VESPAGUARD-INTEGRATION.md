@@ -1,6 +1,6 @@
 # VespaGuard: zwei Repositories, ein System
 
-Stand: 22.11.2026. Geprüfter BeeKeeper3000-Partnerstand für den Cross-Repository-Workflow: `05257986edff26d2e05b0826693f4d8bad8ec0a6` (Quality Gates, Windows, Supply-Chain/SBOM und CodeQL auf `main` erfolgreich). Änderungen am Partnerstand werden bewusst per Workflow-Änderung übernommen. Dies ist eine **Integrationslandkarte**, keine Behauptung einer vollständig betriebsbereiten Hornissenerkennung.
+Stand: 22.11.2026. Geprüfter BeeKeeper3000-Partnerstand für den Cross-Repository-Workflow: `3b4f8953c7e82ce96010f5095577830ce90e8361` (Hauptzweig-Quality-Gates, Windows-Kamera-/Medien-/NMEA-Tests sowie CodeQL erfolgreich). Änderungen am Partnerstand werden bewusst per Workflow-Änderung übernommen. Dies ist eine **Integrationslandkarte**, keine Behauptung einer vollständig betriebsbereiten Hornissenerkennung.
 
 ## Kanonische Rollen
 
@@ -25,6 +25,7 @@ Die Bridge überträgt nur minimierte Ereignismetadaten; keine Bild-/Audio-Rohda
 
 ## Nachweise und Freigabegrenzen
 
+- BeeKeeper3000 PR [#105](https://github.com/simonthomas-ai/BeeKeeper3000/pull/105) ergänzt den optionalen NMEA-0183-Adapter für checksum-geprüfte GGA/RMC-Fixes und HDT/HDM/HDG-Heading-Sätze. Exakte GNSS-Koordinaten bleiben lokal; das ausgehende Ereignis enthält nur eine unbestätigte Peilung. PR [#107](https://github.com/simonthomas-ai/BeeKeeper3000/pull/107) ergänzt den Fake-Serial-/Parser-Test in den Windows-Qualitätslauf. Linux- und Windows-Softwaretests sind erfolgreich; ein physischer GNSS-Empfänger, Kompass, Kalibrierung oder vermessene Referenzpeilung sind **nicht** abgenommen.
 - BeeKeeper3000 PR [#101](https://github.com/simonthomas-ai/BeeKeeper3000/pull/101) ist in `main` integriert (`05257986edff26d2e05b0826693f4d8bad8ec0a6`): Der explizite lokale Bild-/Videoimport besitzt Pfad-/Symlink-, Dateiidentitäts-, Größen-, Pixel-, Frame- und Zeitgrenzen. Er legt ausschließlich das bestehende sechs-feldrige unbestätigte Metadatenereignis lokal ab; es gibt keinen Medien-Upload und keine automatische Synchronisierung. Linux-/Windows-Kamera-, Bridge-, Netzwerk-, SBOM-/Abhängigkeits- und CodeQL-Prüfungen waren erfolgreich. Reale Zielcodecs, Kamerageräte und Modellabnahme bleiben offen.
 - Die lokale Quelle–Bridge–Monitor-Strecke wurde softwareseitig mit **205 Testereignissen** inklusive Cursor-Seiten, Neustart und Replay-Deduplizierung geprüft. Siehe [BeeKeeper3000-Veröffentlichungsstatus](https://github.com/simonthomas-ai/BeeKeeper3000/blob/main/UPLOAD-STATUS.md).
 - CI auf beiden Repositories prüft Softwareverhalten. **Nicht** nachgewiesen sind eine reale Kamera-/Modell-Erkennungsqualität, 99 % Trefferquote, echte iPhone-Hardware, Funkreichweite, Solar-/SIM-Betrieb oder eine feldvalidierte Nestlokalisierung.
@@ -33,6 +34,8 @@ Die Bridge überträgt nur minimierte Ereignismetadaten; keine Bild-/Audio-Rohda
 
 ## Einheitliche technische Freigabe
 
+- Der Datenschutz-Filter wurde mit BeeKeeper3000 PR [#103](https://github.com/simonthomas-ai/BeeKeeper3000/pull/103) weiter gehärtet: NFKC-Normalisierung, Ablehnung nicht-ASCII-basierter technischer Feldnamen und Regressionen gegen Vollbreitenzeichen, kombinierende Zeichen und Homoglyphen.
+- BeeKeeper3000 PR [#104](https://github.com/simonthomas-ai/BeeKeeper3000/pull/104) bindet lokale Medien-Snapshots an Dateiidentität und prüft die Identität nach dem Lesen erneut. Linux- und Windows-Medienimporttests sind bestanden; POSIX-spezifische ctime-Prüfung wird auf Windows korrekt übersprungen.
 - Der BeeKeeper3000-Hauptzweig enthält zusätzlich den gemeinsamen Adapter-Lifecycle mit Pflichtprüfungen für Discovery, Fähigkeiten, Berechtigungen, begrenzte Aufrufe, sauberes Stoppen und Wiederverbindung. PR [#99](https://github.com/simonthomas-ai/BeeKeeper3000/pull/99) ergänzt die fail-closed Sperre für sensible camelCase-/Trennzeichen-Aliase (z. B. `apiKey`, `privateKey`, `imageUrl`, `gpsCoordinates`, `streamUrl`) und ist in den Hauptzweig übernommen. Dies stärkt die Metadaten-Grenze, ersetzt aber keine reale Datenschutz- oder Feldabnahme.
 
 1. Beekeeper-Monitor: Ein-Klick-Gesamttest, Browser/WebKit, lokale Integration und GitHub-Pages-Deployment prüfen.
