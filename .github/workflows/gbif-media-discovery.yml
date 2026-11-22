@@ -7,6 +7,8 @@ on:
       - 'training/discover_gbif_media_candidates.py'
       - 'training/test_discover_gbif_media_candidates.py'
       - 'training/OPEN-DATA-SOURCES.md'
+      - 'training/prepare_gbif_review_gallery.py'
+      - 'training/test_prepare_gbif_review_gallery.py'
       - 'sources/catalog.json'
       - '.github/workflows/gbif-media-discovery.yml'
   push:
@@ -15,6 +17,8 @@ on:
       - 'training/discover_gbif_media_candidates.py'
       - 'training/test_discover_gbif_media_candidates.py'
       - 'training/OPEN-DATA-SOURCES.md'
+      - 'training/prepare_gbif_review_gallery.py'
+      - 'training/test_prepare_gbif_review_gallery.py'
       - 'sources/catalog.json'
       - '.github/workflows/gbif-media-discovery.yml'
   schedule:
@@ -36,11 +40,33 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
-      - name: Test license filters and metadata candidate contract
-        run: python -m unittest training.test_discover_gbif_media_candidates -v
+      - name: Test license filters, metadata contract and mobile GBIF gallery
+        run: |
+          python -m unittest training.test_discover_gbif_media_candidates -v
+          python -m unittest training.test_prepare_gbif_review_gallery -v
       - name: Query the official GBIF API for licensed image metadata only
         if: github.event_name != 'pull_request'
         run: python training/discover_gbif_media_candidates.py --target 500 --max-pages 2 --limit 100 --pause 0.7 --allow-unavailable
+      - name: Build mobile human review gallery from metadata-only GBIF queue
+        if: github.event_name != 'pull_request'
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          status_path = Path("training/gbif-media-discovery-status.json")
+          status = json.loads(status_path.read_text(encoding="utf-8")) if status_path.exists() else {}
+          found = status.get("found", 0)
+          if found > 0:
+              subprocess.run([
+                  "python", "training/prepare_gbif_review_gallery.py",
+                  "--input", "training/gbif-media-review-queue.csv",
+                  "--output", "training/gbif-media-review-gallery.html",
+              ], check=True)
+          else:
+              print("No GBIF metadata candidates; mobile review gallery not created.")
+          PY
       - name: Summarize candidate status
         if: always()
         run: |
@@ -54,7 +80,8 @@ jobs:
               "",
               f"- Status: **{data.get('status', 'unknown')}**",
               f"- Metadata candidates: **{data.get('found', 0)}**",
-              "- Images downloaded: **No**",
+              f"- Mobile gallery: **{'created' if Path('training/gbif-media-review-gallery.html').is_file() else 'not created'}**",
+              "- Image bytes downloaded or stored by workflow: **No**",
           ]
           diagnostics = data.get("diagnostics_by_species", {})
           if diagnostics:
@@ -91,5 +118,6 @@ jobs:
           path: |
             training/gbif-media-review-queue.csv
             training/gbif-media-discovery-status.json
+            training/gbif-media-review-gallery.html
           if-no-files-found: ignore
           retention-days: 14
