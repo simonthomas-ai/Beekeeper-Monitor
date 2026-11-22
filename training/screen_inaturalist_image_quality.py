@@ -14,6 +14,7 @@ import urllib.request
 from collections import Counter, defaultdict
 from pathlib import Path
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
 
 from PIL import Image, ImageFilter, ImageOps, ImageStat, UnidentifiedImageError
 
