@@ -52,7 +52,14 @@ class DiscoveryError(RuntimeError):
 def normalize_license(value):
     if not isinstance(value, str):
         return None
-    return LICENSES.get(value.strip().lower())
+    normalized = value.strip().lower()
+    # GBIF occurrence records commonly expose the Creative Commons legalcode
+    # URL, while multimedia metadata often exposes the deed URL. Removing this
+    # exact terminal path preserves the licence version; it does not broaden
+    # acceptance to NC, ND, SA, other versions, or unknown licences.
+    if normalized.endswith("/legalcode"):
+        normalized = normalized[:-len("legalcode")]
+    return LICENSES.get(normalized)
 
 
 def fetch_json(url, *, timeout=30, retries=3, pause=1.0):
