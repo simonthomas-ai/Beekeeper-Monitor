@@ -27,8 +27,9 @@ LOCAL_IMAGE_RE = re.compile(r"^[0-9]+\.(?:jpg|jpeg|png|webp)$", re.IGNORECASE)
 MANIFEST_NAME = "velutina-original-images-manifest.csv"
 MANIFEST_FIELDS = {
     "photo_id", "observation_id", "species_candidate", "source_url", "license",
-    "creator", "source_image_url", "local_image_path", "image_format",
-    "image_width", "image_height", "image_bytes", "sha256", "download_status",
+    "creator", "creator_login", "attribution", "license_notice", "source_image_url",
+    "local_image_path", "image_format", "image_width", "image_height",
+    "image_bytes", "sha256", "download_status",
 }
 
 
@@ -41,6 +42,32 @@ def _https_url(value: object, field: str, index: int) -> str:
     if url.port not in (None, 443):
         raise ValueError(f"Record {index}: unexpected port in {field}")
     return value
+
+
+def _is_original_image_url(value: object, photo_id: str) -> bool:
+    """Accept only the direct, photo-ID-bound iNaturalist original URL."""
+    if not isinstance(value, str):
+        return False
+    parsed = urlsplit(value)
+    allowed_hosts = {
+        "static.inaturalist.org",
+        "inaturalist-open-data.s3.amazonaws.com",
+        "inaturalist-open-data.s3.us-west-2.amazonaws.com",
+    }
+    return (
+        parsed.scheme == "https"
+        and (parsed.hostname or "").lower() in allowed_hosts
+        and parsed.username is None
+        and parsed.password is None
+        and parsed.port in (None, 443)
+        and not parsed.query
+        and not parsed.fragment
+        and re.fullmatch(
+            rf"/photos/{re.escape(photo_id)}/original\.(?:jpe?g|png|webp)",
+            parsed.path,
+            re.IGNORECASE,
+        ) is not None
+    )
 
 
 def _asset_root(path: str | Path) -> Path:
@@ -117,15 +144,35 @@ def _verify_local_original(
         raise ValueError(f"Record {index}: photo ID is not present in the local original-image manifest")
     if asset.get("local_image_path") != image_url:
         raise ValueError(f"Record {index}: local path does not match its manifest entry")
+    creator = str(asset.get("creator", "")).strip()
+    creator_login = str(asset.get("creator_login", "")).strip()
+    attribution = str(asset.get("attribution", "")).strip()
+    license_notice = str(asset.get("license_notice", "")).strip()
+    source_image_url = str(asset.get("source_image_url", "")).strip()
     if (
         asset.get("species_candidate") != "Vespa velutina"
         or asset.get("license") != "CC0-1.0"
         or asset.get("download_status") != "DOWNLOADED_UNMODIFIED"
-        or not asset.get("creator", "").strip()
+        or not creator
+        or not creator_login
+        or attribution != f"{creator}, no rights reserved (CC0)"
+        or "no rights reserved" not in license_notice.casefold()
+        or not _is_original_image_url(source_image_url, photo_id)
         or asset.get("observation_id") != str(row.get("observation_id", ""))
         or asset.get("source_url") != str(row.get("source_url", ""))
     ):
-        raise ValueError(f"Record {index}: local original metadata differs from the manifest")
+        raise ValueError(f"Record {index}: local original provenance metadata is missing or differs from the manifest")
+
+    # The manifest is authoritative. When an upstream queue includes copied
+    # provenance fields, reject tampering rather than silently accepting it.
+    for field, expected in (
+        ("creator_login", creator_login),
+        ("attribution", attribution),
+        ("license_notice", license_notice),
+        ("source_image_url", source_image_url),
+    ):
+        if field in row and row[field] != expected:
+            raise ValueError(f"Record {index}: {field} differs from the verified manifest")
 
     digest = str(asset.get("sha256", ""))
     byte_count = str(asset.get("image_bytes", ""))
@@ -161,6 +208,10 @@ def _verify_local_original(
         "original_file_bytes": int(byte_count),
         "creator": asset["creator"],
         "license": asset["license"],
+        "creator_login": creator_login,
+        "attribution": attribution,
+        "license_notice": license_notice,
+        "source_image_url": source_image_url,
     }
 
 
@@ -241,6 +292,10 @@ def stage(payload, *, asset_root: str | Path | None = None):
                 "local_image_path": local_metadata["local_image_path"],
                 "original_sha256": local_metadata["original_sha256"],
                 "original_file_bytes": local_metadata["original_file_bytes"],
+                "creator_login": local_metadata["creator_login"],
+                "attribution": local_metadata["attribution"],
+                "license_notice": local_metadata["license_notice"],
+                "source_image_url": local_metadata["source_image_url"],
             })
         queue.append(staged)
 

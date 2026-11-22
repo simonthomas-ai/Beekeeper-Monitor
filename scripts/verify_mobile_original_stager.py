@@ -84,6 +84,11 @@ def verify_mobile_original_gallery(
             "image_url": item.get("image_url"),
             "license": item.get("license"),
             "creator": item.get("creator"),
+            "creator_login": item.get("creator_login"),
+            "attribution": item.get("attribution"),
+            "license_notice": item.get("license_notice"),
+            # The direct original URL is intentionally manifest-only; the gallery
+            # exposes no such field, so the stager restores it from verified metadata.
             "training_eligible": False,
             "image_delivery": item.get("image_delivery"),
             "original_sha256": item.get("original_sha256"),
@@ -108,6 +113,10 @@ def verify_mobile_original_gallery(
             or result.get("mobile_decision") != "PENDING"
             or result.get("original_sha256") != source["original_sha256"]
             or result.get("local_image_path") != source["image_url"]
+            or result.get("creator_login") != source["creator_login"]
+            or result.get("attribution") != source["attribution"]
+            or result.get("license_notice") != source["license_notice"]
+            or not result.get("source_image_url")
         ):
             raise ValueError(f"staged record {source['photo_id']} changed its non-approval or asset binding")
 
