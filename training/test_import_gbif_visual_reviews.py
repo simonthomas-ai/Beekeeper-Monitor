@@ -6,8 +6,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from training.prepare_gbif_review_gallery import prepare_items
-from training.import_gbif_visual_reviews import validate_review_export, write_new_file
+from training.prepare_gbif_review_gallery import MAX_QUEUE_BYTES, prepare_items
+from training.import_gbif_visual_reviews import (
+    MAX_REVIEW_EXPORT_BYTES,
+    load_review_export,
+    validate_review_export,
+    write_new_file,
+)
 
 
 BASE = {
@@ -90,6 +95,35 @@ class GbifReviewImportTests(unittest.TestCase):
                                recorded_at="2026-11-22T10:30:00Z")
         self.assertEqual(result["reviewer"], "Entomology Reviewer")
         self.assertEqual(result["recorded_at"], "2026-11-22T10:30:00+00:00")
+
+    def test_queue_snapshot_parser_uses_bytes_and_rejects_duplicate_headers(self):
+        self.assertEqual(prepare_items(self.queue.read_bytes()), self.expected)
+        header, *body = self.queue.read_bytes().splitlines()
+        fields = header.decode("utf-8").split(",")
+        fields[1] = fields[0]
+        malformed = (",".join(fields) + "\n").encode("utf-8") + b"\n".join(body) + b"\n"
+        with self.assertRaisesRegex(ValueError, "duplicate column names"):
+            prepare_items(malformed)
+
+    def test_queue_snapshot_enforces_size_limit(self):
+        with self.assertRaisesRegex(ValueError, "safety limit"):
+            prepare_items(b"x" * (MAX_QUEUE_BYTES + 1))
+
+    def test_review_json_loader_rejects_duplicate_keys_at_nested_levels(self):
+        path = self.root / "duplicate-review.json"
+        path.write_text(
+            '{"format":"beekeeper-gbif-unverified-review-v2",'
+            '"records":[{"review":{"decision":"PENDING","decision":"LIKELY"}}]}',
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ValueError, "duplicate JSON key"):
+            load_review_export(path)
+
+    def test_review_json_loader_enforces_size_limit(self):
+        path = self.root / "oversized-review.json"
+        path.write_bytes(b" " * (MAX_REVIEW_EXPORT_BYTES + 1))
+        with self.assertRaisesRegex(ValueError, "safety limit"):
+            load_review_export(path)
 
     def test_rejects_review_export_bound_to_different_queue_bytes(self):
         payload = self.export()
