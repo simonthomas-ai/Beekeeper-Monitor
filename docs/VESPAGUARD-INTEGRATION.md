@@ -1,6 +1,6 @@
 # VespaGuard: zwei Repositories, ein System
 
-Stand: 22.11.2026. Geprüfter BeeKeeper3000-Partnerstand für den Cross-Repository-Workflow: `f0d6aa150725ae33c2ad06c726289751c3c0a880` (nach Quality-Gates auf `main` erfolgreich). Änderungen am Partnerstand werden bewusst per Workflow-Änderung übernommen. Dies ist eine **Integrationslandkarte**, keine Behauptung einer vollständig betriebsbereiten Hornissenerkennung.
+Stand: 22.11.2026. Geprüfter BeeKeeper3000-Partnerstand für den Cross-Repository-Workflow: `05257986edff26d2e05b0826693f4d8bad8ec0a6` (Quality Gates, Windows, Supply-Chain/SBOM und CodeQL auf `main` erfolgreich). Änderungen am Partnerstand werden bewusst per Workflow-Änderung übernommen. Dies ist eine **Integrationslandkarte**, keine Behauptung einer vollständig betriebsbereiten Hornissenerkennung.
 
 ## Kanonische Rollen
 
@@ -25,6 +25,7 @@ Die Bridge überträgt nur minimierte Ereignismetadaten; keine Bild-/Audio-Rohda
 
 ## Nachweise und Freigabegrenzen
 
+- BeeKeeper3000 PR [#101](https://github.com/simonthomas-ai/BeeKeeper3000/pull/101) ist in `main` integriert (`05257986edff26d2e05b0826693f4d8bad8ec0a6`): Der explizite lokale Bild-/Videoimport besitzt Pfad-/Symlink-, Dateiidentitäts-, Größen-, Pixel-, Frame- und Zeitgrenzen. Er legt ausschließlich das bestehende sechs-feldrige unbestätigte Metadatenereignis lokal ab; es gibt keinen Medien-Upload und keine automatische Synchronisierung. Linux-/Windows-Kamera-, Bridge-, Netzwerk-, SBOM-/Abhängigkeits- und CodeQL-Prüfungen waren erfolgreich. Reale Zielcodecs, Kamerageräte und Modellabnahme bleiben offen.
 - Die lokale Quelle–Bridge–Monitor-Strecke wurde softwareseitig mit **205 Testereignissen** inklusive Cursor-Seiten, Neustart und Replay-Deduplizierung geprüft. Siehe [BeeKeeper3000-Veröffentlichungsstatus](https://github.com/simonthomas-ai/BeeKeeper3000/blob/main/UPLOAD-STATUS.md).
 - CI auf beiden Repositories prüft Softwareverhalten. **Nicht** nachgewiesen sind eine reale Kamera-/Modell-Erkennungsqualität, 99 % Trefferquote, echte iPhone-Hardware, Funkreichweite, Solar-/SIM-Betrieb oder eine feldvalidierte Nestlokalisierung.
 - In BeeKeeper3000 fehlt weiterhin der vollständige ursprüngliche Hornet3000-C++-Quellbaum als veröffentlichter GitHub-Stand. Das ONNX-Beispielmanifest ist absichtlich ungültig; es gibt kein freigegebenes Modellgewicht.
