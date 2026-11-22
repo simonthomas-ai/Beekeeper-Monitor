@@ -47,6 +47,30 @@ The stager checks each local path against the photo ID and manifest row, require
 4. A qualified reviewer must inspect the actual original pixels and verify species, per-media rights, attribution, image suitability and every proposed box. Use CVAT Community for the actual class-labelled bounding boxes and independent annotation QA. The simple mobile rectangles are suggestions only; they must not be imported directly as class-labelled YOLO ground truth.
 5. Only after review, export CVAT annotations to the expected YOLO structure, create the per-image image/label SHA-256 provenance records, assign observation/photographer/site groups to one split each, and run the provenance and training validators. Keep the source-rights evidence and reviewer signoff under controlled access.
 
+### Prepare the seven-class CVAT task pack
+
+After a mobile export has been staged into an expert queue, prepare a local image-only task pack:
+
+~~~sh
+python scripts/prepare_cvat_review_pack.py /secure/expert-queue.json \
+  --asset-root /secure/original-velutina-artifact \
+  --output-dir /secure/cvat-review-pack
+~~~
+
+The pack contains:
+- `cvat-images.zip`: only the original image files, copied without image conversion or recompression; SHA-256 and byte counts are checked again while the ZIP is written.
+- `labels.json`: the exact seven names from `training/class_schema.py`, offered as task labels only; no image receives a class assignment.
+- `metadata.csv`: photo/observation IDs, source URL, creator, CC0 license, mobile decision, original file path, SHA-256 and bytes.
+- `SHA256SUMS.txt` and `summary.json`: pack integrity and explicit zero-annotation/zero-approval status.
+
+Create a CVAT Community image task, add the seven labels from `labels.json`, and upload only `cvat-images.zip` as the image archive. Keep `metadata.csv` with the task for provenance. The pack does not contain YOLO label files, imported boxes or approval flags. CVAT's current task guide describes creating labels and uploading local image files or an image archive: https://docs.cvat.ai/docs/workspace/tasks-page/. CVAT CLI also accepts a JSON label schema and local image inputs: https://docs.cvat.ai/docs/api_sdk/cli/.
+
+The package generator refuses existing output directories, output paths inside the original artifact, altered files, missing manifest entries, symlinks and any queue that claims training approval. Its tests verify the seven-class schema and byte-preserving ZIP as well as the non-approval invariant:
+
+~~~sh
+python -m unittest scripts.test_prepare_cvat_review_pack -v
+~~~
+
 The stager's regression tests include valid local manifest-backed files, missing asset roots, changed bytes, a mobile SHA mismatch, path mismatch, symlink rejection and the non-approval invariant:
 
 ~~~sh

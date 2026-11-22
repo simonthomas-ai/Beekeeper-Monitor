@@ -6,6 +6,10 @@ Diese Trainingspipeline erstellt **einen Objektdetektor für sieben Klassen**, n
 
 Der dokumentierte Übergang von einem mobilen Galerieexport zu einer nicht freigegebenen Expertenwarteschlange, einschließlich Manifest-/SHA-256-Prüfung lokaler Originalbilder und anschließendem CVAT-Workflow, steht in [DATASET-ANNOTATION-WORKFLOW.md](DATASET-ANNOTATION-WORKFLOW.md). Mobile Rechtecke und `LIKELY`-Entscheidungen sind keine YOLO-Ground-Truth und führen niemals selbst zu einer Trainingsfreigabe.
 
+## CVAT-Aufbereitung für Expertenannotation
+
+Nach dem nicht freigegebenen Mobile-Review und der Manifest-/SHA-256-Prüfung kann `scripts/prepare_cvat_review_pack.py` ein lokales Bildpaket mit sieben unverbindlichen Task-Labels und Quellenmetadaten erzeugen. Es enthält keine Annotationen und vergibt keine Trainingsfreigaben. Ablauf und CVAT-Schritte: [DATASET-ANNOTATION-WORKFLOW.md](DATASET-ANNOTATION-WORKFLOW.md).
+
 ## Architektur- und Feldvalidierungsplan
 
 Der Vergleich von Ein-Stufen-YOLO und einer möglichen zweistufigen Detektor-/Crop-Klassifikator-Pipeline, die Bewertung der verfügbaren Quellen und die Feldabnahmekriterien sind in [DETECTION-ARCHITECTURE-REVIEW-2026-11-21.md](DETECTION-ARCHITECTURE-REVIEW-2026-11-21.md) dokumentiert. Der zweistufige Ansatz wird erst mit echten, freigegebenen Crop-Daten umgesetzt.
