@@ -53,7 +53,7 @@ def _https_url(value, field):
         or not parsed.hostname
         or parsed.username or parsed.password
         or parsed.port not in (None, 443)
-        or parsed.query or parsed.fragment
+        or parsed.fragment
     ):
         raise ValueError(f"{field} must be a credential-free HTTPS URL")
     return parsed
@@ -107,6 +107,8 @@ def prepare_items(source):
         source = _https_url(row["source_url"], "source_url")
         if source.hostname != "www.gbif.org" or source.path != f"/occurrence/{occurrence_id}":
             raise ValueError(f"Row {index}: GBIF source URL does not bind to occurrence ID")
+        if source.query:
+            raise ValueError(f"Row {index}: GBIF source URL query parameters are not allowed")
         media = _https_url(row["image_url"], "image_url")
         if media.query:
             raise ValueError(f"Row {index}: media URL query parameters are not allowed")
