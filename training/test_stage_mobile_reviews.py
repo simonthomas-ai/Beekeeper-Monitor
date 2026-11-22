@@ -74,6 +74,9 @@ class MobileStageTests(unittest.TestCase):
             "source_url": SAMPLE["records"][0]["source_url"],
             "license": "CC0-1.0",
             "creator": "observer",
+            "creator_login": "observer-login",
+            "attribution": "observer, no rights reserved (CC0)",
+            "license_notice": "CC0 1.0: no rights reserved",
             "source_image_url": "https://static.inaturalist.org/photos/101/original.jpg",
             "local_image_path": "images/velutina/101.jpg",
             "image_format": "JPEG",
@@ -112,6 +115,10 @@ class MobileStageTests(unittest.TestCase):
             self.assertFalse(record["training_eligible"])
             self.assertEqual(record["image_delivery"], "LOCAL_UNMODIFIED_ORIGINAL")
             self.assertEqual(record["original_sha256"], digest)
+            self.assertEqual(record["creator_login"], "observer-login")
+            self.assertEqual(record["attribution"], "observer, no rights reserved (CC0)")
+            self.assertEqual(record["license_notice"], "CC0 1.0: no rights reserved")
+            self.assertEqual(record["source_image_url"], "https://static.inaturalist.org/photos/101/original.jpg")
             self.assertIn("verify_boxes_against_image", record["expert_checks_required"])
 
     def test_rejects_tampered_local_original_bytes(self):
