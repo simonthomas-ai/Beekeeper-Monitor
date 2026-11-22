@@ -63,7 +63,7 @@ def _is_original_image_url(value: object, photo_id: str) -> bool:
         and not parsed.query
         and not parsed.fragment
         and re.fullmatch(
-            rf"/photos/{re.escape(photo_id)}/original\\.(?:jpe?g|png|webp)",
+            rf"/photos/{re.escape(photo_id)}/original\.(?:jpe?g|png|webp)",
             parsed.path,
             re.IGNORECASE,
         ) is not None
