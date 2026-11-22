@@ -88,6 +88,14 @@ def _safe_source(root: Path, relative: str) -> Path:
     return resolved
 
 
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def _copy_original_to_zip(archive: zipfile.ZipFile, source: Path, archive_name: str,
                           expected_sha256: str, expected_bytes: int) -> None:
     flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
@@ -120,10 +128,16 @@ def build_cvat_review_pack(expert_queue: dict, asset_root: str | Path,
                            output_dir: str | Path) -> dict:
     """Create a local CVAT-ready images-only ZIP plus labels/provenance sidecars."""
     root = _asset_root(asset_root)
-    target = Path(output_dir).expanduser()
-    if not target.is_absolute():
-        target = Path.cwd() / target
-    target = target.absolute()
+    raw_target = Path(output_dir).expanduser()
+    if not raw_target.is_absolute():
+        raw_target = Path.cwd() / raw_target
+    if raw_target.name in ("", ".", ".."):
+        raise ValueError("Invalid CVAT review pack output directory")
+
+    parent = raw_target.parent
+    parent.mkdir(parents=True, exist_ok=True)
+    parent = parent.resolve(strict=True)
+    target = parent / raw_target.name
     if target.exists() or target.is_symlink():
         raise FileExistsError("Refusing to overwrite an existing CVAT review pack")
     if target == root or target.is_relative_to(root):
@@ -134,12 +148,6 @@ def build_cvat_review_pack(expert_queue: dict, asset_root: str | Path,
     records = verified_queue["records"]
     if not records:
         raise ValueError("No verified local originals are available for CVAT packaging")
-
-    parent = target.parent
-    parent.mkdir(parents=True, exist_ok=True)
-    parent = parent.resolve(strict=True)
-    if target.exists():
-        raise FileExistsError("CVAT review pack path appeared during preparation")
 
     temp_path = Path(tempfile.mkdtemp(prefix=".cvat-review-pack-", dir=parent))
     total_bytes = 0
@@ -237,7 +245,7 @@ This pack has zero annotations, zero YOLO label files and zero training approval
         checksum_path = temp_path / "SHA256SUMS.txt"
         checksum_path.write_text(
             "".join(
-                f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n"
+                f"{_sha256_file(path)}  {path.name}\n"
                 for path in checksummed
             ),
             encoding="utf-8",
@@ -263,7 +271,7 @@ This pack has zero annotations, zero YOLO label files and zero training approval
     return {
         **summary,
         "output_dir": str(target),
-        "archive_sha256": hashlib.sha256((target / "cvat-images.zip").read_bytes()).hexdigest(),
+        "archive_sha256": _sha256_file(target / "cvat-images.zip"),
     }
 
 
