@@ -95,6 +95,31 @@ class ImageQualityScreenTests(unittest.TestCase):
         self.assertEqual(result["image_quality_status"], "UNAVAILABLE")
         self.assertIn("version-unverified", result["quality_reason"])
 
+    def test_exact_cc_by_4_requires_creator_attribution_and_correct_license_url(self):
+        row = self.row()
+        row["license"] = "CC-BY-4.0"
+        row["license_url"] = "https://creativecommons.org/licenses/by/4.0/"
+        row["license_notice"] = "CC BY 4.0"
+        row["attribution"] = "Test Observer (CC BY 4.0)"
+        url = "https://static.inaturalist.org/photos/42/original.jpg"
+        with patch.object(screen.urllib.request, "urlopen",
+                          return_value=FakeResponse(image_bytes(), url)) as mocked:
+            result = screen.inspect_candidate(row)
+        mocked.assert_called_once()
+        self.assertEqual(result["image_quality_status"], "PASS")
+
+    def test_exact_cc_by_with_wrong_license_url_fails_before_network(self):
+        row = self.row()
+        row["license"] = "CC-BY-4.0"
+        row["license_url"] = "https://creativecommons.org/licenses/by/3.0/"
+        row["license_notice"] = "CC BY 4.0"
+        row["attribution"] = "Test Observer (CC BY 4.0)"
+        with patch.object(screen.urllib.request, "urlopen") as mocked:
+            result = screen.inspect_candidate(row)
+        mocked.assert_not_called()
+        self.assertEqual(result["image_quality_status"], "UNAVAILABLE")
+        self.assertIn("license URL", result["quality_reason"])
+
     def test_missing_creator_provenance_fails_closed_without_network(self):
         row = self.row()
         row["creator_login"] = ""
