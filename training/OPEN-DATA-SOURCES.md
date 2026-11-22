@@ -31,7 +31,7 @@ Each photo has its own creator/license information; observation metadata and ima
 
 GBIF occurrence records can carry CC0, CC BY or CC BY-NC, but multimedia media objects have their own license field and can differ from the occurrence license. The discover_gbif_media_candidates.py script resolves an exact species key and additionally requires each returned occurrence's interpreted `speciesKey` and `species` name to match that exact requested species. This second per-record guard is necessary because taxon-key occurrence searches may include descendants. It filters each still-image media object's own license to CC0 or exact CC BY 4.0, requires HTTPS media URLs and attribution identity for CC BY, stores candidate metadata only, and marks every row UNREVIEWED_MEDIA_RIGHTS_AND_IMAGE. The metadata collector does not establish that the pictured insect is correctly identified. Existing candidate exports created before this guard must be regenerated and re-audited; they remain unapproved until manual visual and rights review.
 
-The collector uses small, bounded pages and retry limits on the public GBIF API. It does not request bulk downloads, authenticate, or alter data on GBIF.
+The collector uses the documented camelCase occurrence-search parameters `taxonKey` and `mediaType`, small bounded pages and retry limits on the public GBIF API. A zero-result response is recorded as `empty`, not as a successful candidate discovery. It does not request bulk downloads, authenticate, or alter data on GBIF.
 
 ### Smithsonian Open Access
 
