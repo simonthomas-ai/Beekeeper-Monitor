@@ -40,6 +40,8 @@ Lokaler Empfangsdienst: Start, Token und Umgebungsvariablen stehen in [integrati
 ```sh
 python scripts/check_sources.py
 python scripts/test_static.py
+python -m unittest scripts.test_audit_workflow_action_pins -v
+python scripts/audit_workflow_action_pins.py
 python -m unittest training.test_audit_gallery_rights -v
 python -m unittest training.test_verify_inaturalist_photo_metadata training.test_discover_cc0_candidates training.test_audit_inaturalist_candidates training.test_download_original_inaturalist_images training.test_prepare_visual_review_gallery -v
 python -m unittest discover -s integrations -p 'test_*.py'
