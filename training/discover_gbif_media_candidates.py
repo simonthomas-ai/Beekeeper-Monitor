@@ -25,7 +25,7 @@ FIELDS = [
     "source_id", "source_url", "image_url", "media_license", "media_license_url",
     "media_creator", "rights_holder", "publisher", "format", "occurrence_id",
     "occurrence_license", "occurrence_license_url", "occurrence_rights_holder",
-    "dataset_key", "scientific_name", "review_status",
+    "dataset_key", "scientific_name", "species_key", "review_status",
 ]
 LICENSES = {
     "cc0-1.0": ("CC0-1.0", "https://creativecommons.org/publicdomain/zero/1.0/"),
@@ -88,8 +88,22 @@ def match_species(name, fetch=fetch_json):
     return result["usageKey"]
 
 
-def media_candidate(media, occurrence, species):
-    if not isinstance(media, dict):
+def media_candidate(media, occurrence, species, expected_species_key):
+    """Return media only when GBIF's interpreted species is the requested species.
+
+    occurrence/search with a species taxon key can include descendant taxa.
+    The accepted speciesKey and species name therefore must match the exact
+    species resolved by match_species(); the query's parent key is not enough.
+    """
+    if not isinstance(media, dict) or not isinstance(occurrence, dict):
+        return None
+    if type(expected_species_key) is not int or expected_species_key <= 0:
+        return None
+    if type(occurrence.get("speciesKey")) is not int:
+        return None
+    if occurrence["speciesKey"] != expected_species_key:
+        return None
+    if occurrence.get("species") != species:
         return None
     if str(media.get("type", "")).lower() not in {"stillimage", "image"}:
         return None
@@ -129,6 +143,7 @@ def media_candidate(media, occurrence, species):
         "occurrence_rights_holder": occurrence_rights_holder,
         "dataset_key": dataset_key,
         "scientific_name": species,
+        "species_key": expected_species_key,
         "review_status": "UNREVIEWED_MEDIA_RIGHTS_AND_IMAGE",
     }
 
@@ -164,7 +179,7 @@ def discover(target=1000, max_pages=3, limit=100, pause=1.0, fetch=fetch_json):
                     break
                 for occurrence in records:
                     for media in occurrence.get("media", []) if isinstance(occurrence, dict) else []:
-                        candidate = media_candidate(media, occurrence, species)
+                        candidate = media_candidate(media, occurrence, species, expected_species_key=taxon_key)
                         if not candidate:
                             continue
                         identity = candidate["image_url"]
