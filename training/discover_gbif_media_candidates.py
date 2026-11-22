@@ -154,6 +154,25 @@ def discover(target=1000, max_pages=3, limit=100, pause=1.0, fetch=fetch_json):
     rows, seen_media = [], set()
     quotas = {name: target // len(SPECIES) + (i < target % len(SPECIES)) for i, name in enumerate(SPECIES)}
     counts = {name: 0 for name in SPECIES}
+    diagnostics = {
+        name: {
+            "query_pages": 0,
+            "api_reported_occurrences": 0,
+            "occurrence_records_returned": 0,
+            "exact_species_key_and_name": 0,
+            "media_objects": 0,
+            "still_image_media": 0,
+            "media_license_values": {},
+            "occurrence_license_values": {},
+            "media_license_allowed": 0,
+            "occurrence_license_allowed": 0,
+            "https_media_urls": 0,
+            "cc_by_media_attribution_present": 0,
+            "cc_by_occurrence_rights_holder_present": 0,
+            "accepted_candidates": 0,
+        }
+        for name in SPECIES
+    }
     errors = []
     for species in SPECIES:
         if len(rows) >= target:
@@ -169,19 +188,62 @@ def discover(target=1000, max_pages=3, limit=100, pause=1.0, fetch=fetch_json):
             for page in range(max_pages):
                 if counts[species] >= quota or len(rows) >= target:
                     break
-                # GBIF's public Occurrence API uses camelCase parameter names.
-                # Unknown snake_case names are not equivalent and may yield an
-                # unfiltered result set that the exact species guard then rejects.
+                # Use GBIF's documented canonical camelCase parameter names.
+                # GBIF tolerates several aliases, so the run diagnostics below
+                # also report each response-filtering stage rather than inferring
+                # an empty result from parameter spelling alone.
                 query = urllib.parse.urlencode({
                     "taxonKey": taxon_key, "mediaType": "StillImage",
                     "limit": limit, "offset": page * limit,
                 })
                 payload = fetch(BASE + "/occurrence/search?" + query)
+                diag = diagnostics[species]
+                diag["query_pages"] += 1
                 records = payload.get("results", []) if isinstance(payload, dict) else []
+                if isinstance(payload, dict):
+                    api_count = payload.get("count")
+                    if type(api_count) is int:
+                        diag["api_reported_occurrences"] = max(diag["api_reported_occurrences"], api_count)
                 if not records:
                     break
                 for occurrence in records:
-                    for media in occurrence.get("media", []) if isinstance(occurrence, dict) else []:
+                    if not isinstance(occurrence, dict):
+                        continue
+                    diag["occurrence_records_returned"] += 1
+                    if (
+                        type(occurrence.get("speciesKey")) is int
+                        and occurrence.get("speciesKey") == taxon_key
+                        and occurrence.get("species") == species
+                    ):
+                        diag["exact_species_key_and_name"] += 1
+                    occurrence_license_value = str(occurrence.get("license") or "MISSING")
+                    occurrence_licenses = diag["occurrence_license_values"]
+                    occurrence_licenses[occurrence_license_value] = occurrence_licenses.get(occurrence_license_value, 0) + 1
+                    if normalize_license(occurrence.get("license")):
+                        diag["occurrence_license_allowed"] += 1
+                    if occurrence.get("rightsHolder"):
+                        diag["cc_by_occurrence_rights_holder_present"] += 1
+                    media_items = occurrence.get("media", [])
+                    if not isinstance(media_items, list):
+                        continue
+                    for media in media_items:
+                        if not isinstance(media, dict):
+                            continue
+                        diag["media_objects"] += 1
+                        media_type = str(media.get("type") or "MISSING")
+                        media_types = diag.setdefault("media_type_values", {})
+                        media_types[media_type] = media_types.get(media_type, 0) + 1
+                        if media_type.lower() in {"stillimage", "image"}:
+                            diag["still_image_media"] += 1
+                        media_license_value = str(media.get("license") or "MISSING")
+                        media_licenses = diag["media_license_values"]
+                        media_licenses[media_license_value] = media_licenses.get(media_license_value, 0) + 1
+                        if normalize_license(media.get("license")):
+                            diag["media_license_allowed"] += 1
+                        if isinstance(media.get("identifier"), str) and media["identifier"].startswith("https://"):
+                            diag["https_media_urls"] += 1
+                        if media.get("creator") or media.get("rightsHolder"):
+                            diag["cc_by_media_attribution_present"] += 1
                         candidate = media_candidate(media, occurrence, species, expected_species_key=taxon_key)
                         if not candidate:
                             continue
@@ -191,6 +253,7 @@ def discover(target=1000, max_pages=3, limit=100, pause=1.0, fetch=fetch_json):
                         seen_media.add(identity)
                         rows.append(candidate)
                         counts[species] += 1
+                        diag["accepted_candidates"] += 1
                         break
                     if counts[species] >= quota or len(rows) >= target:
                         break
@@ -202,8 +265,8 @@ def discover(target=1000, max_pages=3, limit=100, pause=1.0, fetch=fetch_json):
             errors.append("%s: %s" % (species, type(exc).__name__))
     status = "complete" if rows and not errors else ("empty" if not rows and not errors else ("partial" if rows else "unavailable"))
     return rows, {"status": status, "requested": target, "found": len(rows),
-                  "counts_by_species": counts, "errors": errors,
-                  "media_downloaded": False, "training_performed": False}
+                  "counts_by_species": counts, "diagnostics_by_species": diagnostics,
+                  "errors": errors, "media_downloaded": False, "training_performed": False}
 
 
 def main():
