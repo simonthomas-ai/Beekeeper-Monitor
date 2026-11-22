@@ -76,7 +76,7 @@ def _validate_candidate_provenance(row):
             raise ValueError("required rights provenance missing: " + field)
     creator = str(row["creator"]).strip()
     login = str(row["creator_login"]).strip()
-    if creator.casefold() in {"unknown", "no rights reserved", "attribution unavailable"}:
+    if creator.casefold() in {"unknown", "no rights reserved", "attribution unavailable"} or login.casefold() in {"unknown", "no rights reserved", "attribution unavailable"}:
         raise ValueError("creator identity is missing or mislabelled")
     if license_code == "CC0-1.0":
         if row["attribution"] != f"{creator}, no rights reserved (CC0)":
