@@ -6,6 +6,7 @@ import argparse
 import json
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +14,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from training.stage_mobile_reviews import stage
+from scripts.prepare_cvat_review_pack import build_cvat_review_pack
 
 ITEMS_RE = re.compile(r"\bconst\s+items\s*=\s*(\[.*?\])\s*;", re.DOTALL)
 
@@ -22,6 +24,7 @@ def verify_mobile_original_gallery(
     asset_root: str | Path,
     *,
     expected_count: int = 94,
+    prepare_cvat_pack: bool = False,
 ) -> tuple[int, int]:
     """Stage all Velutina gallery items using the extracted real original artifact.
 
@@ -108,6 +111,23 @@ def verify_mobile_original_gallery(
         ):
             raise ValueError(f"staged record {source['photo_id']} changed its non-approval or asset binding")
 
+    if prepare_cvat_pack:
+        with tempfile.TemporaryDirectory(prefix="cvat-real-original-smoke-") as temporary:
+            result = build_cvat_review_pack(
+                queued, asset_root, Path(temporary) / "review-pack"
+            )
+            if (
+                result.get("images") != expected_count
+                or result.get("annotations_generated") != 0
+                or result.get("yolo_label_files_generated") != 0
+                or result.get("training_approved") != 0
+            ):
+                raise ValueError("CVAT review-pack smoke test changed image count or created annotations/approval")
+        print(
+            f"PASS: CVAT image-only package verified for {expected_count} originals; "
+            "0 annotations and 0 training approvals."
+        )
+
     return expected_count, total_bytes
 
 
@@ -116,11 +136,13 @@ def main() -> int:
     parser.add_argument("--gallery", type=Path, required=True)
     parser.add_argument("--asset-root", type=Path, required=True)
     parser.add_argument("--expected-count", type=int, default=94)
+    parser.add_argument("--prepare-cvat-pack", action="store_true", help="Build and discard a verified image-only CVAT pack as an end-to-end packaging smoke test")
     args = parser.parse_args()
 
     try:
         count, total_bytes = verify_mobile_original_gallery(
-            args.gallery, args.asset_root, expected_count=args.expected_count
+            args.gallery, args.asset_root, expected_count=args.expected_count,
+            prepare_cvat_pack=args.prepare_cvat_pack,
         )
     except (ValueError, OSError, UnicodeError) as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
@@ -138,6 +160,7 @@ def main() -> int:
                 f"- Original files staged: {count}\n"
                 f"- Source bytes re-verified: {total_bytes}\n"
                 "- Training approvals created: 0\n"
+                + ("- CVAT image-only pack smoke test: passed; 0 annotations\n" if args.prepare_cvat_pack else "")
             )
     return 0
 
