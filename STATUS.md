@@ -12,7 +12,10 @@
 - [x] PR [#268](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/268): GBIF-Review-Queue wird aus demselben begrenzten Byte-Snapshot geparst und gehasht; doppelte CSV-/JSON-Schlüssel und fehlerhafte Zeilen werden abgewiesen.
 - [x] PR [#269](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/269): Pages-Auditor prüft lokale Originale per No-Follow-Datei-Handle; Manifest-/Galerieeingaben sind größenbegrenzt und streng geparst. 22 Auditor-Regressionstests erfolgreich.
 - [x] GBIF-Regressionen erfolgreich: Discovery 12/12, Galerie 12/12, Review-Importer 21/21.
-- [ ] Dependabot-Update-Pull-Requests fuer npm und GitHub Actions muessen einzeln geprueft und mit ihren eigenen CI-Laeufen bestaetigt werden.
+- [x] BeeKeeper3000 PR [#99](https://github.com/simonthomas-ai/BeeKeeper3000/pull/99) integriert: Datenschutzsperre für camelCase-/Trennzeichen-Aliase; post-merge Quality Gates und CodeQL erfolgreich.
+- [x] Cross-Repository-Workflow auf den geprüften BeeKeeper3000-Commit `f0d6aa150725ae33c2ad06c726289751c3c0a880` gepinnt (Monitor PR [#271](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/271)); beide Partner-Commit-IDs werden im CI-Bericht ausgegeben.
+- [x] Post-merge-Prüfung für Monitor main commit `1013b5b373b402b3ed167ca6417e29a31321f8ef` erfolgreich: Gesamttest [#882](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45012848918), Repository-Integration [#45012848971], privater PWA-Build [#45012848923] und BeeKeeper3000-Bridge-Integration.
+- [x] Offene Dependabot-PRs in beiden Repositories geprüft: am 22.11.2026 keine offenen Dependabot-PRs. Neue Bot-PRs müssen weiterhin einzeln mit ihren eigenen CI-Läufen geprüft werden.
 - [ ] Oeffentlicher Pages-Deploy bleibt deaktiviert. Impressum und Datenschutzhinweise enthalten weiterhin offene Betreiber-/Kontaktangaben; keine Veroeffentlichung ohne vollstaendige rechtliche Pruefung und ausdrueckliche Freigabe.
 - [ ] **KI-Status bleibt BLOCKIERT:** Das reale Trainingsdatenverzeichnis `datasets/beekeeper` fehlt; `training/reviewed-annotations.json` mit fachlich bestaetigten Annotationen fehlt ebenfalls. Keine freigegebenen Modellgewichte, keine gemessene Erkennungsgenauigkeit und keine Feldfreigabe.
 
