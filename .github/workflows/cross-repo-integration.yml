@@ -32,7 +32,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: simonthomas-ai/BeeKeeper3000
-          ref: main
+          # Immutable partner revision; update deliberately after its CI passes.
+          ref: f0d6aa150725ae33c2ad06c726289751c3c0a880
           path: beekeeper3000
           persist-credentials: false
       - name: Python vorbereiten
@@ -59,5 +60,7 @@ jobs:
         if: always()
         run: |
           echo '## VespaGuard: Repository-übergreifende Prüfung' >> "$GITHUB_STEP_SUMMARY"
-          echo 'Beide aktuellen Hauptzweige werden zusammen ausgecheckt und ihre Source-API-, Bridge- und Receiver-Tests ausgeführt.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Monitor commit: '$(git -C monitor rev-parse HEAD) >> "$GITHUB_STEP_SUMMARY"
+          echo 'BeeKeeper3000 partner commit: f0d6aa150725ae33c2ad06c726289751c3c0a880' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Der Partnerstand ist absichtlich auf einen unveränderlichen Commit gepinnt; Änderungen daran benötigen eine bewusste Aktualisierung dieses Workflows.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Diese Prüfung ist noch kein Feldtest mit echter Kamera, Funkhardware oder freigegebenem KI-Modell.' >> "$GITHUB_STEP_SUMMARY"
