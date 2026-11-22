@@ -31,7 +31,7 @@ REQUIRED_FIELDS = {
     "occurrence_rights_holder", "dataset_key", "scientific_name",
     "species_key", "review_status",
 }
-ORIGINAL_PATH = re.compile(r"^/photos/[0-9]+/original\\.(?:jpe?g|png|webp)$", re.I)
+ORIGINAL_PATH = re.compile(r"^/photos/[0-9]+/original\.(?:jpe?g|png|webp)$", re.I)
 
 
 def _json_for_inline_script(value):
@@ -54,7 +54,7 @@ def _https_url(value, field):
         or not parsed.hostname
         or parsed.username or parsed.password
         or parsed.port not in (None, 443)
-        or parsed.fragment
+        or parsed.query or parsed.fragment
     ):
         raise ValueError(f"{field} must be a credential-free HTTPS URL")
     return parsed
@@ -63,6 +63,8 @@ def _https_url(value, field):
 def _allowed_inline_image(url, media_format):
     parsed = _https_url(url, "image_url")
     if parsed.hostname.lower() not in INLINE_IMAGE_HOSTS:
+        return False
+    if parsed.query:
         return False
     if not ORIGINAL_PATH.fullmatch(parsed.path):
         return False
@@ -82,6 +84,8 @@ def prepare_items(source):
 
     if not rows:
         raise ValueError("GBIF candidate queue is empty")
+    if len(rows) > 500:
+        raise ValueError("GBIF candidate queue exceeds the configured 500-row review limit")
     seen_ids = set()
     items = []
     for index, row in enumerate(rows, start=2):
