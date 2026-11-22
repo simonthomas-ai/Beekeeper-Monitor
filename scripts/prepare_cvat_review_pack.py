@@ -22,7 +22,8 @@ from training.stage_mobile_reviews import _asset_root, stage
 
 METADATA_FIELDS = (
     "photo_id", "observation_id", "candidate_species", "source_url",
-    "creator", "license", "mobile_decision", "proposed_box_count",
+    "creator", "creator_login", "attribution", "license_notice",
+    "source_image_url", "license", "mobile_decision", "proposed_box_count",
     "image_file", "original_path", "sha256", "file_bytes", "training_eligible",
 )
 
@@ -50,6 +51,10 @@ def _payload_from_expert_queue(queue: dict) -> dict:
             "image_url": row.get("local_image_path"),
             "license": row.get("license_claim"),
             "creator": row.get("creator_claim"),
+            "creator_login": row.get("creator_login"),
+            "attribution": row.get("attribution"),
+            "license_notice": row.get("license_notice"),
+            "source_image_url": row.get("source_image_url"),
             "training_eligible": False,
             "image_delivery": "LOCAL_UNMODIFIED_ORIGINAL",
             "original_sha256": row.get("original_sha256"),
@@ -192,6 +197,10 @@ def build_cvat_review_pack(expert_queue: dict, asset_root: str | Path,
                     "candidate_species": row["species_candidate"],
                     "source_url": row["source_url"],
                     "creator": row["creator_claim"],
+                    "creator_login": row["creator_login"],
+                    "attribution": row["attribution"],
+                    "license_notice": row["license_notice"],
+                    "source_image_url": row["source_image_url"],
                     "license": row["license_claim"],
                     "mobile_decision": row["mobile_decision"],
                     "proposed_box_count": len(row["proposed_boxes"]),
@@ -221,7 +230,8 @@ This pack contains byte-preserved source images for human annotation only.
 
 - cvat-images.zip contains only the original image files. It contains no annotations or generated labels.
 - labels.json is the exact seven-class task label schema. These names are available classes, not assignments to any image.
-- metadata.csv preserves photo and observation IDs, source URL, creator attribution, license, original path, byte count and SHA-256.
+- metadata.csv preserves photo and observation IDs, observation URL, creator name and login, exact attribution text, license notice, direct original-image URL, license, original path, byte count and SHA-256.
+- The provenance fields are copied from the verified source manifest, never inferred from the mobile review.
 - SHA256SUMS.txt binds the sidecar files and image archive.
 
 ## Create a CVAT Community task
