@@ -138,16 +138,11 @@ class MobileStageTests(unittest.TestCase):
     def test_rejects_symlinked_local_image(self):
         with tempfile.TemporaryDirectory() as tmp:
             data, root, image_path, _ = self._make_local_artifact(tmp)
-            link = image_path.with_name("101-link.jpg")
+            target = image_path.with_name("real-original.jpg")
+            image_path.rename(target)
             try:
-                link.symlink_to(image_path.name)
+                image_path.symlink_to(target.name)
             except (OSError, NotImplementedError) as exc:
                 self.skipTest(f"symlinks unavailable: {exc}")
-            data["records"][0]["image_url"] = "images/velutina/101-link.jpg"
-            data["records"][0]["photo_id"] = "101-link"
-            with self.assertRaises(ValueError):
+            with self.assertRaisesRegex(ValueError, "symbolic link"):
                 stage(data, asset_root=root)
-
-
-if __name__ == "__main__":
-    unittest.main()
