@@ -1,0 +1,126 @@
+name: iNaturalist balanced metadata discovery
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'training/discover_inaturalist_candidates.py'
+      - 'training/test_discovery_species.py'
+      - 'training/test_discovery_license.py'
+      - 'training/audit_inaturalist_candidates.py'
+      - 'training/test_audit_inaturalist_candidates.py'
+      - 'training/dataset_groups.py'
+      - 'training/inaturalist_media.py'
+      - 'training/INATURALIST-REVIEW.md'
+      - '.github/workflows/inaturalist-balanced-discovery.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'training/discover_inaturalist_candidates.py'
+      - 'training/test_discovery_species.py'
+      - 'training/test_discovery_license.py'
+      - 'training/audit_inaturalist_candidates.py'
+      - 'training/test_audit_inaturalist_candidates.py'
+      - 'training/dataset_groups.py'
+      - 'training/inaturalist_media.py'
+      - 'training/INATURALIST-REVIEW.md'
+      - '.github/workflows/inaturalist-balanced-discovery.yml'
+  schedule:
+    - cron: '19 6 * * 2'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inaturalist-balanced-metadata-discovery
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Offline candidate, licence and taxonomy regression tests
+        run: |
+          python3 -m unittest discover -s training -p 'test_discovery_*.py' -v
+          python3 -m unittest discover -s training -p 'test_audit_inaturalist_candidates.py' -v
+
+      - name: Discover up to 1,000 balanced observation metadata candidates
+        if: github.event_name != 'pull_request'
+        run: |
+          python3 training/discover_inaturalist_candidates.py \
+            --target 1000 \
+            --max-pages 12 \
+            --pause 1.1 \
+            --output training/inaturalist-review-queue.csv
+
+      - name: Audit creator, attribution, source URL, image variant, duplicate and review metadata
+        if: github.event_name != 'pull_request'
+        run: |
+          python3 training/audit_inaturalist_candidates.py \
+            --input training/inaturalist-review-queue.csv \
+            --output training/inaturalist-metadata-audit.json
+
+      - name: Summarize candidate coverage without granting training approval
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import csv
+          import json
+          import os
+          from collections import Counter
+          from pathlib import Path
+
+          queue = Path("training/inaturalist-review-queue.csv")
+          audit = Path("training/inaturalist-metadata-audit.json")
+          lines = [
+              "## iNaturalist balanced metadata discovery",
+              "",
+              "- Source: official iNaturalist observations API",
+              "- Image bytes downloaded: No",
+              "- Training approvals created: 0",
+              "- Candidate labels are not expert-confirmed species labels.",
+          ]
+          if queue.is_file():
+              with queue.open(newline="", encoding="utf-8") as stream:
+                  rows = list(csv.DictReader(stream))
+              groups = Counter(row.get("dataset_group", "UNKNOWN") for row in rows)
+              species = Counter(row.get("species_candidate", "UNKNOWN") for row in rows)
+              licenses = Counter(row.get("license", "UNKNOWN") for row in rows)
+              lines.extend([
+                  f"- Metadata candidates: {len(rows)} / 1000 requested",
+                  f"- Source shortfall: {'Yes' if len(rows) < 1000 else 'No'}",
+                  f"- Groups: {json.dumps(dict(sorted(groups.items())), ensure_ascii=False)}",
+                  f"- Scientific taxa: {json.dumps(dict(sorted(species.items())), ensure_ascii=False)}",
+                  f"- License classes: {json.dumps(dict(sorted(licenses.items())), ensure_ascii=False)}",
+              ])
+          else:
+              lines.append("- Candidate queue was not created.")
+          if audit.is_file():
+              report = json.loads(audit.read_text(encoding="utf-8"))
+              lines.extend([
+                  f"- Metadata audit errors: {len(report.get('metadata_errors', []))}",
+                  f"- Auditor-approved training images: {report.get('approved_training_images', 0)}",
+                  f"- Human review required: {report.get('requires_human_review', True)}",
+              ])
+          else:
+              lines.append("- Metadata audit report was not created.")
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
+              stream.write("\n".join(lines) + "\n")
+          PY
+
+      - name: Preserve the metadata queue and audit as a short-lived review artifact
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: inaturalist-balanced-review-queue
+          path: |
+            training/inaturalist-review-queue.csv
+            training/inaturalist-metadata-audit.json
+          if-no-files-found: ignore
+          retention-days: 14

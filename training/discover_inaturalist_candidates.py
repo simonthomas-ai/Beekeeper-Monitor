@@ -29,9 +29,10 @@ LICENSES = {
     "cc-by": ("CC-BY-VERSION-UNVERIFIED", ""),
 }
 FIELDS = [
-    "source_id", "source_url", "image_url", "creator", "license",
-    "license_url", "attribution", "observation_id", "photo_id",
-    "species_candidate", "dataset_group", "review_status",
+    "source_id", "source_url", "image_url", "creator", "creator_login",
+    "license", "license_url", "license_notice", "attribution",
+    "observation_id", "photo_id", "species_candidate", "dataset_group",
+    "review_status",
 ]
 
 
@@ -51,6 +52,8 @@ def fetch_observations(species, page):
 
 def _candidate_from_observation(obs, species, seen_photos, seen_observations):
     """Return one valid, original-resolution candidate from an observation."""
+    if not isinstance(obs, dict) or obs.get("quality_grade") != "research":
+        return None
     if (obs.get("taxon") or {}).get("name") != species:
         return None
     observation_id = obs.get("id")
@@ -61,9 +64,33 @@ def _candidate_from_observation(obs, species, seen_photos, seen_observations):
         if not photo_id or str(photo_id) in seen_photos:
             continue
         license_data = LICENSES.get(str(photo.get("license_code", "")).lower())
-        attribution = (photo.get("attribution") or "").strip()
-        if not license_data or not attribution:
+        license_notice = (photo.get("attribution") or "").strip()
+        if not license_data or not license_notice:
             continue
+
+        observer = obs.get("user")
+        if not isinstance(observer, dict):
+            observer = {}
+        creator_login = str(observer.get("login") or obs.get("user_login") or "").strip()
+        creator_name = str(observer.get("name") or "").strip()
+        creator = creator_name or creator_login
+        if not creator_login or not creator:
+            continue
+
+        # Keep creator identity, the source-provided media notice and the
+        # formatted attribution as separate fields. iNaturalist documents this
+        # CC0 attribution form; CC BY stays version-unverified until photo-page
+        # review, so its source-provided attribution is preserved verbatim.
+        if license_data[0] == "CC0-1.0":
+            attribution = f"{creator}, no rights reserved (CC0)"
+        else:
+            attribution = license_notice
+            identity = creator.casefold()
+            login = creator_login.casefold()
+            notice = attribution.casefold()
+            if identity not in notice and login not in notice:
+                continue
+
         try:
             image_url = original_image_url(photo.get("url") or "", photo_id)
         except ValueError:
@@ -75,9 +102,11 @@ def _candidate_from_observation(obs, species, seen_photos, seen_observations):
             "source_id": "inaturalist-photo-" + str(photo_id),
             "source_url": "https://www.inaturalist.org/observations/" + str(observation_id),
             "image_url": image_url,
-            "creator": attribution,
+            "creator": creator,
+            "creator_login": creator_login,
             "license": license_data[0],
             "license_url": license_data[1],
+            "license_notice": license_notice,
             "attribution": attribution,
             "observation_id": str(observation_id),
             "photo_id": str(photo_id),
