@@ -188,9 +188,10 @@ def discover(target=1000, max_pages=3, limit=100, pause=1.0, fetch=fetch_json):
             for page in range(max_pages):
                 if counts[species] >= quota or len(rows) >= target:
                     break
-                # GBIF's public Occurrence API uses camelCase parameter names.
-                # Unknown snake_case names are not equivalent and may yield an
-                # unfiltered result set that the exact species guard then rejects.
+                # Use GBIF's documented canonical camelCase parameter names.
+                # GBIF tolerates several aliases, so the run diagnostics below
+                # also report each response-filtering stage rather than inferring
+                # an empty result from parameter spelling alone.
                 query = urllib.parse.urlencode({
                     "taxonKey": taxon_key, "mediaType": "StillImage",
                     "limit": limit, "offset": page * limit,
