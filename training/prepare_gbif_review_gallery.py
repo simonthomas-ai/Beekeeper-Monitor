@@ -209,7 +209,7 @@ function render(){
  for(const [label,key] of fields){
    const dt=document.createElement("dt"),dd=document.createElement("dd");
    dt.textContent=label;dd.textContent=String(item[key]||"–");
-   if(key==="source_url"||key==="media_license_url"||key==="occurrence_license_url"){
+   if(key==="source_url"||key==="image_url"||key==="media_license_url"||key==="occurrence_license_url"){
      const a=document.createElement("a");a.href=String(item[key]||"#");a.target="_blank";a.rel="noopener noreferrer";a.textContent=String(item[key]||"–");dd.replaceChildren(a);
    }
    $("metadata").append(dt,dd);
