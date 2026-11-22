@@ -95,7 +95,7 @@ class GbifReviewImportTests(unittest.TestCase):
         payload = self.export()
         original = self.queue.read_bytes()
         # CRLF is semantically equivalent CSV but is a different source snapshot.
-        self.queue.write_bytes(original.replace(b"\\n", b"\\r\\n"))
+        self.queue.write_bytes(original.replace(b"\n", b"\r\n"))
         with self.assertRaisesRegex(ValueError, "source queue SHA-256"):
             self.validate(payload)
 
