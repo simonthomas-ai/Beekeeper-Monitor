@@ -24,7 +24,10 @@ def make_verified_queue(root: Path):
     manifest = {
         "photo_id": "101", "observation_id": "202",
         "species_candidate": "Vespa velutina", "source_url": source_url,
-        "license": "CC0-1.0", "creator": "public-creator",
+        "license": "CC0-1.0", "creator": 'Créateur, "Original"',
+        "creator_login": "public-creator-login",
+        "attribution": 'Créateur, "Original", no rights reserved (CC0)',
+        "license_notice": "CC0 1.0: no rights reserved",
         "source_image_url": "https://static.inaturalist.org/photos/101/original.jpg",
         "local_image_path": "images/velutina/101.jpg",
         "image_format": "JPEG", "image_width": "1200", "image_height": "800",
@@ -42,7 +45,11 @@ def make_verified_queue(root: Path):
             "photo_id": "101", "observation_id": "202",
             "species_candidate": "Vespa velutina", "source_url": source_url,
             "image_url": "images/velutina/101.jpg",
-            "license": "CC0-1.0", "creator": "public-creator",
+            "license": "CC0-1.0", "creator": 'Créateur, "Original"',
+            "creator_login": "public-creator-login",
+            "attribution": 'Créateur, "Original", no rights reserved (CC0)',
+            "license_notice": "CC0 1.0: no rights reserved",
+            "source_image_url": "https://static.inaturalist.org/photos/101/original.jpg",
             "training_eligible": False,
             "image_delivery": "LOCAL_UNMODIFIED_ORIGINAL",
             "original_sha256": digest, "original_file_bytes": len(data),
@@ -79,6 +86,20 @@ class CvatReviewPackTests(unittest.TestCase):
             self.assertEqual(row["sha256"], digest)
             self.assertEqual(row["training_eligible"], "false")
             self.assertEqual(row["mobile_decision"], "LIKELY")
+            self.assertEqual(row["creator"], 'Créateur, "Original"')
+            self.assertEqual(row["creator_login"], "public-creator-login")
+            self.assertEqual(row["attribution"], 'Créateur, "Original", no rights reserved (CC0)')
+            self.assertEqual(row["license_notice"], "CC0 1.0: no rights reserved")
+            self.assertEqual(row["source_image_url"], "https://static.inaturalist.org/photos/101/original.jpg")
+
+    def test_rejects_tampered_source_attribution_in_expert_queue(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "artifact"
+            root.mkdir()
+            queue, _, _, _ = make_verified_queue(root)
+            queue["records"][0]["attribution"] = "Forged attribution"
+            with self.assertRaisesRegex(ValueError, "attribution differs from the verified manifest"):
+                build_cvat_review_pack(queue, root, Path(tmp) / "pack")
 
     def test_rejects_queue_that_grants_training_approval(self):
         with tempfile.TemporaryDirectory() as tmp:
