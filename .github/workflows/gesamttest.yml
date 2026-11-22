@@ -70,6 +70,8 @@ jobs:
           python3 -m unittest discover -s training -p 'test_render_hornet_review_gallery.py' -v
           python3 -m unittest discover -s training -p 'test_stage_mobile_reviews.py' -v
           python3 -m unittest discover -s training -p 'test_stage_iphone_csv_reviews.py' -v
+          python3 -m unittest discover -s training -p 'test_prepare_gbif_review_gallery.py' -v
+          python3 -m unittest discover -s training -p 'test_import_gbif_visual_reviews.py' -v
           python3 -m unittest training.test_provenance -v
           python3 -m unittest training.test_train -v
       - name: KI-Dateninventur
