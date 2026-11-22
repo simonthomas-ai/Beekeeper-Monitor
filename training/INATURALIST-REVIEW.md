@@ -64,8 +64,19 @@ No YOLO bounding boxes are produced.
 
 A dedicated GitHub Actions workflow runs the balanced 1,000-candidate metadata
 discovery weekly and stores the CSV plus its metadata-audit report as a
-short-lived Actions artifact. It does not commit candidate metadata to `main`,
-download image bytes, or approve training. The workflow can also be started
+short-lived Actions artifact. It does not commit candidate metadata to `main`
+or approve training.
+
+For quality screening, a separate fail-closed selector passes only rows marked
+exactly `CC0-1.0`, with the official CC0 licence URL, observer identity,
+attribution, observation binding and photo-bound iNaturalist `original.jpg`
+URL. CC-BY rows whose licence version is unverified are excluded before any
+image request. The image-quality tool independently checks the exact licence
+and provenance again before requesting a file. Original derivatives are read
+into memory only; no image bytes are written to the repository or artifact.
+The output contains pixel dimensions, decode status and a ranking-only
+edge-contrast score. PASS is not a species determination, biological visibility
+assessment, rights decision or training approval. The workflow can be started
 manually from the Actions tab. Local audit command:
 
 ```sh
