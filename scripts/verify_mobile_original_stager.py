@@ -87,7 +87,8 @@ def verify_mobile_original_gallery(
             "creator_login": item.get("creator_login"),
             "attribution": item.get("attribution"),
             "license_notice": item.get("license_notice"),
-            "source_image_url": item.get("source_image_url"),
+            # The direct original URL is intentionally manifest-only; the gallery
+            # exposes no such field, so the stager restores it from verified metadata.
             "training_eligible": False,
             "image_delivery": item.get("image_delivery"),
             "original_sha256": item.get("original_sha256"),
