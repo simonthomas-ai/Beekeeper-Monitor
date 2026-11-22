@@ -20,6 +20,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Verify offline provenance gate using synthetic bytes only
         run: python3 -m unittest discover -s tests -p test_verify_varroa_source_blob.py -v
