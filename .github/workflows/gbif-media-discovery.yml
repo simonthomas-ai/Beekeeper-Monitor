@@ -9,6 +9,8 @@ on:
       - 'training/OPEN-DATA-SOURCES.md'
       - 'training/prepare_gbif_review_gallery.py'
       - 'training/test_prepare_gbif_review_gallery.py'
+      - 'training/import_gbif_visual_reviews.py'
+      - 'training/test_import_gbif_visual_reviews.py'
       - 'training/GBIF-MOBILE-REVIEW.md'
       - 'sources/catalog.json'
       - '.github/workflows/gbif-media-discovery.yml'
@@ -20,6 +22,8 @@ on:
       - 'training/OPEN-DATA-SOURCES.md'
       - 'training/prepare_gbif_review_gallery.py'
       - 'training/test_prepare_gbif_review_gallery.py'
+      - 'training/import_gbif_visual_reviews.py'
+      - 'training/test_import_gbif_visual_reviews.py'
       - 'training/GBIF-MOBILE-REVIEW.md'
       - 'sources/catalog.json'
       - '.github/workflows/gbif-media-discovery.yml'
@@ -46,6 +50,7 @@ jobs:
         run: |
           python -m unittest training.test_discover_gbif_media_candidates -v
           python -m unittest training.test_prepare_gbif_review_gallery -v
+          python -m unittest training.test_import_gbif_visual_reviews -v
       - name: Query the official GBIF API for licensed image metadata only
         if: github.event_name != 'pull_request'
         run: python training/discover_gbif_media_candidates.py --target 500 --max-pages 2 --limit 100 --pause 0.7 --allow-unavailable

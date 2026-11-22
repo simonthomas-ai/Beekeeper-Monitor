@@ -46,3 +46,21 @@ Uncertain records must be marked `REJECT` or left `PENDING`; never force an unce
 The gallery does not create boxes, YOLO labels, dataset splits, annotations or model approvals. Human gallery decisions are still proposals. The downstream training gate requires a separate per-image provenance record, expert-confirmed class, independently quality-assured bounding boxes, duplicate checks, group-safe train/validation/test splits and a separate held-out evaluation set.
 
 See also [the main training-data issue](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/191).
+
+
+## Reconcile a local visual-review export
+
+The gallery export is a proposal record, not a training dataset. Before archiving it, reconcile it against the exact original GBIF queue used to build the gallery:
+
+```sh
+python training/import_gbif_visual_reviews.py \
+  --queue training/gbif-media-review-queue.csv \
+  --review-export beekeeper-gbif-visual-review.json \
+  --output training/gbif-visual-review-audit.json \
+  --reviewer "Name of reviewer" \
+  --recorded-at "2026-11-22T10:00:00+01:00"
+```
+
+The importer requires every original candidate exactly once. It rejects changed source IDs, occurrence URLs, species keys/names, media URLs, host allowlist decisions, licence URLs, creator/rights-holder fields, and any attempt to set `training_eligible=true` or add boxes/labels. The output records the decision counts, reviewer and timestamp, but explicitly keeps zero expert species confirmations, zero bounding boxes, zero training labels and zero training approvals.
+
+The output path must be new; an existing audit file is never overwritten. Keep the original queue, review export and reconciled audit together so the review is reproducible.
