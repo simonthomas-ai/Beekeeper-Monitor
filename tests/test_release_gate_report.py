@@ -24,6 +24,15 @@ class ReleaseGateReportTests(unittest.TestCase):
         self.assertIn("| Qualitätsprüfung | unknown |", result)
         self.assertIn("Freigabestatus: GESPERRT", result)
 
+    def test_ai_data_failures_remain_visible(self):
+        result = render(self.checklist, {
+            "Echte Trainingsdaten": "failure",
+            "Fachlich geprüfte Annotationen": "failure",
+        })
+        self.assertIn("| Echte Trainingsdaten | failure |", result)
+        self.assertIn("| Fachlich geprüfte Annotationen | failure |", result)
+        self.assertIn("Freigabestatus: GESPERRT", result)
+
     def test_empty_checklist_fails_closed(self):
         with self.assertRaises(ValueError):
             render("# leer\n", {"Qualitätsprüfung": "success"})
