@@ -125,7 +125,8 @@ jobs:
               "## iNaturalist balanced metadata discovery",
               "",
               "- Source: official iNaturalist observations API",
-              "- Image bytes downloaded: No",
+              "- Image bytes stored on disk or in artifact: No",
+              "- CC0 originals fetched transiently into memory for decode/dimension screening only; unverified CC-BY originals are not fetched.",
               "- Training approvals created: 0",
               "- Candidate labels are not expert-confirmed species labels.",
           ]
