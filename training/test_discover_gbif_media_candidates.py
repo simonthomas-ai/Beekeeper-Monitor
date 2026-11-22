@@ -1,4 +1,6 @@
 import unittest
+from urllib.parse import parse_qs, urlparse
+
 from training.discover_gbif_media_candidates import (
     BASE, normalize_license, media_candidate, match_species, discover
 )
@@ -88,21 +90,46 @@ class GBIFMediaCandidateTests(unittest.TestCase):
             media_candidate(media, occurrence, "Vespa velutina", expected_species_key=123)
         )
 
-    def test_discovery_reports_only_candidate_metadata(self):
+    def test_discovery_uses_documented_camelcase_occurrence_parameters(self):
+        occurrence_queries = []
+
         def fetch(url):
             if "/species/match?" in url:
                 return {"matchType":"EXACT", "rank":"SPECIES", "canonicalName":"Vespa velutina", "usageKey":1}
             if "/occurrence/search?" in url:
+                params = parse_qs(urlparse(url).query)
+                occurrence_queries.append(params)
+                self.assertEqual(params.get("taxonKey"), ["1"])
+                self.assertEqual(params.get("mediaType"), ["StillImage"])
+                self.assertNotIn("taxon_key", params)
+                self.assertNotIn("media_type", params)
                 return {"results":[{"key":9,"speciesKey":1,"species":"Vespa velutina",
                     "license":"CC0_1_0","datasetKey":"d",
                     "media":[{"type":"StillImage","identifier":"https://images.example/9.jpg",
                     "license":"CC0_1_0"}]}]}
             raise AssertionError("Unexpected endpoint: " + url)
-        # Run a single target; the quota means only the first species is queried.
         rows, status = discover(target=1, max_pages=1, limit=10, pause=0.5, fetch=fetch)
         self.assertEqual(len(rows), 1)
+        self.assertTrue(occurrence_queries)
         self.assertEqual(rows[0]["scientific_name"], "Vespa velutina")
         self.assertEqual(rows[0]["species_key"], 1)
+        self.assertFalse(status["media_downloaded"])
+        self.assertFalse(status["training_performed"])
+
+    def test_empty_api_results_are_reported_as_empty_not_complete(self):
+        def fetch(url):
+            if "/species/match?" in url:
+                return {"matchType":"EXACT", "rank":"SPECIES", "canonicalName":"Vespa velutina", "usageKey":1}
+            if "/occurrence/search?" in url:
+                params = parse_qs(urlparse(url).query)
+                self.assertEqual(params.get("taxonKey"), ["1"])
+                self.assertEqual(params.get("mediaType"), ["StillImage"])
+                return {"results":[]}
+            raise AssertionError("Unexpected endpoint: " + url)
+
+        rows, status = discover(target=1, max_pages=1, limit=10, pause=0.5, fetch=fetch)
+        self.assertEqual(rows, [])
+        self.assertEqual(status["status"], "empty")
         self.assertFalse(status["media_downloaded"])
         self.assertFalse(status["training_performed"])
 
