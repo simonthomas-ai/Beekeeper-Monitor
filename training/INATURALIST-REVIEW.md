@@ -52,12 +52,27 @@ For observation **414481366**, photo **763034625**, the old gallery used the
 square.jpg variant; it now uses the original.jpg variant. The candidate remains
 unreviewed and is not automatically eligible for training.
 
+The candidate queue keeps `creator`, `creator_login`, the source-provided
+`license_notice` and the formatted `attribution` in separate columns. CC0
+attribution follows iNaturalist's documented observer-name/login format.
 **Required human review:** verify the license *version* and author on the
 original photo page; iNaturalist API's `cc-by` code alone does not establish
 CC BY **4.0**. Verify actual species, photo quality, use rights, observation
-independence and any labeling requirements. The CSV's CC-BY-4.0 mapping is a
-tentative importer-format placeholder, NOT a verified license grant; change or
-exclude any row that cannot be verified. No YOLO bounding boxes are produced.
+independence and any labeling requirements. `CC-BY-VERSION-UNVERIFIED` is
+deliberately not accepted as CC-BY-4.0 and cannot pass training provenance.
+No YOLO bounding boxes are produced.
+
+A dedicated GitHub Actions workflow runs the balanced 1,000-candidate metadata
+discovery weekly and stores the CSV plus its metadata-audit report as a
+short-lived Actions artifact. It does not commit candidate metadata to `main`,
+download image bytes, or approve training. The workflow can also be started
+manually from the Actions tab. Local audit command:
+
+```sh
+python training/audit_inaturalist_candidates.py \
+  --input training/inaturalist-review-queue.csv \
+  --output training/inaturalist-metadata-audit.json
+```
 
 Only after review, copy the first seven fields of approved rows to a separate
 `approved_images.csv` and use `training/import_authorized_images.py`.
