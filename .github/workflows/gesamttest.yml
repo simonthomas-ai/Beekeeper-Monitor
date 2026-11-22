@@ -33,6 +33,7 @@ jobs:
         run: |
           python3 -m json.tool manifest.webmanifest >/dev/null
           python3 -m unittest scripts.test_audit_workflow_action_pins -v
+          python3 -m unittest scripts.test_bridge_partner_pins -v
           python3 scripts/audit_workflow_action_pins.py
           python3 scripts/check_sources.py
           python3 scripts/test_static.py
