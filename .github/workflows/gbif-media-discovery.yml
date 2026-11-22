@@ -9,6 +9,7 @@ on:
       - 'training/OPEN-DATA-SOURCES.md'
       - 'training/prepare_gbif_review_gallery.py'
       - 'training/test_prepare_gbif_review_gallery.py'
+      - 'training/GBIF-MOBILE-REVIEW.md'
       - 'sources/catalog.json'
       - '.github/workflows/gbif-media-discovery.yml'
   push:
@@ -19,6 +20,7 @@ on:
       - 'training/OPEN-DATA-SOURCES.md'
       - 'training/prepare_gbif_review_gallery.py'
       - 'training/test_prepare_gbif_review_gallery.py'
+      - 'training/GBIF-MOBILE-REVIEW.md'
       - 'sources/catalog.json'
       - '.github/workflows/gbif-media-discovery.yml'
   schedule:
