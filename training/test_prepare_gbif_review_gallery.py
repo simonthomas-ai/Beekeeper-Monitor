@@ -71,6 +71,42 @@ class GbifReviewGalleryTests(unittest.TestCase):
             self.assertNotIn('src:"https://11.ilstatic.hu', page)
             self.assertNotIn('src="https://11.ilstatic.hu', page)
 
+    def test_thumbnail_variant_is_not_auto_embedded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "queue.csv"
+            row = dict(BASE, image_url="https://inaturalist-open-data.s3.amazonaws.com/photos/607770528/square.jpg")
+            self.write_rows(source, [row])
+            item = prepare_items(source)[0]
+            self.assertFalse(item["inline_allowed"])
+            self.assertIsNone(item["inline_image_url"])
+
+    def test_original_with_mismatched_media_format_is_not_auto_embedded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "queue.csv"
+            row = dict(BASE, format="image/webp")
+            self.write_rows(source, [row])
+            item = prepare_items(source)[0]
+            self.assertFalse(item["inline_allowed"])
+
+    def test_image_url_with_query_parameters_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "queue.csv"
+            row = dict(BASE, image_url=BASE["image_url"] + "?redirect=https://evil.example/")
+            self.write_rows(source, [row])
+            with self.assertRaisesRegex(ValueError, "query parameters"):
+                prepare_items(source)
+
+    def test_gallery_limits_queue_size_to_500(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "queue.csv"
+            self.write_rows(source, [
+                dict(BASE, source_id=f"gbif-media-{i}", occurrence_id=str(i),
+                     source_url=f"https://www.gbif.org/occurrence/{i}")
+                for i in range(501)
+            ])
+            with self.assertRaisesRegex(ValueError, "500-row"):
+                prepare_items(source)
+
     def test_rejects_unreviewed_state_change(self):
         with tempfile.TemporaryDirectory() as tmp:
             source = Path(tmp) / "queue.csv"
