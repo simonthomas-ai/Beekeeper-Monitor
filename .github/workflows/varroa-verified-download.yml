@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Test downloader with synthetic bytes (no network)
         run: python3 -m unittest discover -s tests -p test_download_verified_varroa.py -v
       - name: Download pinned upstream weights as inert bytes and verify exact Git blob
