@@ -33,6 +33,11 @@ class ReleaseGateReportTests(unittest.TestCase):
         self.assertIn("| Fachlich geprüfte Annotationen | failure |", result)
         self.assertIn("Freigabestatus: GESPERRT", result)
 
+    def test_taxonomy_failure_is_visible_without_release(self):
+        result = render(self.checklist, {"Europäische Taxonomie (Online-API)": "failure"})
+        self.assertIn("| Europäische Taxonomie (Online-API) | failure |", result)
+        self.assertIn("Freigabestatus: GESPERRT", result)
+
     def test_empty_checklist_fails_closed(self):
         with self.assertRaises(ValueError):
             render("# leer\n", {"Qualitätsprüfung": "success"})
