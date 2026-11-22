@@ -55,9 +55,31 @@ jobs:
               f"- Status: **{data.get('status', 'unknown')}**",
               f"- Metadata candidates: **{data.get('found', 0)}**",
               "- Images downloaded: **No**",
+          ]
+          diagnostics = data.get("diagnostics_by_species", {})
+          if diagnostics:
+              lines.extend(["", "### Per-species filtering diagnostics"])
+              for species, stats in diagnostics.items():
+                  lines.append(
+                      f"- **{species}**: API count={stats.get('api_reported_occurrences', 0)}, "
+                      f"records={stats.get('occurrence_records_returned', 0)}, "
+                      f"exact species={stats.get('exact_species_key_and_name', 0)}, "
+                      f"media={stats.get('media_objects', 0)}, "
+                      f"still images={stats.get('still_image_media', 0)}, "
+                      f"allowed media licence={stats.get('media_license_allowed', 0)}, "
+                      f"allowed occurrence licence={stats.get('occurrence_license_allowed', 0)}, "
+                      f"accepted={stats.get('accepted_candidates', 0)}"
+                  )
+                  lines.append(
+                      f"  - Media licences: {json.dumps(stats.get('media_license_values', {}), ensure_ascii=False)}; "
+                      f"occurrence licences: {json.dumps(stats.get('occurrence_license_values', {}), ensure_ascii=False)}; "
+                      f"media types: {json.dumps(stats.get('media_type_values', {}), ensure_ascii=False)}"
+                  )
+          lines.extend([
+
               "- Model training performed: **No**",
               "- Candidate rights and image identification: **Not yet reviewed**",
-          ]
+          ])
           with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
               stream.write("\n".join(lines) + "\n")
           PY
