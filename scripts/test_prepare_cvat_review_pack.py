@@ -126,16 +126,20 @@ class CvatReviewPackTests(unittest.TestCase):
                 link.symlink_to(root, target_is_directory=True)
             except (OSError, NotImplementedError) as exc:
                 self.skipTest(f"directory symlinks unavailable: {exc}")
+            output = link / "pack"
             with self.assertRaisesRegex(ValueError, "outside the original-image"):
-                build_cvat_review_pack(queue, root, link / "pack")
+                build_cvat_review_pack(queue, root, output)
+            self.assertFalse((root / "pack").exists())
 
     def test_refuses_output_inside_source_asset_root(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / "artifact"
             root.mkdir()
             queue, _, _, _ = make_verified_queue(root)
+            output = root / "cvat-pack"
             with self.assertRaisesRegex(ValueError, "outside the original-image"):
-                build_cvat_review_pack(queue, root, root / "cvat-pack")
+                build_cvat_review_pack(queue, root, output)
+            self.assertFalse(output.exists())
 
     def test_refuses_to_overwrite_existing_output(self):
         with tempfile.TemporaryDirectory() as tmp:
