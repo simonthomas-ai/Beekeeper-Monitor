@@ -14,7 +14,32 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from training.prepare_gbif_review_gallery import prepare_items
+from training.prepare_gbif_review_gallery import prepare_items, read_queue_snapshot
+
+MAX_REVIEW_EXPORT_BYTES = 16 * 1024 * 1024
+
+
+def _unique_json_object(pairs):
+    """Reject duplicate JSON keys instead of silently accepting the last value."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key: {key!r}")
+        result[key] = value
+    return result
+
+
+def load_review_export(path: str | Path) -> object:
+    """Load a bounded UTF-8 review export while rejecting duplicate object keys."""
+    with Path(path).open("rb") as stream:
+        payload = stream.read(MAX_REVIEW_EXPORT_BYTES + 1)
+    if len(payload) > MAX_REVIEW_EXPORT_BYTES:
+        raise ValueError(f"review export exceeds the {MAX_REVIEW_EXPORT_BYTES}-byte safety limit")
+    try:
+        content = payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError("review export must be valid UTF-8") from exc
+    return json.loads(content, object_pairs_hook=_unique_json_object)
 
 FORMAT_IN = "beekeeper-gbif-unverified-review-v2"
 FORMAT_OUT = "beekeeper-gbif-visual-review-audit-v2"
@@ -52,8 +77,11 @@ def validate_review_export(queue_path: str | Path, export: object, *,
     timestamp = _recorded_at(recorded_at)
 
     queue_path = Path(queue_path)
-    expected = prepare_items(queue_path)
-    queue_sha256 = hashlib.sha256(queue_path.read_bytes()).hexdigest()
+    # Parse and hash the exact same immutable bytes. Separate reads would permit
+    # a queue replacement between parsing and digest calculation.
+    queue_bytes = read_queue_snapshot(queue_path)
+    expected = prepare_items(queue_bytes)
+    queue_sha256 = hashlib.sha256(queue_bytes).hexdigest()
     if not isinstance(export, dict) or set(export) != {"format", "source_queue_sha256", "records", "training_eligible"}:
         raise ValueError("review export must contain exactly format, source_queue_sha256, records and training_eligible")
     if export.get("format") != FORMAT_IN:
@@ -161,7 +189,7 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        export = json.loads(args.review_export.read_text(encoding="utf-8"))
+        export = load_review_export(args.review_export)
         result = validate_review_export(
             args.queue, export, reviewer=args.reviewer, recorded_at=args.recorded_at
         )
