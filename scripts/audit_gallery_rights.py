@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import errno
 import hashlib
 import io
 import json
@@ -173,7 +174,8 @@ def _read_manifest(review_root: Path) -> dict[str, dict[str, str]]:
         raise AuditError(f"local original-image manifest missing or unsafe: {manifest_path}")
 
     try:
-        manifest_bytes = manifest_path.read_bytes()
+        with manifest_path.open("rb") as stream:
+            manifest_bytes = stream.read(MAX_MANIFEST_BYTES + 1)
     except OSError as exc:
         raise AuditError(f"cannot read local original-image manifest: {exc}") from exc
     if len(manifest_bytes) > MAX_MANIFEST_BYTES:
@@ -293,6 +295,8 @@ def _resolve_verified_asset(review_root: Path, row: dict[str, str]) -> Path:
     try:
         descriptor = _open_local_asset(review_root, relative)
     except OSError as exc:
+        if exc.errno == errno.ELOOP:
+            raise AuditError(f"symbolic link is not allowed for original image: {relative.as_posix()}") from exc
         raise AuditError(f"original image missing or unsafe: {relative.as_posix()}: {exc}") from exc
 
     digest = hashlib.sha256()
@@ -314,7 +318,8 @@ def _resolve_verified_asset(review_root: Path, row: dict[str, str]) -> Path:
 
 def _extract_items(page_path: Path) -> list[dict[str, object]]:
     try:
-        payload = page_path.read_bytes()
+        with page_path.open("rb") as stream:
+            payload = stream.read(MAX_GALLERY_BYTES + 1)
     except OSError as exc:
         raise AuditError(f"cannot read gallery: {page_path}: {exc}") from exc
     if len(payload) > MAX_GALLERY_BYTES:
@@ -355,6 +360,9 @@ def audit(root: Path) -> tuple[int, int]:
                 raise AuditError(f"{prefix}: invalid observation source URL")
             if not _nonempty(item.get("license")):
                 raise AuditError(f"{prefix}: license metadata missing")
+            if photo_id in seen_in_gallery:
+                raise AuditError(f"{prefix}: duplicate photo ID in gallery")
+            seen_in_gallery.add(photo_id)
             creator = str(item.get("creator", "")).strip()
             creator_login = str(item.get("creator_login", "")).strip()
             attribution = str(item.get("attribution", "")).strip()
@@ -377,9 +385,6 @@ def audit(root: Path) -> tuple[int, int]:
                     raise AuditError(f"{prefix}: local image path lacks explicit local-original delivery marker")
                 if not isinstance(image_url, str):
                     raise AuditError(f"{prefix}: local image path missing")
-                if photo_id in seen_in_gallery:
-                    raise AuditError(f"{prefix}: duplicate photo ID in gallery")
-                seen_in_gallery.add(photo_id)
                 local_references.setdefault(gallery_name, {})[photo_id] = item
             else:
                 if gallery_name == "velutina" or item.get("species_candidate") == "Vespa velutina":
