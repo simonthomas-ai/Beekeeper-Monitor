@@ -10,7 +10,24 @@ class GBIFMediaCandidateTests(unittest.TestCase):
     def test_only_exact_cc0_and_cc_by_4_are_accepted(self):
         self.assertEqual(normalize_license("http://creativecommons.org/publicdomain/zero/1.0/")[0], "CC0-1.0")
         self.assertEqual(normalize_license("https://creativecommons.org/licenses/by/4.0/")[0], "CC-BY-4.0")
-        for denied in ("CC-BY-NC-4.0", "CC BY 3.0", "", None, "all rights reserved"):
+        self.assertEqual(
+            normalize_license("http://creativecommons.org/publicdomain/zero/1.0/legalcode")[0],
+            "CC0-1.0",
+        )
+        self.assertEqual(
+            normalize_license("http://creativecommons.org/licenses/by/4.0/legalcode")[0],
+            "CC-BY-4.0",
+        )
+        self.assertEqual(
+            normalize_license("https://creativecommons.org/licenses/by/4.0/legalcode")[0],
+            "CC-BY-4.0",
+        )
+        for denied in (
+            "CC-BY-NC-4.0", "CC BY 3.0", "", None, "all rights reserved",
+            "http://creativecommons.org/licenses/by-nc/4.0/legalcode",
+            "http://creativecommons.org/licenses/by/3.0/legalcode",
+            "http://creativecommons.org/licenses/by-nc-nd/4.0/legalcode",
+        ):
             self.assertIsNone(normalize_license(denied))
 
     def test_media_license_is_checked_independently_from_occurrence_license(self):
@@ -35,6 +52,15 @@ class GBIFMediaCandidateTests(unittest.TestCase):
                           "license": license_value}
             with self.subTest(license=license_value):
                 self.assertIsNone(media_candidate(media, occurrence, "Vespa velutina", expected_species_key=123))
+
+    def test_cc_by_occurrence_accepts_exact_legalcode_url_with_rights_holder(self):
+        occurrence = {"key": 11, "speciesKey": 123, "species": "Vespa velutina",
+                      "license":"http://creativecommons.org/licenses/by/4.0/legalcode",
+                      "rightsHolder":"Dataset rights holder"}
+        media = {"type":"StillImage", "identifier":"https://images.example/11.jpg", "license":"CC0-1.0"}
+        row = media_candidate(media, occurrence, "Vespa velutina", expected_species_key=123)
+        self.assertEqual(row["occurrence_license"], "CC-BY-4.0")
+        self.assertEqual(row["occurrence_license_url"], "https://creativecommons.org/licenses/by/4.0/")
 
     def test_cc_by_occurrence_requires_rights_holder_attribution(self):
         occurrence = {"key": 11, "speciesKey": 123, "species": "Vespa velutina",
