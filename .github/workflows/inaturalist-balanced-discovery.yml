@@ -79,7 +79,7 @@ jobs:
             --output training/inaturalist-metadata-audit.json
 
       - name: Select exact-CC0 candidates for transient image quality screening
-        id: cc0-queue
+        id: cc0_queue
         if: github.event_name != 'pull_request'
         run: |
           python3 training/prepare_cc0_quality_queue.py \
@@ -87,7 +87,7 @@ jobs:
             --output training/inaturalist-cc0-quality-queue.csv
 
       - name: Screen CC0 original derivatives in memory; persist metadata only
-        if: github.event_name != 'pull_request' && steps.cc0-queue.outputs.candidate_count != '0'
+        if: github.event_name != 'pull_request' && steps.cc0_queue.outputs.candidate_count != '0'
         run: |
           python3 training/screen_inaturalist_image_quality.py \
             --input training/inaturalist-cc0-quality-queue.csv \
