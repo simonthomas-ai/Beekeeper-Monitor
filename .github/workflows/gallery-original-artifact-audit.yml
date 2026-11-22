@@ -11,6 +11,9 @@ on:
       - 'training/test_audit_gallery_rights.py'
       - 'scripts/verify_mobile_original_stager.py'
       - 'scripts/test_verify_mobile_original_stager.py'
+      - 'scripts/prepare_cvat_review_pack.py'
+      - 'scripts/test_prepare_cvat_review_pack.py'
+      - 'training/class_schema.py'
       - 'training/stage_mobile_reviews.py'
       - 'training/test_stage_mobile_reviews.py'
       - 'review/*.html'
@@ -24,6 +27,9 @@ on:
       - 'training/test_audit_gallery_rights.py'
       - 'scripts/verify_mobile_original_stager.py'
       - 'scripts/test_verify_mobile_original_stager.py'
+      - 'scripts/prepare_cvat_review_pack.py'
+      - 'scripts/test_prepare_cvat_review_pack.py'
+      - 'training/class_schema.py'
       - 'training/stage_mobile_reviews.py'
       - 'training/test_stage_mobile_reviews.py'
       - 'review/*.html'
@@ -83,8 +89,8 @@ jobs:
         run: python3 scripts/audit_gallery_rights.py --root _gallery_audit
       - name: Test mobile review staging against all real local original files
         run: |
-          python3 -m unittest training.test_stage_mobile_reviews scripts.test_verify_mobile_original_stager -v
-          python3 scripts/verify_mobile_original_stager.py --gallery review/velutina.html --asset-root _gallery_audit/review --expected-count 94
+          python3 -m unittest training.test_stage_mobile_reviews scripts.test_verify_mobile_original_stager scripts.test_prepare_cvat_review_pack -v
+          python3 scripts/verify_mobile_original_stager.py --gallery review/velutina.html --asset-root _gallery_audit/review --expected-count 94 --prepare-cvat-pack
       - name: Record artifact identity and audit result
         if: always()
         env:
