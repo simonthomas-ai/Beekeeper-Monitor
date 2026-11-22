@@ -113,6 +113,14 @@ class GBIFMediaCandidateTests(unittest.TestCase):
         self.assertTrue(occurrence_queries)
         self.assertEqual(rows[0]["scientific_name"], "Vespa velutina")
         self.assertEqual(rows[0]["species_key"], 1)
+        diag = status["diagnostics_by_species"]["Vespa velutina"]
+        self.assertEqual(diag["occurrence_records_returned"], 1)
+        self.assertEqual(diag["exact_species_key_and_name"], 1)
+        self.assertEqual(diag["media_objects"], 1)
+        self.assertEqual(diag["still_image_media"], 1)
+        self.assertEqual(diag["media_license_allowed"], 1)
+        self.assertEqual(diag["occurrence_license_allowed"], 1)
+        self.assertEqual(diag["accepted_candidates"], 1)
         self.assertFalse(status["media_downloaded"])
         self.assertFalse(status["training_performed"])
 
