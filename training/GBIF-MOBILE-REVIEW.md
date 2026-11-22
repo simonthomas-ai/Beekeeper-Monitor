@@ -11,7 +11,7 @@ The GBIF workflow can generate `training/gbif-media-review-gallery.html` from th
 - Occurrence licence and its official licence URL, separately from the media licence.
 - Media URL and hosting domain.
 
-Every candidate must remain in `UNREVIEWED_MEDIA_RIGHTS_AND_IMAGE`. The browser stores visual review decisions locally in `localStorage`; use the JSON export to preserve them. Exported records remain `training_eligible=false`. `LIKELY` means only that the reviewer considers the candidate plausible and is not an expert-confirmed species label.
+Every candidate must remain in `UNREVIEWED_MEDIA_RIGHTS_AND_IMAGE`. The browser stores visual review decisions locally in `localStorage`; that storage key is bound to the SHA-256 digest of the exact source CSV, so changing the queue starts a separate review state. Use the JSON export to preserve decisions. Export format v2 includes the SHA-256 digest of the original GBIF CSV; exported records remain `training_eligible=false`. `LIKELY` means only that the reviewer considers the candidate plausible and is not an expert-confirmed species label.
 
 ## Automatic image embedding policy
 
@@ -61,6 +61,6 @@ python training/import_gbif_visual_reviews.py \
   --recorded-at "2026-11-22T10:00:00+01:00"
 ```
 
-The importer requires every original candidate exactly once. It rejects changed source IDs, occurrence URLs, species keys/names, media URLs, host allowlist decisions, licence URLs, creator/rights-holder fields, and any attempt to set `training_eligible=true` or add boxes/labels. The output records the decision counts, reviewer and timestamp, but explicitly keeps zero expert species confirmations, zero bounding boxes, zero training labels and zero training approvals.
+The importer requires every original candidate exactly once and first verifies that the export's `source_queue_sha256` matches the exact bytes of the original CSV used to create the gallery. Even a re-serialized CSV with different line endings is a different source snapshot and is rejected. It then rejects changed source IDs, occurrence URLs, species keys/names, media URLs, host allowlist decisions, licence URLs, creator/rights-holder fields, and any attempt to set `training_eligible=true` or add boxes/labels. The output records the source digest, decision counts, reviewer and timestamp, but explicitly keeps zero expert species confirmations, zero bounding boxes, zero training labels and zero training approvals.
 
 The output path must be new; an existing audit file is never overwritten. Keep the original queue, review export and reconciled audit together so the review is reproducible.

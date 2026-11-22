@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -143,7 +144,9 @@ def prepare_items(source):
 
 
 def gallery(source, output):
-    items = prepare_items(source)
+    source_path = Path(source)
+    items = prepare_items(source_path)
+    source_queue_sha256 = hashlib.sha256(source_path.read_bytes()).hexdigest()
     payload = _json_for_inline_script(items)
     page = """<!doctype html>
 <html lang="de">
@@ -158,7 +161,7 @@ def gallery(source, output):
 </head>
 <body>
 <h1>GBIF – mobile Sichtprüfung</h1>
-<div class="notice"><strong>Keine Trainingsfreigabe.</strong> Die 202 Einträge sind unreviewte Metadatenkandidaten. Medien- und Vorkommenslizenz werden getrennt angezeigt. Eine Lizenzangabe ist kein unabhängiger Beweis der Urheberberechtigung und die GBIF-Artzuordnung ist keine visuelle Expertenbestimmung. Sichtentscheidungen bleiben lokal auf diesem Gerät und werden nur bei Export weitergegeben.</div>
+<div class="notice"><strong>Keine Trainingsfreigabe.</strong> Die angezeigten Einträge sind unreviewte Metadatenkandidaten. Medien- und Vorkommenslizenz werden getrennt angezeigt. Eine Lizenzangabe ist kein unabhängiger Beweis der Urheberberechtigung und die GBIF-Artzuordnung ist keine visuelle Expertenbestimmung. Sichtentscheidungen bleiben lokal auf diesem Gerät und werden nur bei Export weitergegeben.</div>
 <p id="counter" role="status"></p>
 <div id="warning" role="status"></div>
 <div class="image"><img id="photo" alt="GBIF Medienkandidat – noch nicht fachlich geprüft" loading="lazy"></div>
@@ -178,7 +181,8 @@ def gallery(source, output):
 <p id="saved" role="status"></p>
 <script>
 const items=__ITEMS__;
-const storageKey="beekeeper-gbif-review-v1";
+const sourceQueueSha256="__QUEUE_SHA256__";
+const storageKey="beekeeper-gbif-review-v2-"+sourceQueueSha256;
 let index=0,decisions={};
 try{decisions=JSON.parse(localStorage.getItem(storageKey)||"{}")}catch(e){decisions={}}
 const $=id=>document.getElementById(id);
@@ -221,18 +225,20 @@ $("previous").onclick=()=>{index=(index-1+items.length)%items.length;render()};
 $("next").onclick=()=>{index=(index+1)%items.length;render()};
 $("export").onclick=()=>{
  const records=items.map(item=>({...item,review:{decision:decisions[item.source_id]||"PENDING"},training_eligible:false}));
- const blob=new Blob([JSON.stringify({format:"beekeeper-gbif-unverified-review-v1",records,training_eligible:false},null,2)],{type:"application/json"});
+ const blob=new Blob([JSON.stringify({format:"beekeeper-gbif-unverified-review-v2",source_queue_sha256:sourceQueueSha256,records,training_eligible:false},null,2)],{type:"application/json"});
  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="beekeeper-gbif-visual-review.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 };
 render();
 </script>
 </body></html>
-""".replace("__ITEMS__", payload)
+""".replace("__ITEMS__", payload).replace("__QUEUE_SHA256__", source_queue_sha256)
     target = Path(output)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(page, encoding="utf-8")
     return {
         "records": len(items),
+        "source_queue_sha256": source_queue_sha256,
+        "review_export_format": "beekeeper-gbif-unverified-review-v2",
         "inline_originals": sum(bool(row["inline_allowed"]) for row in items),
         "external_or_unverified_hosts": sum(not row["inline_allowed"] for row in items),
         "images_embedded_as_bytes": 0,

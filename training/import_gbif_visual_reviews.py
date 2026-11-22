@@ -7,6 +7,7 @@ training labels, adds bounding boxes, or grants training eligibility.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import tempfile
@@ -15,8 +16,8 @@ from pathlib import Path
 
 from training.prepare_gbif_review_gallery import prepare_items
 
-FORMAT_IN = "beekeeper-gbif-unverified-review-v1"
-FORMAT_OUT = "beekeeper-gbif-visual-review-audit-v1"
+FORMAT_IN = "beekeeper-gbif-unverified-review-v2"
+FORMAT_OUT = "beekeeper-gbif-visual-review-audit-v2"
 DECISIONS = {"PENDING", "LIKELY", "REJECT"}
 RECORD_KEYS = {
     "source_id", "occurrence_id", "source_url", "image_url",
@@ -50,11 +51,15 @@ def validate_review_export(queue_path: str | Path, export: object, *,
         raise ValueError("reviewer identity is required")
     timestamp = _recorded_at(recorded_at)
 
+    queue_path = Path(queue_path)
     expected = prepare_items(queue_path)
-    if not isinstance(export, dict) or set(export) != {"format", "records", "training_eligible"}:
-        raise ValueError("review export must contain exactly format, records and training_eligible")
+    queue_sha256 = hashlib.sha256(queue_path.read_bytes()).hexdigest()
+    if not isinstance(export, dict) or set(export) != {"format", "source_queue_sha256", "records", "training_eligible"}:
+        raise ValueError("review export must contain exactly format, source_queue_sha256, records and training_eligible")
     if export.get("format") != FORMAT_IN:
         raise ValueError("unsupported GBIF visual review export format")
+    if export.get("source_queue_sha256") != queue_sha256:
+        raise ValueError("source queue SHA-256 does not match the gallery export")
     if export.get("training_eligible") is not False:
         raise ValueError("review export must keep training_eligible=false")
 
@@ -107,6 +112,7 @@ def validate_review_export(queue_path: str | Path, export: object, *,
     return {
         "format": FORMAT_OUT,
         "source_queue_records": len(expected),
+        "source_queue_sha256": queue_sha256,
         "review_records_reconciled": len(reviewed),
         "reviewer": reviewer,
         "recorded_at": timestamp,

@@ -1,5 +1,6 @@
 import copy
 import csv
+import hashlib
 import json
 import tempfile
 import unittest
@@ -53,7 +54,8 @@ class GbifReviewImportTests(unittest.TestCase):
     def export(self, decisions=None):
         decisions = decisions or ["LIKELY", "REJECT"]
         return {
-            "format": "beekeeper-gbif-unverified-review-v1",
+            "format": "beekeeper-gbif-unverified-review-v2",
+            "source_queue_sha256": hashlib.sha256(self.queue.read_bytes()).hexdigest(),
             "training_eligible": False,
             "records": [
                 {**copy.deepcopy(row), "review": {"decision": decision},
@@ -72,6 +74,7 @@ class GbifReviewImportTests(unittest.TestCase):
     def test_valid_export_reconciles_all_records_without_approval(self):
         result = self.validate()
         self.assertEqual(result["source_queue_records"], 2)
+        self.assertEqual(result["source_queue_sha256"], hashlib.sha256(self.queue.read_bytes()).hexdigest())
         self.assertEqual(result["review_records_reconciled"], 2)
         self.assertEqual(result["decision_counts"]["LIKELY"], 1)
         self.assertEqual(result["decision_counts"]["REJECT"], 1)
@@ -87,6 +90,20 @@ class GbifReviewImportTests(unittest.TestCase):
                                recorded_at="2026-11-22T10:30:00Z")
         self.assertEqual(result["reviewer"], "Entomology Reviewer")
         self.assertEqual(result["recorded_at"], "2026-11-22T10:30:00+00:00")
+
+    def test_rejects_review_export_bound_to_different_queue_bytes(self):
+        payload = self.export()
+        original = self.queue.read_bytes()
+        # CRLF is semantically equivalent CSV but is a different source snapshot.
+        self.queue.write_bytes(original.replace(b"\n", b"\r\n"))
+        with self.assertRaisesRegex(ValueError, "source queue SHA-256"):
+            self.validate(payload)
+
+    def test_rejects_missing_queue_digest(self):
+        payload = self.export()
+        payload.pop("source_queue_sha256")
+        with self.assertRaisesRegex(ValueError, "source_queue_sha256"):
+            self.validate(payload)
 
     def test_rejects_forged_top_level_training_approval(self):
         payload = self.export()
