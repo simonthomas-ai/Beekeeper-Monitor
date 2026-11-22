@@ -12,6 +12,12 @@ on:
       - 'training/dataset_groups.py'
       - 'training/inaturalist_media.py'
       - 'training/INATURALIST-REVIEW.md'
+      - 'training/prepare_cc0_quality_queue.py'
+      - 'training/test_prepare_cc0_quality_queue.py'
+      - 'training/screen_inaturalist_image_quality.py'
+      - 'training/test_screen_inaturalist_image_quality.py'
+      - 'training/prepare_visual_review_gallery.py'
+      - 'training/test_prepare_visual_review_gallery.py'
       - '.github/workflows/inaturalist-balanced-discovery.yml'
   push:
     branches: [main]
@@ -24,6 +30,12 @@ on:
       - 'training/dataset_groups.py'
       - 'training/inaturalist_media.py'
       - 'training/INATURALIST-REVIEW.md'
+      - 'training/prepare_cc0_quality_queue.py'
+      - 'training/test_prepare_cc0_quality_queue.py'
+      - 'training/screen_inaturalist_image_quality.py'
+      - 'training/test_screen_inaturalist_image_quality.py'
+      - 'training/prepare_visual_review_gallery.py'
+      - 'training/test_prepare_visual_review_gallery.py'
       - '.github/workflows/inaturalist-balanced-discovery.yml'
   schedule:
     - cron: '19 6 * * 2'
@@ -38,17 +50,23 @@ concurrency:
 jobs:
   discover:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
 
+      - name: Install Pillow for in-memory image validation tests
+        run: |
+          python3 -m pip install --disable-pip-version-check --only-binary=:all: 'Pillow>=10,<13'
+
       - name: Offline candidate, licence and taxonomy regression tests
         run: |
           python3 -m unittest discover -s training -p 'test_discovery_*.py' -v
           python3 -m unittest discover -s training -p 'test_audit_inaturalist_candidates.py' -v
+          python3 -m unittest training.test_prepare_cc0_quality_queue training.test_screen_inaturalist_image_quality -v
+          python3 -m unittest discover -s training -p 'test_prepare_visual_review_gallery.py' -v
 
       - name: Discover up to 1,000 balanced observation metadata candidates
         if: github.event_name != 'pull_request'
@@ -65,6 +83,31 @@ jobs:
           python3 training/audit_inaturalist_candidates.py \
             --input training/inaturalist-review-queue.csv \
             --output training/inaturalist-metadata-audit.json
+
+      - name: Select exact-CC0 candidates for transient image quality screening
+        id: cc0_queue
+        if: github.event_name != 'pull_request'
+        run: |
+          python3 training/prepare_cc0_quality_queue.py \
+            --input training/inaturalist-review-queue.csv \
+            --output training/inaturalist-cc0-quality-queue.csv
+
+      - name: Screen CC0 original derivatives in memory; persist metadata only
+        if: github.event_name != 'pull_request' && steps.cc0_queue.outputs.candidate_count != '0'
+        run: |
+          python3 training/screen_inaturalist_image_quality.py \
+            --input training/inaturalist-cc0-quality-queue.csv \
+            --output training/inaturalist-cc0-quality-screen.csv \
+            --pause 0.25 \
+            --timeout 6
+
+      - name: Build mobile CC0-only gallery for human visual review
+        if: github.event_name != 'pull_request' && steps.cc0_queue.outputs.candidate_count != '0'
+        run: |
+          python3 training/prepare_visual_review_gallery.py \
+            --input training/inaturalist-cc0-quality-screen.csv \
+            --output training/inaturalist-cc0-review-gallery.html \
+            --species ALL
 
       - name: Summarize candidate coverage without granting training approval
         if: always()
@@ -110,6 +153,24 @@ jobs:
               ])
           else:
               lines.append("- Metadata audit report was not created.")
+          quality = Path("training/inaturalist-cc0-quality-screen.csv")
+          if quality.is_file():
+              with quality.open(newline="", encoding="utf-8") as stream:
+                  screened = list(csv.DictReader(stream))
+              quality_counts = Counter(row.get("image_quality_status", "UNKNOWN") for row in screened)
+              high_res = sum(row.get("resolution_tier") == "HIGH_RESOLUTION" and row.get("image_quality_status") == "PASS" for row in screened)
+              lines.extend([
+                  "",
+                  "### Transient CC0 image quality screen",
+                  f"- Exact-CC0 originals screened in memory: {len(screened)}",
+                  f"- Results: {json.dumps(dict(sorted(quality_counts.items())), ensure_ascii=False)}",
+                  f"- High-resolution candidates: {high_res}",
+                  "- Image bytes written to disk/artifact: No",
+                  "- Biological identity or focus on the insect approved: No",
+                  f"- Mobile visual review gallery: {'created' if Path('training/inaturalist-cc0-review-gallery.html').is_file() else 'not created'}",
+              ])
+          else:
+              lines.extend(["", "### Transient CC0 image quality screen", "- No CC0 rows were available or screening did not run."])
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
               stream.write("\n".join(lines) + "\n")
           PY
@@ -122,5 +183,8 @@ jobs:
           path: |
             training/inaturalist-review-queue.csv
             training/inaturalist-metadata-audit.json
+            training/inaturalist-cc0-quality-queue.csv
+            training/inaturalist-cc0-quality-screen.csv
+            training/inaturalist-cc0-review-gallery.html
           if-no-files-found: ignore
           retention-days: 14
