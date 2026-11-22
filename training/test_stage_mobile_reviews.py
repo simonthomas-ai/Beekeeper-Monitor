@@ -121,6 +121,38 @@ class MobileStageTests(unittest.TestCase):
             self.assertEqual(record["source_image_url"], "https://static.inaturalist.org/photos/101/original.jpg")
             self.assertIn("verify_boxes_against_image", record["expert_checks_required"])
 
+    def test_rejects_manifest_missing_attribution_column(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data, root, _, _ = self._make_local_artifact(tmp)
+            manifest_path = root / MANIFEST_NAME
+            with manifest_path.open(newline="", encoding="utf-8") as stream:
+                reader = csv.DictReader(stream)
+                fields = [field for field in reader.fieldnames if field != "attribution"]
+                row = next(reader)
+            row.pop("attribution", None)
+            with manifest_path.open("w", newline="", encoding="utf-8") as stream:
+                writer = csv.DictWriter(stream, fieldnames=fields)
+                writer.writeheader()
+                writer.writerow(row)
+            with self.assertRaisesRegex(ValueError, "missing columns: attribution"):
+                stage(data, asset_root=root)
+
+    def test_rejects_unapproved_original_image_host(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data, root, _, _ = self._make_local_artifact(tmp)
+            manifest_path = root / MANIFEST_NAME
+            with manifest_path.open(newline="", encoding="utf-8") as stream:
+                reader = csv.DictReader(stream)
+                fields = list(reader.fieldnames)
+                row = next(reader)
+            row["source_image_url"] = "https://evil.example/photos/101/original.jpg"
+            with manifest_path.open("w", newline="", encoding="utf-8") as stream:
+                writer = csv.DictWriter(stream, fieldnames=fields)
+                writer.writeheader()
+                writer.writerow(row)
+            with self.assertRaisesRegex(ValueError, "provenance metadata is missing or differs"):
+                stage(data, asset_root=root)
+
     def test_rejects_tampered_local_original_bytes(self):
         with tempfile.TemporaryDirectory() as tmp:
             data, root, image_path, _ = self._make_local_artifact(tmp)
