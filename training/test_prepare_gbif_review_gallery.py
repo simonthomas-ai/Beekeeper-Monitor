@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import json
 import tempfile
 import unittest
@@ -46,6 +47,12 @@ class GbifReviewGalleryTests(unittest.TestCase):
             self.assertEqual(result["records"], 1)
             self.assertEqual(result["inline_originals"], 1)
             self.assertEqual(result["images_embedded_as_bytes"], 0)
+            self.assertEqual(result["source_queue_sha256"], hashlib.sha256(source.read_bytes()).hexdigest())
+            self.assertEqual(result["review_export_format"], "beekeeper-gbif-unverified-review-v2")
+            self.assertIn('const sourceQueueSha256="' + result["source_queue_sha256"] + '";', page)
+            self.assertIn("beekeeper-gbif-unverified-review-v2", page)
+            self.assertIn("Die angezeigten Einträge", page)
+            self.assertNotIn("Die 202 Einträge", page)
             self.assertIn("inaturalist-open-data.s3.amazonaws.com/photos/607770528/original.jpg", page)
             self.assertIn("UNREVIEWED_MEDIA_RIGHTS_AND_IMAGE", page)
             self.assertIn("Media licence", page) if "Media licence" in page else None
