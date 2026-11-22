@@ -92,6 +92,51 @@ class GalleryRightsAuditTests(unittest.TestCase):
     def test_accepts_local_original_when_manifest_and_bytes_match(self):
         self.assertEqual(audit(self.root), (6, 2))
 
+    def test_rejects_duplicate_manifest_columns(self):
+        path = self.review / "velutina-original-images-manifest.csv"
+        fields = list(self.asset)
+        fields[-1] = fields[0]
+        path.write_text(",".join(fields) + "\n", encoding="utf-8")
+        with self.assertRaisesRegex(AuditError, "duplicate column names"):
+            audit(self.root)
+
+    def test_rejects_manifest_rows_with_extra_or_missing_cells(self):
+        path = self.review / "velutina-original-images-manifest.csv"
+        fields = list(self.asset)
+        with path.open("w", newline="", encoding="utf-8") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(fields)
+            writer.writerow([self.asset[key] for key in fields] + ["unexpected"])
+        with self.assertRaisesRegex(AuditError, "unexpected extra CSV columns"):
+            audit(self.root)
+
+        with path.open("w", newline="", encoding="utf-8") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(fields)
+            writer.writerow([self.asset[key] for key in fields[:-1]])
+        with self.assertRaisesRegex(AuditError, "fewer values"):
+            audit(self.root)
+
+    def test_gallery_rejects_duplicate_json_object_keys(self):
+        page = self.review / "all.html"
+        page.write_text(
+            '<!doctype html><script>const items=[{"photo_id":"42","photo_id":"42"}];</script>',
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(AuditError, "duplicate JSON key"):
+            audit(self.root)
+
+    def test_gallery_json_scanner_handles_brackets_inside_metadata_strings(self):
+        creator = "Example ] ; [ photographer"
+        attribution = f"{creator}, no rights reserved (CC0)"
+        self.asset["creator"] = creator
+        self.asset["attribution"] = attribution
+        self.local_item["creator"] = creator
+        self.local_item["attribution"] = attribution
+        self._write_manifest([self.asset])
+        self._write_galleries()
+        self.assertEqual(audit(self.root), (6, 2))
+
     def test_rejects_symlinked_original_file(self):
         self.image.unlink()
         real_file = self.image_dir / "42.real.jpg"
@@ -165,6 +210,26 @@ class GalleryRightsAuditTests(unittest.TestCase):
         )
         self.assertEqual(audit(self.root), (6, 4))
 
+
+    def test_rejects_remote_original_with_query_parameters(self):
+        remote_item = {
+            "photo_id": "51", "observation_id": "101",
+            "species_candidate": "Vespa crabro", "dataset_group": "european_hornet",
+            "image_url": "https://static.inaturalist.org/photos/51/original.jpg?width=320",
+            "source_url": "https://www.inaturalist.org/observations/101",
+            "license": "CC0-1.0", "creator": "Author",
+            "creator_login": "author-login",
+            "attribution": "Author, no rights reserved (CC0)",
+            "license_notice": "no rights reserved",
+            "image_delivery": "REMOTE_INATURALIST_ORIGINAL",
+        }
+        self._write_galleries(all_items=self.local_items() + [remote_item])
+        (self.review / "crabro.html").write_text(
+            "<script>const items=" + json.dumps([remote_item]) + ";</script>",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(AuditError, "allowlisted HTTPS iNaturalist original"):
+            audit(self.root)
 
     def test_rejects_remote_inaturalist_thumbnail(self):
         remote_item = {

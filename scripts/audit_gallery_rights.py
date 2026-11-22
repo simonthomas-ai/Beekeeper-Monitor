@@ -9,9 +9,13 @@ from __future__ import annotations
 
 import argparse
 import csv
+import errno
 import hashlib
+import io
 import json
+import os
 import re
+import stat
 import sys
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
@@ -33,7 +37,73 @@ FORMAT_EXTENSIONS = {"JPEG": {".jpg", ".jpeg"}, "PNG": {".png"}, "WEBP": {".webp
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 OBSERVATION_PATH_RE = re.compile(r"^/observations/([0-9]+)/?$")
 PHOTO_PATH_RE = re.compile(r"^/photos/([0-9]+)/original\.(jpe?g|png|webp)$", re.IGNORECASE)
-ITEMS_RE = re.compile(r"\bconst\s+items\s*=\s*(\[.*?\])\s*;", re.DOTALL)
+ITEMS_START_RE = re.compile(r"\bconst\s+items\s*=\s*")
+MAX_MANIFEST_BYTES = 8 * 1024 * 1024
+MAX_GALLERY_BYTES = 32 * 1024 * 1024
+
+
+def _unique_json_object(pairs):
+    """Reject duplicate object keys rather than silently taking the last value."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise AuditError(f"duplicate JSON key in gallery: {key!r}")
+        result[key] = value
+    return result
+
+
+def _extract_json_array(content: str, page_path: Path) -> list[dict[str, object]]:
+    """Extract the JSON array after const items= without regex truncation on string data."""
+    match = ITEMS_START_RE.search(content)
+    if not match:
+        raise AuditError(f"{page_path}: embedded gallery items array not found")
+    start = match.end()
+    if start >= len(content) or content[start] != "[":
+        raise AuditError(f"{page_path}: items assignment must contain a JSON array")
+
+    depth = 0
+    in_string = False
+    escaped = False
+    end = None
+    for index in range(start, len(content)):
+        char = content[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "[":
+            depth += 1
+        elif char == "]":
+            depth -= 1
+            if depth < 0:
+                raise AuditError(f"{page_path}: malformed gallery JSON array")
+            if depth == 0:
+                end = index + 1
+                break
+    if end is None or in_string or escaped:
+        raise AuditError(f"{page_path}: unterminated gallery JSON array")
+
+    terminator = end
+    while terminator < len(content) and content[terminator].isspace():
+        terminator += 1
+    if terminator >= len(content) or content[terminator] != ";":
+        raise AuditError(f"{page_path}: JSON items array must end with a semicolon")
+
+    try:
+        items = json.loads(content[start:end], object_pairs_hook=_unique_json_object)
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise AuditError(f"{page_path}: embedded gallery JSON is invalid: {exc}") from exc
+    if not isinstance(items, list):
+        raise AuditError(f"{page_path}: gallery items must be a JSON array")
+    if any(not isinstance(item, dict) for item in items):
+        raise AuditError(f"{page_path}: each gallery item must be an object")
+    return items
 
 
 class AuditError(ValueError):
@@ -73,6 +143,7 @@ def _is_original_image_url(value: object, photo_id: str) -> bool:
         and parsed.username is None
         and parsed.password is None
         and parsed.port in (None, 443)
+        and not parsed.query
         and not parsed.fragment
         and match is not None
         and match.group(1) == photo_id
@@ -102,16 +173,36 @@ def _read_manifest(review_root: Path) -> dict[str, dict[str, str]]:
     if not manifest_path.is_file() or manifest_path.is_symlink():
         raise AuditError(f"local original-image manifest missing or unsafe: {manifest_path}")
 
-    with manifest_path.open(newline="", encoding="utf-8-sig") as stream:
+    manifest_bytes = _read_bounded_regular_file(
+        review_root, PurePosixPath(manifest_path.name), MAX_MANIFEST_BYTES, "manifest"
+    )
+    try:
+        manifest_text = manifest_bytes.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise AuditError("manifest must be valid UTF-8") from exc
+
+    with io.StringIO(manifest_text, newline="") as stream:
         reader = csv.DictReader(stream)
-        fields = set(reader.fieldnames or ())
-        missing = MANIFEST_FIELDS - fields
-        if missing:
-            raise AuditError("manifest columns missing: " + ", ".join(sorted(missing)))
+        fieldnames = reader.fieldnames or []
+        if len(fieldnames) != len(set(fieldnames)):
+            raise AuditError("manifest contains duplicate column names")
+        if set(fieldnames) != MANIFEST_FIELDS:
+            missing = MANIFEST_FIELDS - set(fieldnames)
+            extra = set(fieldnames) - MANIFEST_FIELDS
+            detail = []
+            if missing:
+                detail.append("missing: " + ", ".join(sorted(missing)))
+            if extra:
+                detail.append("unexpected: " + ", ".join(sorted(extra)))
+            raise AuditError("manifest columns mismatch (" + "; ".join(detail) + ")")
 
         assets: dict[str, dict[str, str]] = {}
         paths: set[str] = set()
         for line_number, row in enumerate(reader, start=2):
+            if None in row:
+                raise AuditError(f"manifest line {line_number}: unexpected extra CSV columns")
+            if any(value is None for value in row.values()):
+                raise AuditError(f"manifest line {line_number}: row has fewer values than its header")
             photo_id = str(row.get("photo_id", "")).strip()
             if not photo_id.isdecimal():
                 raise AuditError(f"manifest line {line_number}: invalid photo_id")
@@ -162,57 +253,98 @@ def _read_manifest(review_root: Path) -> dict[str, dict[str, str]]:
     return assets
 
 
-def _resolve_verified_asset(review_root: Path, row: dict[str, str]) -> Path:
-    photo_id = str(row["photo_id"])
-    relative = _safe_local_path(row.get("local_image_path"), photo_id, row.get("image_format", "").upper())
-    candidate = review_root.joinpath(*relative.parts)
+def _open_local_asset(review_root: Path, relative: PurePosixPath) -> int:
+    """Open an asset without following symlinks on POSIX; use resolved fallback elsewhere."""
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    directory = getattr(os, "O_DIRECTORY", 0)
+    if os.name == "posix" and nofollow and directory and os.open in getattr(os, "supports_dir_fd", set()):
+        current_fd = os.open(review_root, os.O_RDONLY | directory | nofollow)
+        try:
+            for part in relative.parts[:-1]:
+                next_fd = os.open(part, os.O_RDONLY | directory | nofollow, dir_fd=current_fd)
+                os.close(current_fd)
+                current_fd = next_fd
+            return os.open(relative.name, os.O_RDONLY | nofollow, dir_fd=current_fd)
+        finally:
+            os.close(current_fd)
 
-    # Reject symlinks in every component; resolve() alone would allow an
-    # in-tree symlink to point elsewhere within the same directory.
+    # Windows and platforms without openat/dir_fd: reject visible links and
+    # resolve within the review root before opening, then hash the opened handle.
     current = review_root
     for part in relative.parts:
         current = current / part
         if current.is_symlink():
             raise AuditError(f"symbolic link is not allowed for original image: {relative.as_posix()}")
-
     try:
         resolved_root = review_root.resolve(strict=True)
-        resolved_file = candidate.resolve(strict=True)
+        resolved_file = current.resolve(strict=True)
         resolved_file.relative_to(resolved_root)
     except (OSError, ValueError) as exc:
         raise AuditError(f"original image missing or outside review root: {relative.as_posix()}") from exc
-    if not resolved_file.is_file():
-        raise AuditError(f"original image is not a regular file: {relative.as_posix()}")
+    return os.open(resolved_file, os.O_RDONLY | getattr(os, "O_BINARY", 0) | nofollow)
 
+
+def _read_bounded_regular_file(root: Path, relative: PurePosixPath,
+                               max_bytes: int, description: str) -> bytes:
+    try:
+        descriptor = _open_local_asset(root, relative)
+    except OSError as exc:
+        if exc.errno == errno.ELOOP:
+            raise AuditError(f"symbolic link is not allowed for {description}: {relative.as_posix()}") from exc
+        raise AuditError(f"cannot safely open {description}: {relative.as_posix()}: {exc}") from exc
+
+    try:
+        with os.fdopen(descriptor, "rb") as stream:
+            metadata = os.fstat(stream.fileno())
+            if not stat.S_ISREG(metadata.st_mode):
+                raise AuditError(f"{description} is not a regular file: {relative.as_posix()}")
+            if metadata.st_size > max_bytes:
+                raise AuditError(f"{description} exceeds the {max_bytes}-byte safety limit")
+            payload = stream.read(max_bytes + 1)
+    except OSError as exc:
+        raise AuditError(f"cannot read {description}: {relative.as_posix()}: {exc}") from exc
+    if len(payload) > max_bytes:
+        raise AuditError(f"{description} exceeds the {max_bytes}-byte safety limit")
+    return payload
+
+
+def _resolve_verified_asset(review_root: Path, row: dict[str, str]) -> Path:
+    photo_id = str(row["photo_id"])
+    relative = _safe_local_path(row.get("local_image_path"), photo_id, row.get("image_format", "").upper())
     expected_size = int(row["image_bytes"])
-    if resolved_file.stat().st_size != expected_size:
-        raise AuditError(f"original image byte count differs from manifest: {relative.as_posix()}")
+    try:
+        descriptor = _open_local_asset(review_root, relative)
+    except OSError as exc:
+        if exc.errno == errno.ELOOP:
+            raise AuditError(f"symbolic link is not allowed for original image: {relative.as_posix()}") from exc
+        raise AuditError(f"original image missing or unsafe: {relative.as_posix()}: {exc}") from exc
+
     digest = hashlib.sha256()
-    with resolved_file.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
+    try:
+        with os.fdopen(descriptor, "rb") as stream:
+            metadata = os.fstat(stream.fileno())
+            if not stat.S_ISREG(metadata.st_mode):
+                raise AuditError(f"original image is not a regular file: {relative.as_posix()}")
+            if metadata.st_size != expected_size:
+                raise AuditError(f"original image byte count differs from manifest: {relative.as_posix()}")
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                digest.update(chunk)
+    except OSError as exc:
+        raise AuditError(f"cannot read original image: {relative.as_posix()}: {exc}") from exc
     if digest.hexdigest() != row["sha256"]:
         raise AuditError(f"original image SHA-256 differs from manifest: {relative.as_posix()}")
-    return resolved_file
+    return review_root.joinpath(*relative.parts)
 
 
 def _extract_items(page_path: Path) -> list[dict[str, object]]:
+    payload = _read_bounded_regular_file(
+        page_path.parent, PurePosixPath(page_path.name), MAX_GALLERY_BYTES, f"gallery {page_path}"
+    )
     try:
-        content = page_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeError) as exc:
-        raise AuditError(f"cannot read gallery: {page_path}: {exc}") from exc
-    match = ITEMS_RE.search(content)
-    if not match:
-        raise AuditError(f"{page_path}: embedded gallery items array not found")
-    try:
-        items = json.loads(match.group(1))
-    except json.JSONDecodeError as exc:
-        raise AuditError(f"{page_path}: embedded gallery JSON is invalid: {exc}") from exc
-    if not isinstance(items, list):
-        raise AuditError(f"{page_path}: gallery items must be a JSON array")
-    if any(not isinstance(item, dict) for item in items):
-        raise AuditError(f"{page_path}: each gallery item must be an object")
-    return items
+        content = payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise AuditError(f"{page_path}: gallery must be valid UTF-8") from exc
+    return _extract_json_array(content, page_path)
 
 
 def audit(root: Path) -> tuple[int, int]:
@@ -244,6 +376,9 @@ def audit(root: Path) -> tuple[int, int]:
                 raise AuditError(f"{prefix}: invalid observation source URL")
             if not _nonempty(item.get("license")):
                 raise AuditError(f"{prefix}: license metadata missing")
+            if photo_id in seen_in_gallery:
+                raise AuditError(f"{prefix}: duplicate photo ID in gallery")
+            seen_in_gallery.add(photo_id)
             creator = str(item.get("creator", "")).strip()
             creator_login = str(item.get("creator_login", "")).strip()
             attribution = str(item.get("attribution", "")).strip()
@@ -266,9 +401,6 @@ def audit(root: Path) -> tuple[int, int]:
                     raise AuditError(f"{prefix}: local image path lacks explicit local-original delivery marker")
                 if not isinstance(image_url, str):
                     raise AuditError(f"{prefix}: local image path missing")
-                if photo_id in seen_in_gallery:
-                    raise AuditError(f"{prefix}: duplicate photo ID in gallery")
-                seen_in_gallery.add(photo_id)
                 local_references.setdefault(gallery_name, {})[photo_id] = item
             else:
                 if gallery_name == "velutina" or item.get("species_candidate") == "Vespa velutina":
