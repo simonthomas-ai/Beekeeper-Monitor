@@ -43,10 +43,11 @@ python scripts/test_static.py
 python -m unittest training.test_audit_gallery_rights -v
 python -m unittest training.test_verify_inaturalist_photo_metadata training.test_discover_cc0_candidates training.test_audit_inaturalist_candidates training.test_download_original_inaturalist_images training.test_prepare_visual_review_gallery -v
 python -m unittest discover -s integrations -p 'test_*.py'
-npm install && npx playwright install --with-deps && npm run test:e2e   # Browser-Tests (Playwright)
+npm ci && npx playwright install --with-deps && npm run test:e2e   # Node.js 22, reproduzierbare Browser-Tests (Playwright)
+npm audit --audit-level=high   # bekannte hohe/kritische npm-Advisories pruefen
 ```
 
-Die GitHub-Actions-Workflows in `.github/workflows/` prüfen unter anderem WebKit-/iPhone-Emulation und Trainingsdaten-Gates. Der öffentliche GitHub-Pages-Deploy ist derzeit deaktiviert; ein grüner CI-Lauf bedeutet weder öffentliche Bereitstellung noch Modell- oder Feldfreigabe.
+Die npm-Abhaengigkeiten sind ueber `package-lock.json` fixiert; lokale und automatisierte Installationen verwenden `npm ci`. Dependabot prueft npm- und GitHub-Actions-Abhaengigkeiten woechentlich. Die GitHub-Actions-Workflows in `.github/workflows/` prüfen unter anderem WebKit-/iPhone-Emulation und Trainingsdaten-Gates. Der öffentliche GitHub-Pages-Deploy ist derzeit deaktiviert; ein grüner CI-Lauf bedeutet weder öffentliche Bereitstellung noch Modell- oder Feldfreigabe.
 
 ## Dokumentation
 

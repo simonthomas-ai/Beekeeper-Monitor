@@ -30,6 +30,14 @@ Die bestehenden Sperren für unvollständige Impressums- und Datenschutzhinweise
 ## Einmalige GitHub-Einstellung
 Unter **Settings > Pages > Build and deployment > Source** muss **GitHub Actions** ausgewählt sein. Der Workflow kann diese Einstellung nicht garantieren. Veröffentlichungsfehler unter **Actions** prüfen.
 
+## Nachgewiesener Originalbild-Artefaktpfad – 22.11.2026
+
+Der nicht veröffentlichende Workflow `.github/workflows/gallery-original-artifact-audit.yml` lädt den letzten erfolgreichen CC0-Quellenlauf auf `main`, übernimmt dessen Actions-Artefakt `original-velutina-images` und prüft es gemeinsam mit den sechs eingecheckten Review-Galerien. Der erfolgreiche Hauptzweiglauf [44997072834](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/44997072834) verwendete den erfolgreichen Quellenlauf [44923213005](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/44923213005).
+
+Prüfergebnis: **94 Originaldateien**, **94 Manifestzeilen**, alle Bytezahlen und SHA-256-Werte stimmen; die sechs Galerien enthalten insgesamt **936 Datensätze**. `velutina.html` und `all.html` referenzieren die Manifestmenge exakt. Der Artefakt-Digest wurde beim Download zusätzlich von GitHub Actions geprüft.
+
+Dieser Nachweis bestätigt die technische Übereinstimmung des konkreten Artefakts mit dem geprüften Galerie-Quellstand. Er ist weder unabhängige Rechtsprüfung noch Trainingsdatenfreigabe. Der Pages-Deploy bleibt deaktiviert; die Prüfung veröffentlicht keine Dateien.
+
 ## Öffentliche Adresse (derzeit NICHT als erreichbar bestätigt)\nhttps://simonthomas-ai.github.io/Beekeeper-Monitor/\n\nDie Unterseite `/varroa.html` ist im Repository und im privaten Build vorhanden, aber öffentlich erst nach einem erfolgreichen Pages-Deployment erreichbar. Ein HTTP-404 ist bis dahin erwartbar. Vor einem öffentlichen Testbetrieb müssen die tatsächlichen Betreiber-/Kontaktangaben und Datenschutzhinweise geprüft und ergänzt werden. Danach kann der Pages-Workflow kontrolliert wieder aktiviert werden.
 
 ## Funktionsgrenzen
