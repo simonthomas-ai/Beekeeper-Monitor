@@ -6,7 +6,7 @@ Offline-fähige Beobachtungs-PWA für Imker zur Erfassung und Sichtung von Hinwe
 
 **Wichtig:** Projekt im Aufbau. Es gibt noch kein validiertes KI-Erkennungsmodell und keine nachgewiesene Erkennungsgenauigkeit. Die App ist ein Beobachtungs- und Suchhinweissystem, keine bestätigende Artbestimmung und keine Grundlage für Nestzerstörung. Details: [STATUS.md](STATUS.md).
 
-Live: https://simonthomas-ai.github.io/Beekeeper-Monitor/
+**Öffentliche Bereitstellung:** Der GitHub-Pages-Deploy ist derzeit deaktiviert. Die frühere URL https://simonthomas-ai.github.io/Beekeeper-Monitor/ ist kein Nachweis einer erreichbaren oder freigegebenen Live-Anwendung. Für Tests die PWA lokal starten; keine öffentliche Bereitstellung ohne gesonderte Freigabe.
 
 ## Was es heute kann
 
@@ -46,7 +46,7 @@ python -m unittest discover -s integrations -p 'test_*.py'
 npm install && npx playwright install --with-deps && npm run test:e2e   # Browser-Tests (Playwright)
 ```
 
-Die GitHub-Actions-Workflows in `.github/workflows/` führen diese Prüfungen sowie WebKit-/iPhone-Emulation, Trainingsdaten-Gates und das Deployment nach GitHub Pages aus.
+Die GitHub-Actions-Workflows in `.github/workflows/` prüfen unter anderem WebKit-/iPhone-Emulation und Trainingsdaten-Gates. Der öffentliche GitHub-Pages-Deploy ist derzeit deaktiviert; ein grüner CI-Lauf bedeutet weder öffentliche Bereitstellung noch Modell- oder Feldfreigabe.
 
 ## Dokumentation
 
