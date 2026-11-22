@@ -23,7 +23,7 @@ SPECIES = {
 }
 DECISIONS = {"PENDING", "LIKELY", "REJECT"}
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
-LOCAL_IMAGE_RE = re.compile(r"^[0-9]+\\.(?:jpg|jpeg|png|webp)$", re.IGNORECASE)
+LOCAL_IMAGE_RE = re.compile(r"^[0-9]+\.(?:jpg|jpeg|png|webp)$", re.IGNORECASE)
 MANIFEST_NAME = "velutina-original-images-manifest.csv"
 MANIFEST_FIELDS = {
     "photo_id", "observation_id", "species_candidate", "source_url", "license",
@@ -98,7 +98,7 @@ def _verify_local_original(
 ) -> dict:
     if row.get("image_delivery") != "LOCAL_UNMODIFIED_ORIGINAL":
         raise ValueError(f"Record {index}: local image path is not marked as an unchanged original")
-    if not isinstance(image_url, str) or "\\\\" in image_url:
+    if not isinstance(image_url, str) or "\\" in image_url:
         raise ValueError(f"Record {index}: unsafe local image path")
     relative = PurePosixPath(image_url)
     if (
