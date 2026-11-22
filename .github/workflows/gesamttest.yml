@@ -214,7 +214,7 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           # Pin the integration partner to a reviewed commit; avoid moving-main CI drift.
-          ref: 8eba14db628a5b5d8672bcbab9b078f0e7977799
+          ref: 1eaa4546e9c4510bcf8efbc5a5e0a25ab5a135f5
           path: beekeeper3000
           persist-credentials: false
       - name: Beekeeper-Monitor fuer repo-uebergreifenden Vertrag auschecken
