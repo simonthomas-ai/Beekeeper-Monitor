@@ -6,7 +6,7 @@ import re
 import sys
 from pathlib import Path
 
-USES_RE = re.compile(r"^\s*uses:\s*(\S+?)(?:\s+#.*)?\s*$")
+USES_RE = re.compile(r"^\s*(?:-\s*)?uses:\s*(\S+?)(?:\s+#.*)?\s*$")
 ACTION_SHA_RE = re.compile(
     r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*@[0-9a-fA-F]{40}$"
 )
