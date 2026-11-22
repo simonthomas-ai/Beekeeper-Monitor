@@ -113,6 +113,10 @@ def verify_mobile_original_gallery(
             or result.get("mobile_decision") != "PENDING"
             or result.get("original_sha256") != source["original_sha256"]
             or result.get("local_image_path") != source["image_url"]
+            or result.get("creator_login") != source["creator_login"]
+            or result.get("attribution") != source["attribution"]
+            or result.get("license_notice") != source["license_notice"]
+            or not result.get("source_image_url")
         ):
             raise ValueError(f"staged record {source['photo_id']} changed its non-approval or asset binding")
 
