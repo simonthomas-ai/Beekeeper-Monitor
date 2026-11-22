@@ -131,10 +131,22 @@ def build_cvat_review_pack(expert_queue: dict, asset_root: str | Path,
     raw_target = Path(output_dir).expanduser()
     if not raw_target.is_absolute():
         raw_target = Path.cwd() / raw_target
+    raw_target = Path(os.path.abspath(raw_target))
     if raw_target.name in ("", ".", ".."):
         raise ValueError("Invalid CVAT review pack output directory")
 
-    parent = raw_target.parent
+    # Resolve the nearest existing ancestor before creating missing parents.
+    # This prevents a target under the asset root (including through a symlink)
+    # from creating even an empty directory inside the original artifact.
+    probe = raw_target.parent
+    missing_parts = []
+    while not probe.exists() and not probe.is_symlink():
+        missing_parts.insert(0, probe.name)
+        probe = probe.parent
+    resolved_ancestor = probe.resolve(strict=True)
+    if resolved_ancestor == root or resolved_ancestor.is_relative_to(root):
+        raise ValueError("CVAT review pack must be outside the original-image asset root")
+    parent = resolved_ancestor.joinpath(*missing_parts)
     parent.mkdir(parents=True, exist_ok=True)
     parent = parent.resolve(strict=True)
     target = parent / raw_target.name
