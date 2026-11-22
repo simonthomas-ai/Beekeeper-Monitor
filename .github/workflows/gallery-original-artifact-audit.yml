@@ -22,6 +22,10 @@ on:
       - '.github/workflows/ki-cc0-quellen.yml'
       - 'scripts/audit_gallery_rights.py'
       - 'training/test_audit_gallery_rights.py'
+      - 'scripts/verify_mobile_original_stager.py'
+      - 'scripts/test_verify_mobile_original_stager.py'
+      - 'training/stage_mobile_reviews.py'
+      - 'training/test_stage_mobile_reviews.py'
       - 'review/*.html'
 permissions:
   contents: read
