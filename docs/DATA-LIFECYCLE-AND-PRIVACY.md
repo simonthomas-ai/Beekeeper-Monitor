@@ -38,8 +38,26 @@ network logging and content licence terms are outside this application's
 control. Review marks remain in the browser until exported.
 
 The camera/microphone page is a user-started preview and microphone-level test.
-It does not record, store or upload media and stops the active streams on page
-exit. This is separate from the station's optional camera inference service.
+It does not continuously record media. In the explicit camera shadow test, one
+user-selected frame is converted to a bounded JPEG and staged in the existing
+manual observation form; it is written to IndexedDB only when the user saves
+that observation. The entry is labelled `Kamera-Shadow-Test (nicht bestimmt)`.
+The PWA does not upload that frame to BeeKeeper3000 or the Monitor receiver.
+Frames may still contain personal or sensitive content, so avoid people,
+private areas and unnecessary location data, and protect/export/delete them as
+described above. The active camera/microphone streams stop on page exit.
+
+The separate manual field-classification workflow stores selected JPEG, PNG or
+WebP image bytes and MIME types in `beekeeper-field-dataset-v1`, object store `images`. It stores the chosen seven-class
+image labels, an app-addition timestamp, a random tab-session ID, optional pseudonymous
+labeler ID, and the entered source/rights review. It does not read GPS or transmit
+images or labels. Records remain on-device until the user explicitly exports a ZIP.
+The ZIP is available only after the user separately attests to image/label review
+and training-use permission for every record; this status records the operator's
+attestation and is not an independent verification or proof of image rights. The export contains image bytes and
+`annotations.jsonl`; it is sensitive data and is outside the PWA's storage controls
+after download. Deleting a record removes it from this field-capture database, but
+does not remove an existing export or copies made elsewhere.
 
 ### Local station PWA and Monitor receiver
 
