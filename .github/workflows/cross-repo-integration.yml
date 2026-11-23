@@ -13,6 +13,7 @@ on:
     paths:
       - '.github/workflows/cross-repo-integration.yml'
       - 'integrations/**'
+      - 'scripts/test_practical_modules_http.py'
       - 'docs/VESPAGUARD-INTEGRATION.md'
   schedule:
     - cron: '17 5 * * *'
