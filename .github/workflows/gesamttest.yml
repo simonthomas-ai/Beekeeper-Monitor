@@ -48,11 +48,11 @@ jobs:
         id: browser
         continue-on-error: true
         run: npm run test:e2e
-      - name: Safari-WebKit-Browsertests (18)
+      - name: Safari-WebKit-Browsertests
         id: webkit
         continue-on-error: true
         run: npx playwright test --browser webkit
-      - name: iPhone-WebKit-Emulation (18)
+      - name: iPhone-WebKit-Emulation
         id: iphone
         if: always()
         continue-on-error: true
@@ -132,9 +132,9 @@ jobs:
           echo '|---|---|' >> "$GITHUB_STEP_SUMMARY"
           echo "| PWA und Quellcode | $STATIC |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Warnregeln und Bridge-Kandidaten | $ALERTTESTS |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Chromium (18 Tests) | $BROWSER |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Safari WebKit (18 Tests) | $WEBKIT |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| iPhone-WebKit-Emulation (18 Tests) | $IPHONE |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Chromium (dynamische Testsuite) | $BROWSER |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Safari WebKit (dynamische Testsuite) | $WEBKIT |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| iPhone-WebKit-Emulation (dynamische Testsuite) | $IPHONE |" >> "$GITHUB_STEP_SUMMARY"
           echo 'Hinweis: Ein gruener Gesamttest bestaetigt die verpflichtenden Software- und Bridge-Pruefungen, nicht die Einsatzreife eines KI-Modells.' >> "$GITHUB_STEP_SUMMARY"
           echo '## KI-Forschungsstand (nicht als einsatzbereit freigegeben)' >> "$GITHUB_STEP_SUMMARY"
           echo "| KI-Dateninventur | $MODEL |" >> "$GITHUB_STEP_SUMMARY"
