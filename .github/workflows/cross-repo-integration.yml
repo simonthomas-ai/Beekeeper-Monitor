@@ -34,7 +34,7 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           # Immutable partner revision; update deliberately after its CI passes.
-          ref: 3b4f8953c7e82ce96010f5095577830ce90e8361
+          ref: beb8fa94907f5093bedc8e37cfb053ab6a81670c
           path: beekeeper3000
           persist-credentials: false
       - name: Python vorbereiten
@@ -62,6 +62,6 @@ jobs:
         run: |
           echo '## VespaGuard: Repository-übergreifende Prüfung' >> "$GITHUB_STEP_SUMMARY"
           echo 'Monitor commit: '$(git -C monitor rev-parse HEAD) >> "$GITHUB_STEP_SUMMARY"
-          echo 'BeeKeeper3000 partner commit: 3b4f8953c7e82ce96010f5095577830ce90e8361' >> "$GITHUB_STEP_SUMMARY"
+          echo 'BeeKeeper3000 partner commit: beb8fa94907f5093bedc8e37cfb053ab6a81670c' >> "$GITHUB_STEP_SUMMARY"
           echo 'Der Partnerstand ist absichtlich auf einen unveränderlichen Commit gepinnt; Änderungen daran benötigen eine bewusste Aktualisierung dieses Workflows.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Diese Prüfung ist noch kein Feldtest mit echter Kamera, Funkhardware oder freigegebenem KI-Modell.' >> "$GITHUB_STEP_SUMMARY"
