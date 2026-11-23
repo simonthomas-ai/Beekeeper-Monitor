@@ -26,6 +26,7 @@ test('test alert is clearly marked as a test',async({page})=>{
 
 test('qualifying detection raises exactly one unconfirmed warning',async({page})=>{
  await page.goto('/');
+ await page.waitForFunction(()=>typeof window.BeekeeperAlerts?.process==='function');
  await page.locator('#alert-enabled').check();
  const result=await page.evaluate(()=>{
   const mk=(c,conf,label='vespa_velutina')=>{const now=new Date().toISOString();return {event_id:c.repeat(64),received_at:now,event:{kind:'camera_detection',device_id:'station-1',timestamp:now,payload:{label,confidence:conf}}};};

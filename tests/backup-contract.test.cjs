@@ -28,7 +28,11 @@ function backupText(observations) {
 }
 
 test('accepts a valid export and preserves observation records', () => {
-  const rows = [observation(), observation({ id: 'observation-2', type: 'Pollen' })];
+  const rows = [
+    observation(),
+    observation({ id: 'observation-2', type: 'Pollen' }),
+    observation({ id: 'observation-3', type: 'Kamera-Shadow-Test (nicht bestimmt)' })
+  ];
   assert.deepEqual(contract.parseBackupText(backupText(rows)), rows);
 });
 

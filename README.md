@@ -4,7 +4,7 @@
 
 Offline-fähige Beobachtungs-PWA für Imker zur Erfassung und Sichtung von Hinweisen auf die Asiatische Hornisse (*Vespa velutina*). Teil des gemeinsamen VespaGuard-Systems zusammen mit [BeeKeeper3000](https://github.com/simonthomas-ai/BeeKeeper3000).
 
-**Wichtig:** Projekt im Aufbau. Es gibt noch kein validiertes KI-Erkennungsmodell und keine nachgewiesene Erkennungsgenauigkeit. Die App ist ein Beobachtungs- und Suchhinweissystem, keine bestätigende Artbestimmung und keine Grundlage für Nestzerstörung. Details: [STATUS.md](STATUS.md).
+**Wichtig:** Projekt im Aufbau. Es gibt kein lokales, freigegebenes oder feldvalidiertes KI-Erkennungsmodell und keine nachgewiesene Erkennungsgenauigkeit. Die automatische KI-Inferenz ist in diesem Build deaktiviert; die App zeigt nur Modellkandidaten und Freigabevoraussetzungen an. Sie ist ein Beobachtungs- und Suchhinweissystem, keine bestätigende Artbestimmung und keine Grundlage für Nestzerstörung. Details: [STATUS.md](STATUS.md) und [iPhone-Kameratest](docs/IPHONE-HTTPS-KAMERATEST.md).
 
 **Öffentliche Bereitstellung:** Der GitHub-Pages-Deploy ist derzeit deaktiviert. Die frühere URL https://simonthomas-ai.github.io/Beekeeper-Monitor/ ist kein Nachweis einer erreichbaren oder freigegebenen Live-Anwendung. Für Tests die PWA lokal starten; keine öffentliche Bereitstellung ohne gesonderte Freigabe.
 
@@ -12,14 +12,17 @@ Offline-fähige Beobachtungs-PWA für Imker zur Erfassung und Sichtung von Hinwe
 
 - Installierbare PWA (`manifest.webmanifest`, Service Worker) mit Offline-Protokollierung im Browser
 - Kamera- und Mikrofonzugriff für manuelle Beobachtung (`live-media.js`)
+- KI-freier Kamera-Shadow-Test mit explizit übernommenem Einzelbild, unklassifiziertem Beobachtungstyp und lokaler IndexedDB-Speicherung; keine Daueraufnahme, Erkennung oder Übertragung
+- Lokale manuelle Bildklassifikation für Feldaufnahmen: sieben Taxonomie-Slugs, Mehrfachlabels oder explizites Negativbild; JPG/JPEG, PNG, WebP; ZIP-Export (`images/` + `annotations.jsonl`) erst nach manueller Labelprüfung und ausdrücklicher Nutzerattestierung. Rechteangaben sind Freitext, kein automatisch geprüfter Nachweis
 - Lokaler Empfangsdienst für Stationsereignisse: authentifiziert, nur Loopback, SQLite-Speicher mit Deduplizierung, Aufbewahrungsfrist, Export und Löschung ([integrations/](integrations/README.md))
 - Datenschutz-Grenze: nur validierte Metadaten, keine Bilder, kein Audio, keine GPS-Koordinaten; Bridge-Ereignisse bleiben unbestätigte Kandidaten
 - Abschaltbare lokale Warnung (Banner, Ton, Systembenachrichtigung) bei Velutina-Verdacht ab einstellbarer Konfidenz, nur bei geöffneter und verbundener Seite; immer als unbestätigter Verdacht gekennzeichnet
+- Sichtbare Bereitschaftsanzeige für alle sieben dokumentierten KI-Module; Modellgewichte und automatische Inferenz sind nicht verfügbar
 - Prüfpipeline für Trainingsdaten: Lizenz- und Provenienz-Gates pro Bild, sieben Klassen, Split-Leckage-Prüfung ([training/](training/README.md))
 
 ## Noch nicht vorhanden
 
-- Freigegebenes Erkennungsmodell und Erkennung im Browser
+- Freigegebenes Erkennungsmodell, valide Erkennungsleistung und Feldfreigabe
 - Benachrichtigung ohne geöffnete Seite (SMS, Server-Push); dafür braucht es einen separat geprüften Dienst
 - Abnahme auf echten Geräten und im Feld
 
@@ -61,6 +64,7 @@ Die npm-Abhaengigkeiten sind ueber `package-lock.json` fixiert; lokale und autom
 | Datenlebenszyklus und Datenschutz | [docs/DATA-LIFECYCLE-AND-PRIVACY.md](docs/DATA-LIFECYCLE-AND-PRIVACY.md) |
 | Modellabnahme | [docs/MODEL-ACCEPTANCE.md](docs/MODEL-ACCEPTANCE.md) |
 | Trainingsdaten und Lizenzen | [training/README.md](training/README.md) |
+| Lokale Klassifikations-Feldaufnahme | [docs/FIELD-DATASET-CAPTURE.md](docs/FIELD-DATASET-CAPTURE.md) |
 
 ## Lizenz
 

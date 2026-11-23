@@ -1,0 +1,183 @@
+const {test, expect} = require('@playwright/test');
+const {execFileSync} = require('node:child_process');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+
+const CLASS_SLUGS = [
+  'vespa_velutina', 'vespa_crabro', 'other_vespidae',
+  'apis_mellifera', 'bombus_spp', 'syrphidae', 'other_insect'
+];
+
+function extractStoredZip(buffer) {
+  const endSignature = Buffer.from([0x50, 0x4b, 0x05, 0x06]);
+  const endOffset = buffer.lastIndexOf(endSignature);
+  expect(endOffset).toBeGreaterThanOrEqual(0);
+  const count = buffer.readUInt16LE(endOffset + 10);
+  let cursor = buffer.readUInt32LE(endOffset + 16);
+  const files = new Map();
+  for (let index = 0; index < count; index++) {
+    expect(buffer.readUInt32LE(cursor)).toBe(0x02014b50);
+    const size = buffer.readUInt32LE(cursor + 24);
+    const nameLength = buffer.readUInt16LE(cursor + 28);
+    const extraLength = buffer.readUInt16LE(cursor + 30);
+    const commentLength = buffer.readUInt16LE(cursor + 32);
+    const localOffset = buffer.readUInt32LE(cursor + 42);
+    const name = buffer.toString('utf8', cursor + 46, cursor + 46 + nameLength);
+    expect(buffer.readUInt32LE(localOffset)).toBe(0x04034b50);
+    const localNameLength = buffer.readUInt16LE(localOffset + 26);
+    const localExtraLength = buffer.readUInt16LE(localOffset + 28);
+    const dataStart = localOffset + 30 + localNameLength + localExtraLength;
+    files.set(name, buffer.subarray(dataStart, dataStart + size));
+    cursor += 46 + nameLength + extraLength + commentLength;
+  }
+  return files;
+}
+
+async function addImage(page, name, bytes) {
+  await page.locator('#field-dataset-photo').setInputFiles({
+    name,
+    mimeType: 'image/jpeg',
+    buffer: Buffer.from(bytes)
+  });
+}
+
+async function attestEveryRecord(page) {
+  const approval = page.getByRole('button', {name:'Manuelle Prüfung und Nutzungsattestierung speichern'});
+  while (await approval.count()) {
+    const remaining = await approval.count();
+    const row = approval.first().locator('xpath=../..');
+    await row.getByRole('checkbox', {name:'Bildinhalt und sämtliche Klassen manuell geprüft'}).check();
+    await row.getByRole('checkbox', {name:'Ich attestiere, dass ich das Bild für Trainingszwecke verwenden darf'}).check();
+    page.once('dialog', dialog => dialog.accept());
+    await approval.first().click();
+    await expect(approval).toHaveCount(remaining - 1);
+  }
+}
+
+test('stores multi-label and negative images locally and exports the reviewed contract', async ({page}) => {
+  const requests = [];
+  page.on('request', request => requests.push({url:request.url(), method:request.method()}));
+  await page.goto('/');
+  await expect(page.locator('#field-dataset-classes input[name="class-label"]')).toHaveCount(7);
+  expect(await page.locator('#field-dataset-classes input[name="class-label"]').evaluateAll(inputs =>
+    inputs.map(input => input.value)
+  )).toEqual(CLASS_SLUGS);
+
+  const positiveBytes = [0xff, 0xd8, 0xff, 0x11, 0x22, 0xff, 0xd9];
+  await addImage(page, 'field-positive.jpg', positiveBytes);
+  await page.locator('input[name="image-kind"][value="positive"]').check();
+  await page.locator('input[name="class-label"][value="vespa_velutina"]').check();
+  await page.locator('input[name="class-label"][value="apis_mellifera"]').check();
+  await page.locator('#field-rights-source').fill('Eigene Feldaufnahme');
+  await page.locator('#field-rights-basis').fill('Nutzerangabe; nicht unabhängig geprüft');
+  await page.locator('#field-dataset-form button[type="submit"]').click();
+  await expect(page.locator('#field-dataset-status')).toContainText('lokal gespeichert');
+  await expect(page.locator('#field-dataset-summary')).toContainText('1 lokale Aufnahme');
+  await expect(page.locator('#field-dataset-export')).toBeDisabled();
+  const positiveRow = page.locator('.field-dataset-record').first();
+  await positiveRow.getByRole('checkbox', {name:'Bildinhalt und sämtliche Klassen manuell geprüft'}).check();
+  await positiveRow.getByRole('checkbox', {name:'Ich attestiere, dass ich das Bild für Trainingszwecke verwenden darf'}).check();
+  page.once('dialog', dialog => dialog.accept());
+  await positiveRow.getByRole('button', {name:'Manuelle Prüfung und Nutzungsattestierung speichern'}).click();
+  await expect(page.locator('#field-dataset-summary')).toContainText('0 ohne abgeschlossene Nutzerprüfung');
+
+  const negativeBytes = [0xff, 0xd8, 0xff, 0x33, 0x44, 0xff, 0xd9];
+  await addImage(page, 'field-negative.jpg', negativeBytes);
+  await page.locator('input[name="image-kind"][value="negative"]').check();
+  await page.locator('#field-rights-source').fill('Eigene Feldaufnahme');
+  await page.locator('#field-rights-basis').fill('Nutzerangabe; nicht unabhängig geprüft');
+  await page.locator('#field-dataset-form button[type="submit"]').click();
+  await expect(page.locator('#field-dataset-status')).toContainText('Noch ungeprüft');
+  await expect(page.locator('#field-dataset-export')).toBeDisabled();
+  await attestEveryRecord(page);
+  await expect(page.locator('#field-dataset-export')).toBeEnabled();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('#field-dataset-export').click();
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  const zipBuffer = Buffer.concat(chunks);
+  if (process.env.BEEKEEPER_MULTILABEL_VALIDATOR) {
+    const zipPath = path.join(os.tmpdir(), `beekeeper-monitor-${Date.now()}.zip`);
+    fs.writeFileSync(zipPath, zipBuffer);
+    try {
+      execFileSync('python', ['-c',
+        'import importlib.util,sys; p=sys.argv[1]; s=importlib.util.spec_from_file_location("beekeeper_multilabel_dataset",p); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); rows=m.validate_dataset_archive(sys.argv[2]); assert len(rows)==2; assert rows[0]["labels"] or rows[1]["labels"]',
+        process.env.BEEKEEPER_MULTILABEL_VALIDATOR, zipPath
+      ], {stdio:'pipe', env:{...process.env, PYTHONDONTWRITEBYTECODE:'1'}});
+    } finally {
+      fs.unlinkSync(zipPath);
+    }
+  }
+  const files = extractStoredZip(zipBuffer);
+  expect([...files.keys()].filter(name => name.startsWith('images/'))).toHaveLength(2);
+  const lines = files.get('annotations.jsonl').toString('utf8').trim().split('\n').map(line => JSON.parse(line));
+  expect(lines).toHaveLength(2);
+  const positive = lines.find(line => line.labels.length);
+  const negative = lines.find(line => line.labels.length === 0);
+  expect(positive.labels).toEqual(['vespa_velutina', 'apis_mellifera']);
+  expect(negative.labels).toEqual([]);
+  for (const line of lines) {
+    expect(line).toMatchObject({
+      captured_at: expect.stringMatching(/Z$/),
+      capture_session_id: expect.any(String),
+      review_status: 'approved',
+      rights: {source:'Eigene Feldaufnahme', status:'training_approved'}
+    });
+    expect(line).not.toHaveProperty('location');
+    expect(line).not.toHaveProperty('station_id');
+    expect(files.has(line.image)).toBeTruthy();
+  }
+  expect(files.get(positive.image)).toEqual(Buffer.from(positiveBytes));
+  expect(files.get(negative.image)).toEqual(Buffer.from(negativeBytes));
+  expect(requests.some(request => request.method !== 'GET' && request.method !== 'HEAD')).toBeFalsy();
+});
+
+test('requires an explicit image kind and at least one class for positive images', async ({page}) => {
+  await page.goto('/');
+  await addImage(page, 'unlabelled.jpg', [0xff, 0xd8, 0xff, 0xd9]);
+  await page.locator('input[name="image-kind"][value="positive"]').check();
+  await page.locator('#field-rights-source').fill('Eigene Aufnahme');
+  await page.locator('#field-rights-basis').fill('Nutzerangabe');
+  await page.locator('#field-dataset-form button[type="submit"]').click();
+  await expect(page.locator('#field-dataset-status')).toContainText('mindestens eine Klasse auswählen');
+  await expect(page.locator('#field-dataset-summary')).toContainText('0 lokale Aufnahmen');
+  await expect(page.locator('#field-dataset-export')).toBeDisabled();
+});
+
+test('rejects HEIC and exposes required bounded free-text rights fields', async ({page}) => {
+  await page.goto('/');
+  await expect(page.locator('#field-rights-source')).toHaveAttribute('required', '');
+  await expect(page.locator('#field-rights-source')).toHaveAttribute('maxlength', '200');
+  await expect(page.locator('#field-rights-basis')).toHaveAttribute('required', '');
+  await expect(page.locator('#field-rights-basis')).toHaveAttribute('maxlength', '120');
+  await page.locator('#field-dataset-photo').setInputFiles({
+    name:'iphone-photo.heic', mimeType:'image/heic', buffer:Buffer.from([1,2,3])
+  });
+  await page.locator('input[name="image-kind"][value="negative"]').check();
+  await page.locator('#field-rights-source').fill('Eigene Feldaufnahme');
+  await page.locator('#field-rights-basis').fill('Eigenes Bild');
+  await page.locator('#field-dataset-form button[type="submit"]').click();
+  await expect(page.locator('#field-dataset-status')).toContainText('JPEG-, PNG- oder WebP-Bild');
+  await expect(page.locator('#field-dataset-summary')).toContainText('0 lokale Aufnahmen');
+});
+
+test('blocks export when the same image bytes were captured twice', async ({page}) => {
+  await page.goto('/');
+  const bytes = [0xff, 0xd8, 0xff, 0x31, 0xff, 0xd9];
+  for (const name of ['copy-one.jpg', 'copy-two.jpg']) {
+    await addImage(page, name, bytes);
+    await page.locator('input[name="image-kind"][value="negative"]').check();
+    await page.locator('#field-rights-source').fill('Eigene Feldaufnahme');
+    await page.locator('#field-rights-basis').fill('Nutzerangabe; nicht unabhängig geprüft');
+    await page.locator('#field-dataset-form button[type="submit"]').click();
+    await expect(page.locator('#field-dataset-summary')).toContainText(name === 'copy-one.jpg' ? '1 lokale Aufnahme' : '2 lokale Aufnahmen');
+  }
+  await attestEveryRecord(page);
+  await expect(page.locator('#field-dataset-export')).toBeEnabled();
+  await page.locator('#field-dataset-export').click();
+  await expect(page.locator('#field-dataset-status')).toContainText('derselbe Bildinhalt wurde mehrfach erfasst');
+});

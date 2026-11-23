@@ -10,7 +10,7 @@
   const MAX_PHOTO_BASE64_LENGTH = Math.ceil(MAX_PHOTO_BYTES / 3) * 4;
   const TYPES = new Set([
     'Asiatische Hornisse', 'Varroa', 'Drohnenbrut',
-    'Pollen', 'Schwarm', 'Königin'
+    'Pollen', 'Schwarm', 'Königin', 'Kamera-Shadow-Test (nicht bestimmt)'
   ]);
   const IMAGE_TYPES = new Set([
     'image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif',

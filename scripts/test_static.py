@@ -10,10 +10,27 @@ app=(root/"app.js").read_text()
 sw=(root/"sw.js").read_text()
 manifest=json.loads((root/"manifest.webmanifest").read_text())
 catalog=json.loads((root/"sources/catalog.json").read_text())
+pages=(root/".github/workflows/pages.yml").read_text()
 assert "<html lang=\"de\">" in html
-for path in ("backup-contract.js","app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
+for path in ("backup-contract.js","app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","field-dataset.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
     assert (root/path).is_file(),path
 assert "capture=\"environment\"" in html
+assert 'id="field-dataset"' in html
+assert 'src="./field-dataset.js" defer' in html
+assert 'accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"' in html
+assert "nicht automatisch geprüft" in html
+assert (root/"tests/test_beekeeper_importer_roundtrip.py").is_file()
+assert "BEEKEEPER_MULTILABEL_VALIDATOR" in (root/"tests/test_beekeeper_importer_roundtrip.py").read_text()
+assert (root/"docs/FIELD-DATASET-CAPTURE.md").is_file()
+assert (root/"scripts/validate_field_dataset_zip.py").is_file()
+assert (root/"tests/test_field_dataset_zip.py").is_file()
+assert "Bilder noch Labels" in (root/"datenschutz.html").read_text()
+assert "./field-dataset.js" in sw
+assert "beekeeper-shell-v19" in sw
+assert "annotations.jsonl" in html
+assert "field-dataset.js" in pages
+for class_slug in ("vespa_velutina","vespa_crabro","other_vespidae","apis_mellifera","bombus_spp","syrphidae","other_insect"):
+    assert class_slug in html and class_slug in (root/"field-dataset.js").read_text()
 for legal in ("datenschutz.html", "impressum.html"):
     assert (root/legal).is_file(), legal
     assert f'href="./{legal}"' in html, legal
@@ -52,11 +69,10 @@ assert 'id="station-events-form"' in html
 assert 'src="./integrations-ui.js"' in html
 assert "./live-media.js" in sw
 assert "SHELL.has(url.href)" in sw
-pages=(root/".github/workflows/pages.yml").read_text()
 assert "path: _site" in pages
 assert r"grep -Eq '\[[^]]+\]'" in pages
 assert re.search(r"\[[^]]+\]", "[MISSING OPERATOR DETAILS]")
-assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js hornet-onnx-decoder.js camera-onnx-runtime.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg _site/" in pages
+assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js field-dataset.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg _site/" in pages
 assert "cp wissen/wissenschaft-hornissen-bienen.html _site/wissen/" in pages
 assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
 # Local original-image byte verification runs only after Pages stages the
@@ -74,16 +90,11 @@ assert 'href="./varroa.html"' in html
 assert 'id="varroa-mode"' in (root/'varroa.html').read_text()
 assert './varroa.html' in sw and './varroa-ui.js' in sw
 
-# Camera model choice must never imply that unreviewed weights execute.
-assert 'id="camera-model"' in html
-assert all('value="'+key+'"' in html for key in ('none','hornet3000','varroa-board','varroa-bee'))
-media=(root/'live-media.js').read_text()
-assert 'NICHT AKTIV' in media and 'modelSelect.addEventListener' in media
-
-assert (root/'hornet-onnx-decoder.js').is_file()
-assert 'src="./hornet-onnx-decoder.js"' in html
-assert './hornet-onnx-decoder.js' in sw
-
-assert (root/'camera-onnx-runtime.js').is_file()
-assert 'src="./camera-onnx-runtime.js"' in html
-assert './camera-onnx-runtime.js' in sw
+# No model weights are released in this repository; inference stays out of the PWA.
+assert 'id="ai-readiness-status"' in html and 'NICHT SCHARF' in html
+assert 'id="camera-model"' not in html
+assert 'src="./hornet-onnx-decoder.js"' not in html
+assert './hornet-onnx-decoder.js' not in sw
+assert 'src="./camera-onnx-runtime.js"' not in html
+assert './camera-onnx-runtime.js' not in sw
+assert 'camera-onnx-runtime.js' not in pages
