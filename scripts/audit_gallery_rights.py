@@ -374,8 +374,8 @@ def audit(root: Path) -> tuple[int, int]:
                 raise AuditError(f"{prefix}: invalid photo or observation ID")
             if not _is_observation_url(item.get("source_url"), observation_id):
                 raise AuditError(f"{prefix}: invalid observation source URL")
-            if not _nonempty(item.get("license")):
-                raise AuditError(f"{prefix}: license metadata missing")
+            if item.get("license") != "CC0-1.0":
+                raise AuditError(f"{prefix}: gallery image is not marked CC0-1.0")
             if photo_id in seen_in_gallery:
                 raise AuditError(f"{prefix}: duplicate photo ID in gallery")
             seen_in_gallery.add(photo_id)

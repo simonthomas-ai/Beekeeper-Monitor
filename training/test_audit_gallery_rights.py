@@ -211,6 +211,19 @@ class GalleryRightsAuditTests(unittest.TestCase):
         self.assertEqual(audit(self.root), (6, 4))
 
 
+    def test_rejects_remote_original_without_exact_cc0_label(self):
+        for license_label in ("CC-BY-4.0", "unknown", "", None):
+            with self.subTest(license=license_label):
+                remote = dict(self.local_item, photo_id="51", observation_id="101",
+                              species_candidate="Vespa crabro",
+                              source_url="https://www.inaturalist.org/observations/101",
+                              image_url="https://static.inaturalist.org/photos/51/original.jpg",
+                              image_delivery="REMOTE_INATURALIST_ORIGINAL",
+                              license=license_label)
+                self._write_galleries(all_items=self.local_items() + [remote])
+                with self.assertRaisesRegex(AuditError, "not marked CC0-1.0"):
+                    audit(self.root)
+
     def test_rejects_remote_original_with_query_parameters(self):
         remote_item = {
             "photo_id": "51", "observation_id": "101",
