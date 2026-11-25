@@ -18,7 +18,6 @@ on:
       - 'training/test_prepare_visual_review_gallery.py'
       - 'scripts/audit_gallery_rights.py'
       - 'training/test_audit_gallery_rights.py'
-      - 'scripts/test_cc0_workflow_publication_policy.py'
       - '.github/workflows/ki-cc0-quellen.yml'
   schedule:
     - cron: '17 6 * * 1'
