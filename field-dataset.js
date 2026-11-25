@@ -10,6 +10,13 @@
   const MIME_EXTENSIONS = Object.freeze({
     'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
   });
+  const RIGHTS_BASES = Object.freeze([
+    'CC0-1.0', 'CC-BY-4.0', 'LicenseRef-ExplicitPermission'
+  ]);
+  const RIGHTS_LICENSES = Object.freeze({
+    'CC0-1.0': 'https://creativecommons.org/publicdomain/zero/1.0/',
+    'CC-BY-4.0': 'https://creativecommons.org/licenses/by/4.0/'
+  });
   const form = document.getElementById('field-dataset-form');
   if (!form) return;
   const status = document.getElementById('field-dataset-status');
@@ -19,6 +26,12 @@
   const classInputs = [...form.querySelectorAll('input[name="class-label"]')];
   const classGroup = document.getElementById('field-dataset-classes');
   const rightsBasis = document.getElementById('field-rights-basis');
+  const rightsSource = document.getElementById('field-rights-source');
+  const rightsEvidence = document.getElementById('field-rights-evidence');
+  const attributionField = document.getElementById('field-rights-attribution-field');
+  const attributionInput = document.getElementById('field-rights-attribution');
+  const permissionField = document.getElementById('field-rights-permission-field');
+  const permissionInput = document.getElementById('field-rights-permission-ref');
   let objectUrls = [];
 
   function id() {
@@ -117,6 +130,119 @@
     return extension;
   }
 
+  function normalizeSource(value) {
+    const source = typeof value === 'string' ? value.trim() : '';
+    if (!source || source.length > 200) {
+      throw Error('Bitte eine Bildquelle bis 200 Zeichen angeben.');
+    }
+    if (['eigene feldaufnahme', 'own field capture'].includes(source.toLowerCase())) {
+      return 'Eigene Feldaufnahme';
+    }
+    let parsed;
+    try {
+      parsed = new URL(source);
+    } catch {
+      throw Error('Die Bildquelle muss „Eigene Feldaufnahme“ oder eine HTTPS-Adresse sein.');
+    }
+    if (parsed.protocol !== 'https:' || !parsed.hostname || parsed.username ||
+        parsed.password || parsed.search || parsed.hash) {
+      throw Error('Die Bildquelle muss eine HTTPS-Adresse ohne Zugangsdaten, Query oder Fragment sein.');
+    }
+    return source;
+  }
+
+  function normalizeRights(rights, requiredStatus) {
+    if (!rights || typeof rights !== 'object' || Array.isArray(rights)) {
+      throw Error('Rechteangaben fehlen oder sind ungültig.');
+    }
+    const source = normalizeSource(rights.source);
+    const basis = rights.basis;
+    if (!RIGHTS_BASES.includes(basis)) {
+      throw Error('Bitte eine der drei unterstützten Rechtebasen auswählen.');
+    }
+    if (!['pending_review', 'training_approved'].includes(rights.status) ||
+        (requiredStatus && rights.status !== requiredStatus)) {
+      throw Error('Die Rechteattestierung ist noch nicht abgeschlossen.');
+    }
+    const normalized = {source, basis, status:rights.status};
+    const evidenceUrl = RIGHTS_LICENSES[basis];
+    if (evidenceUrl) {
+      if (rights.evidence_url !== evidenceUrl) {
+        throw Error('Der kanonische Lizenznachweis fehlt oder stimmt nicht mit der Rechtebasis überein.');
+      }
+      normalized.evidence_url = evidenceUrl;
+    }
+    if (basis === 'CC-BY-4.0') {
+      const attribution = typeof rights.attribution === 'string' ? rights.attribution.trim() : '';
+      if (!attribution || attribution.length > 500) {
+        throw Error('Für CC BY 4.0 ist eine Attribution bis 500 Zeichen erforderlich.');
+      }
+      normalized.attribution = attribution;
+    }
+    if (basis === 'LicenseRef-ExplicitPermission') {
+      const permissionRef = typeof rights.permission_ref === 'string' ? rights.permission_ref.trim() : '';
+      if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(permissionRef)) {
+        throw Error('Für eine individuelle Erlaubnis ist eine opake Referenz (max. 200 Zeichen) erforderlich.');
+      }
+      normalized.permission_ref = permissionRef;
+    }
+    return normalized;
+  }
+
+  function rightsContractComplete(rights) {
+    try {
+      normalizeRights(rights);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function rightsFromForm() {
+    const basis = rightsBasis.value;
+    if (!RIGHTS_BASES.includes(basis)) {
+      throw Error('Bitte eine unterstützte Rechtebasis auswählen.');
+    }
+    const rights = {
+      source: normalizeSource(rightsSource.value),
+      basis,
+      status: 'pending_review'
+    };
+    if (RIGHTS_LICENSES[basis]) rights.evidence_url = RIGHTS_LICENSES[basis];
+    if (basis === 'CC-BY-4.0') {
+      const attribution = attributionInput.value.trim();
+      if (!attribution || attribution.length > 500) {
+        throw Error('Für CC BY 4.0 ist eine Attribution bis 500 Zeichen erforderlich.');
+      }
+      rights.attribution = attribution;
+    }
+    if (basis === 'LicenseRef-ExplicitPermission') {
+      const permissionRef = permissionInput.value.trim();
+      if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(permissionRef)) {
+        throw Error('Bitte eine opake Erlaubnis-Referenz ohne Namen, E-Mail oder URL angeben.');
+      }
+      rights.permission_ref = permissionRef;
+    }
+    return rights;
+  }
+
+  function updateRightsFields() {
+    const basis = rightsBasis.value;
+    const showAttribution = basis === 'CC-BY-4.0';
+    attributionField.hidden = !showAttribution;
+    attributionInput.disabled = !showAttribution;
+    attributionInput.required = showAttribution;
+    const showPermission = basis === 'LicenseRef-ExplicitPermission';
+    permissionField.hidden = !showPermission;
+    permissionInput.disabled = !showPermission;
+    permissionInput.required = showPermission;
+    const evidenceUrl = RIGHTS_LICENSES[basis];
+    rightsEvidence.hidden = !evidenceUrl;
+    setText(rightsEvidence, evidenceUrl
+      ? 'Kanonischer Lizenznachweis wird automatisch in den Export übernommen: ' + evidenceUrl
+      : '');
+  }
+
   function labelsText(labels) {
     return labels.length ? labels.join(', ') : 'Negativbild (keine Zielklasse)';
   }
@@ -139,13 +265,17 @@
     const title = document.createElement('strong');
     setText(title, labelsText(record.labels));
     const metadata = document.createElement('p');
-    const approved = record.review_status === 'approved' && record.rights.status === 'training_approved';
-    setText(metadata, `${new Date(record.captured_at).toLocaleString('de-DE')} · ${approved ? 'Nutzerattestierung für Trainingsverwendung' : 'Prüfung ausstehend'} · Quelle: ${record.rights.source}`);
+    const rightsComplete = rightsContractComplete(record.rights);
+    const approved = rightsComplete && record.review_status === 'approved' &&
+      record.rights.status === 'training_approved';
+    setText(metadata, `${new Date(record.captured_at).toLocaleString('de-DE')} · ${approved ? 'Nutzerattestierung für Trainingsverwendung' : 'Prüfung ausstehend'} · Quelle: ${record.rights?.source || 'nicht angegeben'}`);
     const rights = document.createElement('p');
-    setText(rights, `Rechteangabe (Nutzereingabe, nicht verifiziert): ${record.rights.basis} · Status: ${record.rights.status}`);
+    setText(rights, rightsComplete
+      ? `Rechteangabe (Nutzereingabe, nicht verifiziert): ${record.rights.basis} · Status: ${record.rights.status}`
+      : 'Alte oder unvollständige Rechteangabe: Diese Aufnahme kann nicht exportiert werden. Bitte mit der strukturierten Rechteauswahl neu erfassen.');
     details.append(title, metadata, rights);
 
-    if (!approved) {
+    if (!approved && rightsComplete) {
       const contentReview = document.createElement('input');
       contentReview.type = 'checkbox';
       contentReview.setAttribute('aria-label', 'Bildinhalt und sämtliche Klassen manuell geprüft');
@@ -175,8 +305,8 @@
         }
         if (!window.confirm('Du bestätigst persönlich, dass du Bild und alle Labels geprüft hast und das Bild für Trainingszwecke verwenden darfst. Die App überprüft diese Erklärung nicht. Fortfahren?')) return;
         try {
+          record.rights = normalizeRights({...record.rights, status:'training_approved'}, 'training_approved');
           record.review_status = 'approved';
-          record.rights.status = 'training_approved';
           await update(record);
           setText(status, 'Deine manuelle Prüfung und Nutzungsattestierung wurden gespeichert; die App hat sie nicht unabhängig verifiziert.');
         } catch (error) {
@@ -184,6 +314,11 @@
         }
       });
       details.append(contentReviewLabel, rightsReviewLabel, reviewNote, approve);
+    } else if (!rightsComplete) {
+      const legacyNote = document.createElement('p');
+      legacyNote.className = 'note';
+      setText(legacyNote, 'Diese Altaufnahme verwendet das frühere Freitextformat. Sie kann lokal gelöscht und mit der strukturierten Rechteauswahl neu erfasst werden.');
+      details.append(legacyNote);
     }
 
     const removeButton = document.createElement('button');
@@ -211,8 +346,8 @@
     try {
       const records = (await all()).sort((a, b) => b.captured_at.localeCompare(a.captured_at));
       for (const record of records) rows.append(renderRecord(record));
-      const pending = records.filter(record => record.review_status !== 'approved' ||
-        record.rights.status !== 'training_approved');
+      const pending = records.filter(record => !rightsContractComplete(record.rights) ||
+        record.review_status !== 'approved' || record.rights.status !== 'training_approved');
       exportButton.disabled = records.length === 0 || pending.length > 0;
       setText(document.getElementById('field-dataset-summary'),
         `${records.length} lokal${records.length === 1 ? 'e Aufnahme' : 'e Aufnahmen'} · ${pending.length} ohne abgeschlossene Nutzerprüfung`);
@@ -290,10 +425,9 @@
     const records = await all();
     if (!records.length) throw Error('Es gibt keine lokalen Aufnahmen zum Exportieren.');
     if (records.length >= 0xffff) throw Error('ZIP-Export abgebrochen: zu viele Aufnahmen für das Archivformat.');
-    if (records.some(record => record.review_status !== 'approved' ||
-        record.rights.status !== 'training_approved' ||
-        !record.rights.basis || record.rights.basis === 'not_assessed')) {
-      throw Error('Export gesperrt: Für jede Aufnahme sind manuelle Bild-/Labelprüfung und ausdrückliche Attestierung der Trainingsnutzung erforderlich.');
+    if (records.some(record => !rightsContractComplete(record.rights) ||
+        record.review_status !== 'approved' || record.rights.status !== 'training_approved')) {
+      throw Error('Export gesperrt: Jede Aufnahme benötigt vollständige strukturierte Rechteangaben sowie manuelle Bild-/Labelprüfung und ausdrückliche Nutzungsattestierung.');
     }
     const files = [];
     const annotations = [];
@@ -316,7 +450,7 @@
         captured_at: record.captured_at,
         capture_session_id: record.capture_session_id,
         review_status: record.review_status,
-        rights: record.rights
+        rights: normalizeRights(record.rights, 'training_approved')
       };
       if (record.labeler_id) annotation.labeler_id = record.labeler_id;
       annotations.push(JSON.stringify(annotation));
@@ -334,6 +468,7 @@
   }
 
   for (const radio of kindRadios) radio.addEventListener('change', updateKind);
+  rightsBasis.addEventListener('change', updateRightsFields);
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const button = form.querySelector('button[type="submit"]');
@@ -346,10 +481,7 @@
         throw Error('Bitte ein JPEG-, PNG- oder WebP-Bild bis 8 MB auswählen. HEIC muss auf dem iPhone zuerst lokal als JPEG gespeichert werden.');
       }
       const labels = labelsForForm();
-      const source = document.getElementById('field-rights-source').value.trim();
-      const basisInput = rightsBasis.value.trim();
-      if (!source || source.length > 200) throw Error('Bitte die Bildquelle als Text (maximal 200 Zeichen) angeben.');
-      if (!basisInput || basisInput.length > 120) throw Error('Bitte die Rechte-/Nutzungsangabe als Text (maximal 120 Zeichen) angeben.');
+      const rights = rightsFromForm();
       const record = {
         id: id(),
         image_bytes: await file.arrayBuffer(),
@@ -358,11 +490,7 @@
         captured_at: new Date().toISOString(),
         capture_session_id: sessionId,
         review_status: 'pending_review',
-        rights: {
-          source,
-          basis: basisInput,
-          status: 'pending_review'
-        }
+        rights
       };
       const labeler = document.getElementById('field-labeler-id').value.trim();
       if (labeler) record.labeler_id = labeler;
@@ -370,7 +498,8 @@
       form.reset();
       classInputs.forEach(input => { input.checked = false; });
       updateKind();
-      setText(status, 'Bild und Angaben lokal gespeichert. Noch ungeprüft; die App prüft keine Rechte. Für den Export sind eine separate Nutzerattestierung und manuelle Bild-/Labelprüfung nötig.');
+      updateRightsFields();
+      setText(status, 'Bild und strukturierte Rechteangaben lokal gespeichert. Noch ungeprüft; die App prüft keine Rechte. Für den Export sind eine separate Nutzerattestierung und manuelle Bild-/Labelprüfung nötig.');
       await render();
     } catch (error) {
       setText(status, 'Nicht gespeichert: ' + error.message);
@@ -389,5 +518,6 @@
     }
   });
   updateKind();
+  updateRightsFields();
   void render();
 })();
