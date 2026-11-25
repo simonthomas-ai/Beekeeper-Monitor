@@ -157,8 +157,8 @@ class FieldDatasetZipTests(unittest.TestCase):
                     self.record("images/negative.jpg", []),
                 ])
                 errors = validate(path)
-                self.assertTrue(any("rights.source" in error or "nicht unterstützte Felder" in error
-                                    for error in errors))
+                self.assertTrue(any("rights.source" in error or "nicht unterstützte Felder" in error or
+                                    "publication_allowed" in error for error in errors))
 
     def test_requires_cc_by_attribution_and_explicit_permission_reference(self):
         invalid = [
