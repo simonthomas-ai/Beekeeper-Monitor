@@ -35,7 +35,7 @@ class CC0WorkflowPublicationPolicyTests(unittest.TestCase):
             / "workflows"
             / "pages.yml"
         ).read_text(encoding="utf-8")
-        self.assertIn("if: \${{ false }}", pages_workflow)
+        self.assertIn("if: " + "$" + "{{ false }}", pages_workflow)
         self.assertNotIn("pages: write", pages_workflow)
         self.assertNotIn("id-token: write", pages_workflow)
 
