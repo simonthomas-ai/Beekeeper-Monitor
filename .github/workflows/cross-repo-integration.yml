@@ -7,6 +7,11 @@ on:
       - '.github/workflows/cross-repo-integration.yml'
       - 'integrations/**'
       - 'scripts/test_practical_modules_http.py'
+      - 'field-dataset.js'
+      - 'index.html'
+      - 'tests/field-dataset.spec.cjs'
+      - 'tests/test_beekeeper_importer_roundtrip.py'
+      - 'docs/FIELD-DATASET-CAPTURE.md'
       - 'docs/VESPAGUARD-INTEGRATION.md'
   pull_request:
     branches: [main]
@@ -14,6 +19,11 @@ on:
       - '.github/workflows/cross-repo-integration.yml'
       - 'integrations/**'
       - 'scripts/test_practical_modules_http.py'
+      - 'field-dataset.js'
+      - 'index.html'
+      - 'tests/field-dataset.spec.cjs'
+      - 'tests/test_beekeeper_importer_roundtrip.py'
+      - 'docs/FIELD-DATASET-CAPTURE.md'
       - 'docs/VESPAGUARD-INTEGRATION.md'
   schedule:
     - cron: '17 5 * * *'
@@ -34,7 +44,7 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           # Immutable partner revision; update deliberately after its CI passes.
-          ref: 4d707d95b036b26b83077a3f2e0e8da3be2d8128
+          ref: cf4a9868a41b4d1836957cc78c6963eedb131e5a
           path: beekeeper3000
           persist-credentials: false
       - name: Python vorbereiten
@@ -62,6 +72,6 @@ jobs:
         run: |
           echo '## VespaGuard: Repository-übergreifende Prüfung' >> "$GITHUB_STEP_SUMMARY"
           echo 'Monitor commit: '$(git -C monitor rev-parse HEAD) >> "$GITHUB_STEP_SUMMARY"
-          echo 'BeeKeeper3000 partner commit: 4d707d95b036b26b83077a3f2e0e8da3be2d8128' >> "$GITHUB_STEP_SUMMARY"
+          echo 'BeeKeeper3000 partner commit: cf4a9868a41b4d1836957cc78c6963eedb131e5a' >> "$GITHUB_STEP_SUMMARY"
           echo 'Der Partnerstand ist absichtlich auf einen unveränderlichen Commit gepinnt; Änderungen daran benötigen eine bewusste Aktualisierung dieses Workflows.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Diese Prüfung ist noch kein Feldtest mit echter Kamera, Funkhardware oder freigegebenem KI-Modell.' >> "$GITHUB_STEP_SUMMARY"
