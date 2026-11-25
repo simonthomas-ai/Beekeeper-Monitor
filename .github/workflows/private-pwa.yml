@@ -24,9 +24,11 @@ jobs:
       - name: Offline-PWA-Dateien bereitstellen (ohne Deployment)
         run: |
           mkdir -p private-pwa/wissen
-          cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js hornet-onnx-decoder.js camera-onnx-runtime.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg private-pwa/
+          # Do not package dormant ONNX inference/decoder prototypes: no model
+          # weights have cleared rights, graph-contract or field-validation gates.
+          cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg private-pwa/
           cp wissen/wissenschaft-hornissen-bienen.html wissen/weltlage-vespa-velutina.html private-pwa/wissen/
-          printf '%s\n' 'Nur Build-Artefakt, keine gehostete Website.' 'ZIP-Dateien lassen sich auf iOS nicht direkt als installierbare PWA verwenden.' > private-pwa/README-PRIVAT.txt
+          printf '%s\\n' 'Nur Build-Artefakt, keine gehostete Website.' 'ZIP-Dateien lassen sich auf iOS nicht direkt als installierbare PWA verwenden.' > private-pwa/README-PRIVAT.txt
       - name: Build nur als GitHub-Actions-Artefakt speichern
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
