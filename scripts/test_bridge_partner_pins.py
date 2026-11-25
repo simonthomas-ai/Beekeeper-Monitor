@@ -11,6 +11,7 @@ WORKFLOWS = (
 )
 PIN = re.compile(r"^\s*ref:\s*([0-9a-f]{40})\s*(?:#.*)?$", re.MULTILINE)
 
+EXPECTED_PARTNER_SHA = "4d707d95b036b26b83077a3f2e0e8da3be2d8128"
 
 def partner_pins(text):
     # Require the immutable SHA directly after the named partner checkout.
@@ -33,6 +34,7 @@ class BridgePartnerPinTests(unittest.TestCase):
                 self.assertRegex(found[0], r"^[0-9a-f]{40}$")
                 pins.extend(found)
         self.assertEqual(pins[0], pins[1], "Bridge partner revisions drifted")
+        self.assertEqual(pins[0], EXPECTED_PARTNER_SHA, "Bridge tests must use the reviewed BeeKeeper3000 commit")
 
 
 if __name__ == "__main__":
