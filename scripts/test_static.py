@@ -11,6 +11,7 @@ sw=(root/"sw.js").read_text()
 manifest=json.loads((root/"manifest.webmanifest").read_text())
 catalog=json.loads((root/"sources/catalog.json").read_text())
 pages=(root/".github/workflows/pages.yml").read_text()
+private_build=(root/".github/workflows/private-pwa.yml").read_text()
 assert "<html lang=\"de\">" in html
 for path in ("backup-contract.js","app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","field-dataset.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
     assert (root/path).is_file(),path
@@ -98,3 +99,7 @@ assert './hornet-onnx-decoder.js' not in sw
 assert 'src="./camera-onnx-runtime.js"' not in html
 assert './camera-onnx-runtime.js' not in sw
 assert 'camera-onnx-runtime.js' not in pages
+private_copy_lines = [line for line in private_build.splitlines() if line.lstrip().startswith("cp ")]
+assert private_copy_lines, "private PWA asset copy commands must remain explicit"
+assert all("camera-onnx-runtime.js" not in line for line in private_copy_lines)
+assert all("hornet-onnx-decoder.js" not in line for line in private_copy_lines)
