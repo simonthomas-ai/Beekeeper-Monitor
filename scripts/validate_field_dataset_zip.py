@@ -102,6 +102,15 @@ def validate_rights(rights: object, line_number: int, errors: list[str]) -> None
             errors.append(f"{prefix}.permission_ref muss eine opake Referenz bis 200 Zeichen sein")
 
 
+def _unique_json_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
 def iso_timestamp(value: object) -> bool:
     if not isinstance(value, str) or not value:
         return False
@@ -167,9 +176,9 @@ def validate(zip_path: Path) -> list[str]:
             for line_number, line in enumerate(text.splitlines(), start=1):
                 line_count += 1
                 try:
-                    record = json.loads(line)
-                except json.JSONDecodeError as exc:
-                    errors.append(f"Zeile {line_number}: ungültiges JSON ({exc.msg})")
+                    record = json.loads(line, object_pairs_hook=_unique_json_object)
+                except (json.JSONDecodeError, ValueError) as exc:
+                    errors.append(f"Zeile {line_number}: ungültiges JSON oder doppelter Schlüssel ({exc})")
                     continue
                 if not isinstance(record, dict):
                     errors.append(f"Zeile {line_number}: Annotation muss ein Objekt sein")
