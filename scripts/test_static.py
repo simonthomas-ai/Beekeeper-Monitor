@@ -111,7 +111,7 @@ private_copy_lines = [line for line in private_build.splitlines() if line.lstrip
 assert private_copy_lines, "private PWA asset copy commands must remain explicit"
 assert any("field-dataset.js" in line for line in private_copy_lines), "private PWA must include the field dataset module"
 offline_assets = sw.split("const FILES=[", 1)[1].split("];", 1)[0]
-for asset in re.findall(r"'(\\./[^']+)'", offline_assets):
+for asset in re.findall(r"'(\./[^']+)'", offline_assets):
     relative = asset.removeprefix("./")
     if relative:
         assert any(relative in line for line in private_copy_lines), f"private PWA copy misses offline asset: {relative}"
