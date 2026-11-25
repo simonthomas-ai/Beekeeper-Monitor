@@ -11,7 +11,7 @@ WORKFLOWS = (
 )
 PIN = re.compile(r"^\s*ref:\s*([0-9a-f]{40})\s*(?:#.*)?$", re.MULTILINE)
 
-EXPECTED_PARTNER_SHA = "4d707d95b036b26b83077a3f2e0e8da3be2d8128"
+EXPECTED_PARTNER_SHA = "f1aa134e1a310badce3125f52e51d890f3efd26a"
 
 def partner_pins(text):
     # Require the immutable SHA directly after the named partner checkout.
@@ -30,11 +30,13 @@ class BridgePartnerPinTests(unittest.TestCase):
         for path in WORKFLOWS:
             with self.subTest(workflow=path.name):
                 found = partner_pins(path.read_text(encoding="utf-8"))
-                self.assertEqual(len(found), 1, "Expected exactly one partner checkout")
-                self.assertRegex(found[0], r"^[0-9a-f]{40}$")
+                self.assertGreaterEqual(len(found), 1, "Expected at least one partner checkout")
+                for pin in found:
+                    self.assertRegex(pin, r"^[0-9a-f]{40}$")
+                    self.assertEqual(pin, EXPECTED_PARTNER_SHA, "Every integration job must use the reviewed BeeKeeper3000 commit")
                 pins.extend(found)
-        self.assertEqual(pins[0], pins[1], "Bridge partner revisions drifted")
-        self.assertEqual(pins[0], EXPECTED_PARTNER_SHA, "Bridge tests must use the reviewed BeeKeeper3000 commit")
+        self.assertTrue(pins, "No BeeKeeper3000 partner pins found")
+        self.assertEqual(set(pins), {EXPECTED_PARTNER_SHA}, "Bridge partner revisions drifted")
 
 
 if __name__ == "__main__":

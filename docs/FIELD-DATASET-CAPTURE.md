@@ -1,66 +1,88 @@
 # Lokale Klassifikationsdaten erfassen und exportieren
 
-Dieser PWA-Workflow erstellt einen **manuell annotierten Bildklassifikationsbestand** für die spätere Prüfung. Er erzeugt keine Vorhersagen und trainiert kein Modell. Er ist vom Kamera-Shadow-Beobachtungseintrag und vom bestehenden Bounding-Box-Trainingspfad getrennt; der Export ist nicht direkt als Bounding-Box-Trainingsbestand verwendbar. Vor einem Training muss ein eigener Datenadapter und eine passende Klassifikations- oder Multi-Label-Modellaufgabe fachlich freigegeben werden.
+**Status: lokaler, manueller Erfassungs- und Exportpfad; nicht trainiert oder feldvalidiert.** Die PWA erzeugt keine Vorhersagen, führt keine Inferenz aus und lädt keine Bilder oder Annotationen hoch. Der Export ist ein ZIP mit `images/` und `annotations.jsonl`; er ist kein Bounding-Box-Datensatz und keine automatische Rechte- oder Fachfreigabe.
 
 ## Browser- und iPhone-Ablauf
 
-1. Öffne die PWA lokal unter `http://localhost:8000/` oder über eine private HTTPS-Vorschau. Für die iPhone-Kamera ist HTTPS nötig. Die öffentliche Pages-Veröffentlichung ist unabhängig davon deaktiviert.
-2. Unter **Lokale Feldaufnahme und manuelle Bildklassifikation** nimm ein Bild auf oder wähle eine lokale JPEG/JPG-, PNG- oder WebP-Datei bis 8 MB. Diese Endungen entsprechen dem BeeKeeper-Feldtest-Validator.
-3. Wähle ausdrücklich **Eine oder mehrere Zielklassen** und alle zutreffenden Klassen oder **Negativbild ohne Zielklasse**. Das Negativbild wird als leere Klassenliste `[]` exportiert; es ist keine unbekannte/fehlende Auswahl.
-4. Trage Bildquelle/Herkunft und Rechte-/Nutzungsangabe als Freitext ein (Quelle max. 200, Angabe max. 120 Zeichen; keine URL- oder SPDX-Pflicht). Das sind **Nutzereingaben, keine Belege und keine Rechtsprüfung**. Ein optionaler `labeler_id` soll nur ein Pseudonym sein, kein Name oder Kontaktmerkmal.
-5. Jedes Bild wird zunächst als ungeprüft gespeichert. Vor dem Export müssen Bild und Labels manuell geprüft sowie die Berechtigung zur Trainingsnutzung ausdrücklich attestiert werden. Diese Attestierung zeichnet nur die Erklärung der Person auf; die App prüft sie nicht unabhängig und macht aus einer Eingabe keinen Rechtebeleg.
-6. **Attestierten Bestand als ZIP exportieren** erzeugt auf ausdrücklichen Klick ein Archiv, das `images/` und `annotations.jsonl` enthält. Der lokale Bestand bleibt nach dem Download erhalten; lösche ihn bei Bedarf manuell aus der PWA.
+1. Öffne die PWA lokal unter `http://localhost:8000/` oder über eine private HTTPS-Vorschau. Für iPhone-Kamerazugriff ist HTTPS erforderlich. Die öffentliche Pages-Veröffentlichung bleibt separat deaktiviert.
+2. Unter **Lokale Feldaufnahme und manuelle Bildklassifikation** wähle ein JPEG/JPG-, PNG- oder WebP-Bild bis 8 MB. HEIC wird bewusst abgelehnt; wandle es vor der Auswahl lokal auf dem Gerät in JPEG um.
+3. Wähle ausdrücklich **Eine oder mehrere Zielklassen** und alle zutreffenden Klassen oder **Negativbild ohne Zielklasse**. Ein Negativbild wird mit `labels: []` exportiert.
+4. Trage als Quelle entweder exakt **Eigene Feldaufnahme** oder eine credential-freie HTTPS-Fotoquellen-URL ein. URLs mit Zugangsdaten, Query-Parametern oder Fragmenten werden abgelehnt.
+5. Wähle eine strukturierte Rechtebasis:
+   - **CC0-1.0:** Der kanonische Nachweis `https://creativecommons.org/publicdomain/zero/1.0/` wird automatisch ergänzt.
+   - **CC-BY-4.0:** Der kanonische Nachweis `https://creativecommons.org/licenses/by/4.0/` wird automatisch ergänzt; eine Attribution bis 500 Zeichen ist Pflicht.
+   - **LicenseRef-ExplicitPermission:** Eine opake Referenz bis 200 Zeichen ist Pflicht. Keine Namen, E-Mail-Adressen, privaten Dokumente oder vertraulichen URLs eintragen.
+6. Jedes Bild wird zunächst ungeprüft lokal gespeichert. Vor dem Export müssen Bildinhalt/Labels manuell geprüft und die Berechtigung zur Trainingsnutzung ausdrücklich attestiert werden. Diese Attestierung hält nur eine Nutzeraussage fest; sie ist keine unabhängige Rechtsprüfung.
+7. **Attestierten Bestand als ZIP exportieren** startet den Download erst nach ausdrücklichem Klick. Die lokalen Originale bleiben im Browser, bis sie dort gelöscht werden.
 
-In iOS Safari kann `capture="environment"` die Kamera oder die Fotoauswahl anbieten; die genaue Auswahloberfläche hängt von Gerät und Browser ab. Stelle für direkte iPhone-Aufnahmen **Einstellungen → Kamera → Formate → Maximale Kompatibilität** ein, damit neue Fotos als JPEG aufgenommen werden. Bestehende HEIC-Fotos werden klar abgelehnt; wandle sie vor der Auswahl lokal in der iPhone-Kurzbefehle-App mit „Bild konvertieren“ → JPEG um und speichere das JPEG in „Dateien“. Diese Schritte sind nicht auf einem echten iPhone abgenommen. Die PWA liest keinen GPS-Standort und sendet weder Bilder noch Labels an eine API, BeeKeeper3000 oder einen Modellanbieter. Der Zeitstempel bezeichnet das Hinzufügen zur PWA und wird nicht aus EXIF abgeleitet. Vermeide Personen, private Bereiche und unnötige Standortdetails. Browser- und Betriebssystem-Speicher sind nicht durch die PWA verschlüsselt.
+Der Zeitstempel bezeichnet das Hinzufügen in der PWA und wird nicht aus EXIF abgeleitet. Die PWA liest für diesen Workflow keinen GPS-Standort und überträgt weder Bilder noch Labels an eine API, BeeKeeper3000 oder einen Modellanbieter. Browser- und Betriebssystem-Speicher sind durch die PWA nicht verschlüsselt. Schütze das Gerät und heruntergeladene ZIP-Dateien entsprechend. Bereits exportierte Kopien werden durch das Löschen lokaler Datensätze nicht entfernt.
 
 ## Exportvertrag
 
-Jede Zeile von `annotations.jsonl` beschreibt ein Bild und enthält:
+Jede Zeile von `annotations.jsonl` enthält die Bildreferenz, Klassen, einen zeitzonenbewussten Zeitstempel, eine zufällige Sitzungs-ID, den manuellen Prüfstatus und strukturierte Rechteangaben. `labeler_id` ist optional und darf nur ein Pseudonym sein.
+
+Beispiel für eine eigene Aufnahme mit dokumentierter individueller Erlaubnis:
 
 ```json
 {
   "image": "images/<id>.jpg",
   "labels": ["vespa_velutina", "apis_mellifera"],
-  "captured_at": "2026-11-23T06:00:00.000Z",
+  "captured_at": "2026-11-26T08:00:00Z",
   "capture_session_id": "<zufällige Sitzungs-ID>",
   "review_status": "approved",
   "rights": {
     "source": "Eigene Feldaufnahme",
-    "basis": "Nutzerangabe; nicht unabhängig geprüft",
+    "basis": "LicenseRef-ExplicitPermission",
+    "permission_ref": "consent-record-2026-001",
     "status": "training_approved"
   }
 }
 ```
 
-`labeler_id` kann als pseudonymer Wert ergänzt werden. Zulässige Klassen-Slugs stammen exakt aus `training/class_schema.py`: `vespa_velutina`, `vespa_crabro`, `other_vespidae`, `apis_mellifera`, `bombus_spp`, `syrphidae`, `other_insect`. Mehrere Slugs pro Bild sind erlaubt. Für ein Negativbild ist `labels` ein leeres Array. Der Vertrag enthält keine Bounding-Boxes, GPS- oder Stations-ID-Felder. Exportdateien bleiben in der Verantwortung der Person, die sie speichert und weitergibt; der Export ist keine automatische rechtliche Freigabe des Gesamtbestands.
+Beispiel für eine externe CC-BY-4.0-Quelle:
 
-Ein konkretes Beispiel mit einer Mehrfach- und einer Negativannotation:
-
-```jsonl
-{"image":"images/3a9fd4b4-1.jpg","labels":["vespa_velutina","apis_mellifera"],"captured_at":"2026-11-23T08:00:00+01:00","capture_session_id":"field-session-pseudonym","labeler_id":"reviewer-pseudonym","review_status":"approved","rights":{"source":"Eigene Feldaufnahme","basis":"Nutzerangabe; nicht unabhängig geprüft","status":"training_approved"}}
-{"image":"images/c5e72cb1-2.jpg","labels":[],"captured_at":"2026-11-23T08:05:00+01:00","capture_session_id":"field-session-pseudonym","review_status":"approved","rights":{"source":"Eigene Feldaufnahme","basis":"Nutzerangabe; nicht unabhängig geprüft","status":"training_approved"}}
+```json
+{
+  "image": "images/<id>.jpg",
+  "labels": [],
+  "captured_at": "2026-11-26T08:05:00Z",
+  "capture_session_id": "<zufällige Sitzungs-ID>",
+  "review_status": "approved",
+  "rights": {
+    "source": "https://example.org/photos/example",
+    "basis": "CC-BY-4.0",
+    "evidence_url": "https://creativecommons.org/licenses/by/4.0/",
+    "attribution": "Name der Urheberperson (CC BY 4.0)",
+    "status": "training_approved"
+  }
+}
 ```
 
-Der gemeinsam bearbeitete BeeKeeper-Feldtest-Branch `simonthomas-ai-feldtest-vorbereitung` enthält `training/multilabel_dataset.py`; der am 23.11.2026 geprüfte Worktree-Stand war `a4340f4144837cd6b1056b5dbab7b8a0dbb8069c` plus uncommittete Änderungen. Dessen aktuelle `validate_dataset_archive()`-Implementierung akzeptiert `rights.source` als nichtleeren Freitext bis 200 Zeichen, `rights.basis` als nichtleeren Freitext bis 120 Zeichen, `rights.status="training_approved"` und `review_status="approved"` sowie JPG/JPEG, PNG und WebP. Eine vorhandene `RIGHTS_BASES`-Konstante wird in der aktuellen Validatorfunktion nicht als Allowlist angewendet. Der Validator liegt in einem unveröffentlichten Arbeitsbranch, nicht in BeeKeeper3000 `main`; die Kompatibilität muss bei Änderungen dieses Branches erneut geprüft werden. Der öffentliche `scripts/import_mobile_export.py` auf `main` importiert ein separates Metadatenereignis-Format und ist **kein** Bilddatensatz-Importer.
+Der Export setzt bewusst **kein** `publication_allowed`. Eine Attestierung zur Trainingsnutzung erteilt nicht automatisch eine Erlaubnis zur öffentlichen Weitergabe. Die drei Rechtebasen sind eine begrenzte technische Eingabe-Allowlist, keine rechtliche Aussage über das konkrete Bild. Die Referenz für eine individuelle Erlaubnis muss auf einen lokal verwahrten Nachweis verweisen; der Nachweis selbst gehört nicht in das Manifest oder CI.
 
-Das ZIP-Fixture `test_accepts_safe_zip_export` in diesem Partner-Worktree wurde gegen denselben Validator ausgeführt und akzeptiert die vereinbarte Form mit Freitext sowie `rights.status="training_approved"`. Das bestätigt nur den gerade geprüften Session-Worktree, nicht einen Commit oder Merge nach BeeKeeper3000 `main`.
+Zulässige Klassen-Slugs: `vespa_velutina`, `vespa_crabro`, `other_vespidae`, `apis_mellifera`, `bombus_spp`, `syrphidae`, `other_insect`. Mehrere Slugs pro Bild sind möglich. Ein Negativbild verwendet ein leeres Array. Der Vertrag enthält keine Bounding-Boxes, GPS- oder Stations-ID-Felder.
 
-Der Monitor-Prüfer kontrolliert lokal eine ZIP-Datei gegen denselben Zielformatvertrag:
+### Altaufnahmen
 
-```sh
-python scripts/validate_field_dataset_zip.py /sicherer/pfad/beekeeper-field-dataset.zip
-python -m unittest tests.test_field_dataset_zip -v
-```
+Vor dem strukturierten Rechtevertrag gespeicherte Freitextangaben wie `Nutzerangabe` werden nicht stillschweigend umgedeutet. Solche Altaufnahmen können nicht exportiert werden; erfasse sie nach Prüfung erneut mit der strukturierten Auswahl oder lösche sie lokal.
 
-Der Cross-Repo-Fixturetest ruft den konkreten Session-Branch-Validator auf, wenn sein Dateipfad gesetzt ist:
+## Repository-übergreifende Prüfung
+
+Der Monitor prüft den Browser-ZIP-Export in `tests/field-dataset.spec.cjs`. Im Ein-Klick-Gesamttest wird derselbe Browser-Export gegen den unveränderlich gepinnten BeeKeeper3000-Validator aus Commit `f1aa134e1a310badce3125f52e51d890f3efd26a` geprüft. Der Job führt zusätzlich die Validator-Unit-Tests und den Python-Fixture-Roundtrip aus. Die Testbilder sind künstliche Byte-Fixtures; es werden keine privaten Fotos, realen Rechteunterlagen oder Trainingsdaten in CI hochgeladen.
+
+Lokaler Cross-Repo-Fixturetest:
 
 ```powershell
 $env:BEEKEEPER_MULTILABEL_VALIDATOR = 'C:\Pfad\zum\BeeKeeper3000\training\multilabel_dataset.py'
 python -m unittest tests.test_beekeeper_importer_roundtrip -v
 ```
 
-Der Test übergibt eine Mehrfachlabel- und eine Negativbildannotation (`[]`) an BeeKeepers `validate_dataset_archive()`. Der Monitor-Prüfer lehnt unbekannte Slugs, ungeprüfte Einträge, fehlende Bilder, Mehrfachannotierung desselben Bildes, Pfadmanipulation, Bounding-Boxes, GPS, Stations-ID und nicht vertragskonforme Zusatzdateien ab. Das belegt keine tatsächlichen Rechte, fachliche Labelrichtigkeit oder Trainingsfreigabe eines Gesamtbestands.
+Die Tests prüfen das Dateiformat und die technische Rechtefeld-Validierung. Sie beweisen weder die Echtheit einer Erlaubnis noch die korrekte Artbestimmung, Trainingsqualität oder Modellleistung. Ein grüner CI-Lauf ist keine KI- oder Feldfreigabe.
 
-## Tests und Grenzen
+## Grenzen und Freigaben
 
-Der Browser-Test prüft Mehrfachlabels, explizite Negativbilder, die manuelle Nutzerattestierung und den Inhalt des ZIP-Vertrags. `python scripts/test_static.py` und `python scripts/check_pwa_deployment_contract.py` prüfen die PWA- und Offline-Shell-Einbindung. Das belegt keine fachliche Labelgenauigkeit, Bildrechte, echte Geräteabnahme, Modellgüte oder Feldfreigabe. Es gibt keinen bereits vorhandenen, durch diesen Workflow annotierten Bestand.
+- Kein freigegebenes Modellgewicht wird durch diesen Workflow geladen oder aktiviert.
+- Der Siebenklassen-Datensatzvertrag ist Klassifikation mit mehreren Labels, nicht Objektdetektion mit Bounding-Boxes.
+- Eine ausreichende Anzahl unabhängiger Fotografen-/Sitzungs-/Quellgruppen ist vor einem Split erforderlich.
+- Vor einem Training müssen Bildrechte, Datenschutz, fachliche Annotationen und unabhängige Holdout-Daten separat geprüft werden.
+- Es gibt derzeit keine nachgewiesene 99-%-Erkennungsrate und keine automatische Hornissen- oder Varroa-Feldfreigabe.

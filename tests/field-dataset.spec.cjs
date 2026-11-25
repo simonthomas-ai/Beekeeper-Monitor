@@ -42,6 +42,22 @@ async function addImage(page, name, bytes) {
   });
 }
 
+async function fillRights(page, {
+  basis = 'LicenseRef-ExplicitPermission',
+  source = 'Eigene Feldaufnahme',
+  attribution = 'Example photographer (CC BY 4.0)',
+  permissionRef = 'consent-record-test-001'
+} = {}) {
+  await page.locator('#field-rights-source').fill(source);
+  await page.locator('#field-rights-basis').selectOption(basis);
+  if (basis === 'CC-BY-4.0') {
+    await page.locator('#field-rights-attribution').fill(attribution);
+  }
+  if (basis === 'LicenseRef-ExplicitPermission') {
+    await page.locator('#field-rights-permission-ref').fill(permissionRef);
+  }
+}
+
 async function attestEveryRecord(page) {
   const approval = page.getByRole('button', {name:'Manuelle Prüfung und Nutzungsattestierung speichern'});
   while (await approval.count()) {
@@ -69,8 +85,7 @@ test('stores multi-label and negative images locally and exports the reviewed co
   await page.locator('input[name="image-kind"][value="positive"]').check();
   await page.locator('input[name="class-label"][value="vespa_velutina"]').check();
   await page.locator('input[name="class-label"][value="apis_mellifera"]').check();
-  await page.locator('#field-rights-source').fill('Eigene Feldaufnahme');
-  await page.locator('#field-rights-basis').fill('Nutzerangabe; nicht unabhängig geprüft');
+  await fillRights(page);
   await page.locator('#field-dataset-form button[type="submit"]').click();
   await expect(page.locator('#field-dataset-status')).toContainText('lokal gespeichert');
   await expect(page.locator('#field-dataset-summary')).toContainText('1 lokale Aufnahme');
@@ -85,8 +100,7 @@ test('stores multi-label and negative images locally and exports the reviewed co
   const negativeBytes = [0xff, 0xd8, 0xff, 0x33, 0x44, 0xff, 0xd9];
   await addImage(page, 'field-negative.jpg', negativeBytes);
   await page.locator('input[name="image-kind"][value="negative"]').check();
-  await page.locator('#field-rights-source').fill('Eigene Feldaufnahme');
-  await page.locator('#field-rights-basis').fill('Nutzerangabe; nicht unabhängig geprüft');
+  await fillRights(page);
   await page.locator('#field-dataset-form button[type="submit"]').click();
   await expect(page.locator('#field-dataset-status')).toContainText('Noch ungeprüft');
   await expect(page.locator('#field-dataset-export')).toBeDisabled();
@@ -103,8 +117,9 @@ test('stores multi-label and negative images locally and exports the reviewed co
   if (process.env.BEEKEEPER_MULTILABEL_VALIDATOR) {
     const zipPath = path.join(os.tmpdir(), `beekeeper-monitor-${Date.now()}.zip`);
     fs.writeFileSync(zipPath, zipBuffer);
+    const python = process.platform === 'win32' ? 'python' : 'python3';
     try {
-      execFileSync('python', ['-c',
+      execFileSync(python, ['-c',
         'import importlib.util,sys; p=sys.argv[1]; s=importlib.util.spec_from_file_location("beekeeper_multilabel_dataset",p); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); rows=m.validate_dataset_archive(sys.argv[2]); assert len(rows)==2; assert rows[0]["labels"] or rows[1]["labels"]',
         process.env.BEEKEEPER_MULTILABEL_VALIDATOR, zipPath
       ], {stdio:'pipe', env:{...process.env, PYTHONDONTWRITEBYTECODE:'1'}});
@@ -125,7 +140,12 @@ test('stores multi-label and negative images locally and exports the reviewed co
       captured_at: expect.stringMatching(/Z$/),
       capture_session_id: expect.any(String),
       review_status: 'approved',
-      rights: {source:'Eigene Feldaufnahme', status:'training_approved'}
+      rights: {
+        source:'Eigene Feldaufnahme',
+        basis:'LicenseRef-ExplicitPermission',
+        permission_ref:'consent-record-test-001',
+        status:'training_approved'
+      }
     });
     expect(line).not.toHaveProperty('location');
     expect(line).not.toHaveProperty('station_id');
@@ -140,29 +160,103 @@ test('requires an explicit image kind and at least one class for positive images
   await page.goto('/');
   await addImage(page, 'unlabelled.jpg', [0xff, 0xd8, 0xff, 0xd9]);
   await page.locator('input[name="image-kind"][value="positive"]').check();
-  await page.locator('#field-rights-source').fill('Eigene Aufnahme');
-  await page.locator('#field-rights-basis').fill('Nutzerangabe');
+  await fillRights(page);
   await page.locator('#field-dataset-form button[type="submit"]').click();
   await expect(page.locator('#field-dataset-status')).toContainText('mindestens eine Klasse auswählen');
   await expect(page.locator('#field-dataset-summary')).toContainText('0 lokale Aufnahmen');
   await expect(page.locator('#field-dataset-export')).toBeDisabled();
 });
 
-test('rejects HEIC and exposes required bounded free-text rights fields', async ({page}) => {
+test('rejects HEIC and exposes the structured bounded rights fields', async ({page}) => {
   await page.goto('/');
   await expect(page.locator('#field-rights-source')).toHaveAttribute('required', '');
   await expect(page.locator('#field-rights-source')).toHaveAttribute('maxlength', '200');
   await expect(page.locator('#field-rights-basis')).toHaveAttribute('required', '');
-  await expect(page.locator('#field-rights-basis')).toHaveAttribute('maxlength', '120');
+  await expect(page.locator('#field-rights-attribution')).toHaveAttribute('maxlength', '500');
+  await expect(page.locator('#field-rights-permission-ref')).toHaveAttribute('maxlength', '200');
   await page.locator('#field-dataset-photo').setInputFiles({
     name:'iphone-photo.heic', mimeType:'image/heic', buffer:Buffer.from([1,2,3])
   });
   await page.locator('input[name="image-kind"][value="negative"]').check();
-  await page.locator('#field-rights-source').fill('Eigene Feldaufnahme');
-  await page.locator('#field-rights-basis').fill('Eigenes Bild');
+  await fillRights(page);
   await page.locator('#field-dataset-form button[type="submit"]').click();
   await expect(page.locator('#field-dataset-status')).toContainText('JPEG-, PNG- oder WebP-Bild');
   await expect(page.locator('#field-dataset-summary')).toContainText('0 lokale Aufnahmen');
+});
+
+
+test('exports canonical CC-BY evidence and required attribution', async ({page}) => {
+  await page.goto('/');
+  await addImage(page, 'cc-by-photo.jpg', [0xff, 0xd8, 0xff, 0x51, 0xff, 0xd9]);
+  await page.locator('input[name="image-kind"][value="negative"]').check();
+  await fillRights(page, {
+    basis:'CC-BY-4.0',
+    source:'https://example.org/photos/cc-by-photo',
+    attribution:'Example photographer (CC BY 4.0)'
+  });
+  await page.locator('#field-dataset-form button[type="submit"]').click();
+  await expect(page.locator('#field-dataset-summary')).toContainText('1 lokale Aufnahme');
+  await attestEveryRecord(page);
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('#field-dataset-export').click();
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  const files = extractStoredZip(Buffer.concat(chunks));
+  const [row] = files.get('annotations.jsonl').toString('utf8').trim().split('\\n').map(JSON.parse);
+  expect(row.rights).toMatchObject({
+    source:'https://example.org/photos/cc-by-photo',
+    basis:'CC-BY-4.0',
+    evidence_url:'https://creativecommons.org/licenses/by/4.0/',
+    attribution:'Example photographer (CC BY 4.0)',
+    status:'training_approved'
+  });
+  expect(row.rights).not.toHaveProperty('publication_allowed');
+});
+
+test('exports the canonical CC0 evidence URL without adding publication permission', async ({page}) => {
+  await page.goto('/');
+  await addImage(page, 'cc0-photo.jpg', [0xff, 0xd8, 0xff, 0x61, 0xff, 0xd9]);
+  await page.locator('input[name="image-kind"][value="negative"]').check();
+  await fillRights(page, {basis:'CC0-1.0', source:'Eigene Feldaufnahme'});
+  await page.locator('#field-dataset-form button[type="submit"]').click();
+  await expect(page.locator('#field-dataset-status')).toContainText('lokal gespeichert');
+  await expect(page.locator('#field-dataset-summary')).toContainText('1 lokale Aufnahme');
+  await attestEveryRecord(page);
+  await expect(page.locator('#field-dataset-export')).toBeEnabled();
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('#field-dataset-export').click();
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  const files = extractStoredZip(Buffer.concat(chunks));
+  const [row] = files.get('annotations.jsonl').toString('utf8').trim().split('\\n').map(JSON.parse);
+  expect(row.rights).toMatchObject({
+    source:'Eigene Feldaufnahme',
+    basis:'CC0-1.0',
+    evidence_url:'https://creativecommons.org/publicdomain/zero/1.0/',
+    status:'training_approved'
+  });
+  expect(row.rights).not.toHaveProperty('publication_allowed');
+});
+
+test('rejects source URLs that may carry credentials or tracking/query data', async ({page}) => {
+  await page.goto('/');
+  await addImage(page, 'invalid-source.jpg', [0xff, 0xd8, 0xff, 0x71, 0xff, 0xd9]);
+  await page.locator('input[name="image-kind"][value="negative"]').check();
+  for (const source of [
+    'http://example.org/photo',
+    'https://user:password@example.org/photo',
+    'https://example.org/photo?token=example',
+    'https://example.org/photo#private'
+  ]) {
+    await fillRights(page, {source});
+    await page.locator('#field-dataset-form button[type="submit"]').click();
+    await expect(page.locator('#field-dataset-status')).toContainText('HTTPS-Adresse ohne Zugangsdaten, Query oder Fragment');
+    await expect(page.locator('#field-dataset-summary')).toContainText('0 lokale Aufnahmen');
+  }
 });
 
 test('blocks export when the same image bytes were captured twice', async ({page}) => {
@@ -171,8 +265,7 @@ test('blocks export when the same image bytes were captured twice', async ({page
   for (const name of ['copy-one.jpg', 'copy-two.jpg']) {
     await addImage(page, name, bytes);
     await page.locator('input[name="image-kind"][value="negative"]').check();
-    await page.locator('#field-rights-source').fill('Eigene Feldaufnahme');
-    await page.locator('#field-rights-basis').fill('Nutzerangabe; nicht unabhängig geprüft');
+    await fillRights(page);
     await page.locator('#field-dataset-form button[type="submit"]').click();
     await expect(page.locator('#field-dataset-summary')).toContainText(name === 'copy-one.jpg' ? '1 lokale Aufnahme' : '2 lokale Aufnahmen');
   }

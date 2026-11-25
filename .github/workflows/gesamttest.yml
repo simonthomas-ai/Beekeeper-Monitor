@@ -221,7 +221,7 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           # Pin the integration partner to a reviewed commit; avoid moving-main CI drift.
-          ref: 4d707d95b036b26b83077a3f2e0e8da3be2d8128
+          ref: f1aa134e1a310badce3125f52e51d890f3efd26a
           path: beekeeper3000
           persist-credentials: false
       - name: Beekeeper-Monitor fuer repo-uebergreifenden Vertrag auschecken
@@ -286,3 +286,37 @@ jobs:
           echo '## BeeKeeper3000 Bridge-Integration' >> "$GITHUB_STEP_SUMMARY"
           echo 'Die Bridge-Tests laufen als eigener verpflichtender Job dieses Ein-Klick-Gesamttests.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Dies ist kein Nachweis für Kamera-Hardware oder validierte KI-Modelle.' >> "$GITHUB_STEP_SUMMARY"
+
+  field-dataset-contract:
+    name: Field-Dataset-Export gegen BeeKeeper-Validator
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.1-noble@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: BeeKeeper3000 mit geprüftem Rechtevalidator auschecken
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: simonthomas-ai/BeeKeeper3000
+          ref: f1aa134e1a310badce3125f52e51d890f3efd26a
+          path: beekeeper3000
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - name: Monitor-Browserabhaengigkeiten reproduzierbar installieren
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Strikten BeeKeeper-Datensatzvalidator separat testen
+        working-directory: beekeeper3000
+        run: python3 -m unittest training.test_multilabel_dataset -v
+      - name: Tatsächlichen PWA-ZIP-Export gegen den gepinnten Validator prüfen
+        env:
+          BEEKEEPER_MULTILABEL_VALIDATOR: ${{ github.workspace }}/beekeeper3000/training/multilabel_dataset.py
+        run: npx playwright test tests/field-dataset.spec.cjs
+      - name: Monitor-Fixture-Roundtrip gegen denselben Validator prüfen
+        env:
+          BEEKEEPER_MULTILABEL_VALIDATOR: ${{ github.workspace }}/beekeeper3000/training/multilabel_dataset.py
+        run: python3 -m unittest tests.test_beekeeper_importer_roundtrip -v

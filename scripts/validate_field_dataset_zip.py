@@ -9,11 +9,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 import zipfile
 from datetime import datetime
 from pathlib import PurePosixPath
 from pathlib import Path
+from urllib.parse import urlparse
 
 
 CLASSES = frozenset({
@@ -30,6 +32,83 @@ ALLOWED_ANNOTATION_FIELDS = {
     "image", "labels", "captured_at", "capture_session_id",
     "labeler_id", "review_status", "rights",
 }
+RIGHTS_BASES = {"CC0-1.0", "CC-BY-4.0", "LicenseRef-ExplicitPermission"}
+LICENSE_URLS = {
+    "CC0-1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "CC-BY-4.0": "https://creativecommons.org/licenses/by/4.0/",
+}
+ALLOWED_RIGHTS_FIELDS = {
+    "source", "basis", "status", "publication_allowed",
+    "evidence_url", "attribution", "permission_ref",
+}
+
+
+def _credential_free_https(value: object) -> bool:
+    if not isinstance(value, str):
+        return False
+    parsed = urlparse(value)
+    return bool(
+        parsed.scheme == "https" and parsed.netloc and
+        not parsed.username and not parsed.password and
+        not parsed.query and not parsed.fragment
+    )
+
+
+def validate_rights(rights: object, line_number: int, errors: list[str]) -> None:
+    prefix = f"Zeile {line_number}: rights"
+    if not isinstance(rights, dict):
+        errors.append(f"{prefix} fehlt oder ist ungültig")
+        return
+    unknown = sorted(set(rights) - ALLOWED_RIGHTS_FIELDS)
+    if unknown:
+        errors.append(f"{prefix} enthält nicht unterstützte Felder: {', '.join(unknown)}")
+
+    source = rights.get("source")
+    if not isinstance(source, str) or not source.strip() or len(source.strip()) > 200:
+        errors.append(f"{prefix}.source muss ein nichtleerer Text bis 200 Zeichen sein")
+    elif source.strip().casefold() not in {"eigene feldaufnahme", "own field capture"}:
+        if not _credential_free_https(source.strip()):
+            errors.append(f"{prefix}.source muss eine HTTPS-URL ohne Zugangsdaten, Query oder Fragment sein")
+
+    basis = rights.get("basis")
+    if not isinstance(basis, str) or basis not in RIGHTS_BASES:
+        errors.append(f"{prefix}.basis muss CC0-1.0, CC-BY-4.0 oder LicenseRef-ExplicitPermission sein")
+    if rights.get("status") != "training_approved":
+        errors.append(f"{prefix}.status ist nicht training_approved")
+
+    if "publication_allowed" in rights and (
+        type(rights["publication_allowed"]) is not bool or not rights["publication_allowed"]
+    ):
+        errors.append(f"{prefix}.publication_allowed muss true sein")
+
+    if isinstance(basis, str) and basis in LICENSE_URLS:
+        evidence = rights.get("evidence_url")
+        if evidence is None:
+            errors.append(f"{prefix}.evidence_url fehlt für die gewählte Lizenz")
+        elif not _credential_free_https(evidence):
+            errors.append(f"{prefix}.evidence_url muss eine HTTPS-URL ohne Zugangsdaten, Query oder Fragment sein")
+        elif evidence.rstrip("/") != LICENSE_URLS[basis].rstrip("/"):
+            errors.append(f"{prefix}.evidence_url passt nicht zur Rechtebasis")
+    elif "evidence_url" in rights and not _credential_free_https(rights["evidence_url"]):
+        errors.append(f"{prefix}.evidence_url muss eine HTTPS-URL ohne Zugangsdaten, Query oder Fragment sein")
+
+    if basis == "CC-BY-4.0":
+        attribution = rights.get("attribution")
+        if not isinstance(attribution, str) or not attribution.strip() or len(attribution.strip()) > 500:
+            errors.append(f"{prefix}.attribution ist für CC-BY-4.0 erforderlich (max. 500 Zeichen)")
+    if basis == "LicenseRef-ExplicitPermission":
+        permission_ref = rights.get("permission_ref")
+        if not isinstance(permission_ref, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,199}", permission_ref.strip()):
+            errors.append(f"{prefix}.permission_ref muss eine opake Referenz bis 200 Zeichen sein")
+
+
+def _unique_json_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
 
 
 def iso_timestamp(value: object) -> bool:
@@ -97,9 +176,9 @@ def validate(zip_path: Path) -> list[str]:
             for line_number, line in enumerate(text.splitlines(), start=1):
                 line_count += 1
                 try:
-                    record = json.loads(line)
-                except json.JSONDecodeError as exc:
-                    errors.append(f"Zeile {line_number}: ungültiges JSON ({exc.msg})")
+                    record = json.loads(line, object_pairs_hook=_unique_json_object)
+                except (json.JSONDecodeError, ValueError) as exc:
+                    errors.append(f"Zeile {line_number}: ungültiges JSON oder doppelter Schlüssel ({exc})")
                     continue
                 if not isinstance(record, dict):
                     errors.append(f"Zeile {line_number}: Annotation muss ein Objekt sein")
@@ -144,18 +223,7 @@ def validate(zip_path: Path) -> list[str]:
                 if record.get("review_status") != "approved":
                     errors.append(f"Zeile {line_number}: review_status ist nicht approved")
 
-                rights = record.get("rights")
-                if not isinstance(rights, dict):
-                    errors.append(f"Zeile {line_number}: rights fehlt oder ist ungültig")
-                else:
-                    source = rights.get("source")
-                    basis = rights.get("basis")
-                    if not isinstance(source, str) or not source.strip() or len(source.strip()) > 200:
-                        errors.append(f"Zeile {line_number}: rights.source muss ein nichtleerer Text bis 200 Zeichen sein")
-                    if not isinstance(basis, str) or not basis.strip() or len(basis.strip()) > 120:
-                        errors.append(f"Zeile {line_number}: rights.basis muss ein nichtleerer Text bis 120 Zeichen sein")
-                    if rights.get("status") != "training_approved":
-                        errors.append(f"Zeile {line_number}: rights.status ist nicht training_approved")
+                validate_rights(record.get("rights"), line_number, errors)
 
                 labeler = record.get("labeler_id")
                 if "labeler_id" in record and (

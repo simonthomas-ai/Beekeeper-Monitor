@@ -31,7 +31,8 @@ class BeeKeeperImporterRoundTripTests(unittest.TestCase):
                 "review_status": "approved",
                 "rights": {
                     "source": "Eigene Feldaufnahme",
-                    "basis": "Nutzerangabe; nicht unabhängig geprüft",
+                    "basis": "LicenseRef-ExplicitPermission",
+                    "permission_ref": "field-consent-fixture-001",
                     "status": "training_approved",
                 },
             },
@@ -42,8 +43,10 @@ class BeeKeeperImporterRoundTripTests(unittest.TestCase):
                 "capture_session_id": "capture-session-pseudonym",
                 "review_status": "approved",
                 "rights": {
-                    "source": "Eigene Feldaufnahme",
-                    "basis": "Nutzerangabe; nicht unabhängig geprüft",
+                    "source": "https://example.org/photos/negative",
+                    "basis": "CC-BY-4.0",
+                    "evidence_url": "https://creativecommons.org/licenses/by/4.0/",
+                    "attribution": "Example photographer (CC BY 4.0)",
                     "status": "training_approved",
                 },
             },
