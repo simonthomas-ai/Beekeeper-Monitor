@@ -20,6 +20,14 @@ assert 'id="field-dataset"' in html
 assert 'src="./field-dataset.js" defer' in html
 assert 'accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"' in html
 assert "nicht automatisch geprüft" in html
+assert 'id="field-rights-basis"' in html and "<select id=\\"field-rights-basis\\" required>" in html
+for rights_basis in ("CC0-1.0", "CC-BY-4.0", "LicenseRef-ExplicitPermission"):
+    assert f'value="{rights_basis}"' in html
+assert 'id="field-rights-attribution"' in html
+assert 'id="field-rights-permission-ref"' in html
+field_dataset_source = (root/"field-dataset.js").read_text()
+assert "rightsContractComplete" in field_dataset_source
+assert "RIGHTS_LICENSES" in field_dataset_source
 assert (root/"tests/test_beekeeper_importer_roundtrip.py").is_file()
 assert "BEEKEEPER_MULTILABEL_VALIDATOR" in (root/"tests/test_beekeeper_importer_roundtrip.py").read_text()
 assert (root/"docs/FIELD-DATASET-CAPTURE.md").is_file()
