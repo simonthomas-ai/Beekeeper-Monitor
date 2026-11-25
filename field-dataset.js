@@ -155,6 +155,17 @@
     if (!rights || typeof rights !== 'object' || Array.isArray(rights)) {
       throw Error('Rechteangaben fehlen oder sind ungültig.');
     }
+    const allowedFields = new Set([
+      'source', 'basis', 'status', 'evidence_url', 'attribution',
+      'permission_ref', 'publication_allowed'
+    ]);
+    if (Object.keys(rights).some(key => !allowedFields.has(key))) {
+      throw Error('Unbekannte Rechtefelder dürfen nicht exportiert werden.');
+    }
+    if (Object.prototype.hasOwnProperty.call(rights, 'publication_allowed') &&
+        rights.publication_allowed !== true) {
+      throw Error('Eine explizite publication_allowed-Angabe muss true sein.');
+    }
     const source = normalizeSource(rights.source);
     const basis = rights.basis;
     if (!RIGHTS_BASES.includes(basis)) {
