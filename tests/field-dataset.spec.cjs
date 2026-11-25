@@ -221,7 +221,10 @@ test('exports the canonical CC0 evidence URL without adding publication permissi
   await page.locator('input[name="image-kind"][value="negative"]').check();
   await fillRights(page, {basis:'CC0-1.0', source:'Eigene Feldaufnahme'});
   await page.locator('#field-dataset-form button[type="submit"]').click();
+  await expect(page.locator('#field-dataset-status')).toContainText('lokal gespeichert');
+  await expect(page.locator('#field-dataset-summary')).toContainText('1 lokale Aufnahme');
   await attestEveryRecord(page);
+  await expect(page.locator('#field-dataset-export')).toBeEnabled();
   const downloadPromise = page.waitForEvent('download');
   await page.locator('#field-dataset-export').click();
   const download = await downloadPromise;
@@ -262,8 +265,7 @@ test('blocks export when the same image bytes were captured twice', async ({page
   for (const name of ['copy-one.jpg', 'copy-two.jpg']) {
     await addImage(page, name, bytes);
     await page.locator('input[name="image-kind"][value="negative"]').check();
-    await page.locator('#field-rights-source').fill('Eigene Feldaufnahme');
-    await page.locator('#field-rights-basis').fill('Nutzerangabe; nicht unabhängig geprüft');
+    await fillRights(page);
     await page.locator('#field-dataset-form button[type="submit"]').click();
     await expect(page.locator('#field-dataset-summary')).toContainText(name === 'copy-one.jpg' ? '1 lokale Aufnahme' : '2 lokale Aufnahmen');
   }
