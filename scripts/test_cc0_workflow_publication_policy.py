@@ -28,6 +28,17 @@ class CC0WorkflowPublicationPolicyTests(unittest.TestCase):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, self.content)
 
+    def test_pages_workflow_stays_disabled_without_deploy_permissions(self):
+        pages_workflow = (
+            Path(__file__).resolve().parents[1]
+            / ".github"
+            / "workflows"
+            / "pages.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("if: \${{ false }}", pages_workflow)
+        self.assertNotIn("pages: write", pages_workflow)
+        self.assertNotIn("id-token: write", pages_workflow)
+
     def test_review_galleries_remain_limited_to_actions_artifacts(self):
         self.assertIn("name: ki-cc0-quellen-prueflisten", self.content)
         self.assertIn("training/*-visual-review.html", self.content)
