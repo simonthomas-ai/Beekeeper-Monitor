@@ -13,6 +13,23 @@ CLASS_SLUGS = [
 ]
 
 
+def rights(basis="LicenseRef-ExplicitPermission", source="Eigene Feldaufnahme", **changes):
+    result = {
+        "source": source,
+        "basis": basis,
+        "status": "training_approved",
+    }
+    if basis == "CC0-1.0":
+        result["evidence_url"] = "https://creativecommons.org/publicdomain/zero/1.0/"
+    elif basis == "CC-BY-4.0":
+        result["evidence_url"] = "https://creativecommons.org/licenses/by/4.0/"
+        result["attribution"] = "Example photographer (CC BY 4.0)"
+    elif basis == "LicenseRef-ExplicitPermission":
+        result["permission_ref"] = "consent-record-test-001"
+    result.update(changes)
+    return result
+
+
 class FieldDatasetZipTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -33,7 +50,7 @@ class FieldDatasetZipTests(unittest.TestCase):
             ) + "\n")
         return path
 
-    def record(self, image, labels):
+    def record(self, image, labels, rights_data=None):
         return {
             "image": image,
             "labels": labels,
@@ -41,11 +58,7 @@ class FieldDatasetZipTests(unittest.TestCase):
             "capture_session_id": "session-pseudonym-1",
             "labeler_id": "reviewer-1",
             "review_status": "approved",
-            "rights": {
-                "source": "Eigene Feldaufnahme",
-                "basis": "Nutzerangabe; nicht unabhängig geprüft",
-                "status": "training_approved",
-            },
+            "rights": rights_data or rights(),
         }
 
     def test_accepts_multilabel_and_negative_contract(self):
@@ -53,6 +66,17 @@ class FieldDatasetZipTests(unittest.TestCase):
             self.record("images/positive.jpg", ["vespa_velutina", "apis_mellifera"]),
             self.record("images/negative.jpg", []),
         ])
+        self.assertEqual(validate(path), [])
+
+    def test_accepts_each_supported_rights_basis(self):
+        rows = [
+            self.record("images/positive.jpg", ["vespa_velutina"], rights("CC0-1.0")),
+            self.record(
+                "images/negative.jpg", [],
+                rights("CC-BY-4.0", "https://example.org/photos/negative"),
+            ),
+        ]
+        path = self.make_zip(rows)
         self.assertEqual(validate(path), [])
 
     def test_rejects_unapproved_and_unknown_labels(self):
@@ -89,12 +113,26 @@ class FieldDatasetZipTests(unittest.TestCase):
         errors = validate(path)
         self.assertTrue(any("mehrfach annotiert" in error for error in errors))
 
-    def test_rights_are_bounded_free_text_and_only_supported_image_suffixes(self):
+    def test_rejects_unknown_rights_basis_missing_evidence_and_long_values(self):
         long_source = self.record("images/positive.jpg", [CLASS_SLUGS[0]])
         long_source["rights"]["source"] = "x" * 201
         path = self.make_zip([long_source, self.record("images/negative.jpg", [])])
         errors = validate(path)
         self.assertTrue(any("rights.source" in error for error in errors))
+
+        bad_basis = self.record(
+            "images/positive.jpg", [CLASS_SLUGS[0]],
+            rights("Nutzerangabe"),
+        )
+        missing_evidence = rights("CC0-1.0")
+        missing_evidence.pop("evidence_url")
+        path = self.make_zip([
+            bad_basis,
+            self.record("images/negative.jpg", [], missing_evidence),
+        ])
+        errors = validate(path)
+        self.assertTrue(any("rights.basis" in error for error in errors))
+        self.assertTrue(any("evidence_url fehlt" in error for error in errors))
 
         unsupported = self.root / "unsupported.zip"
         with zipfile.ZipFile(unsupported, "w") as archive:
@@ -102,6 +140,41 @@ class FieldDatasetZipTests(unittest.TestCase):
             archive.writestr("annotations.jsonl", "{}\n")
         errors = validate(unsupported)
         self.assertTrue(any("Unzulässiger ZIP-Pfad" in error for error in errors))
+
+    def test_rejects_credentials_queries_fragments_and_unknown_rights_fields(self):
+        invalid = [
+            rights(source="http://example.org/photo"),
+            rights(source="https://user:password@example.org/photo"),
+            rights(source="https://example.org/photo?token=example"),
+            rights(source="https://example.org/photo#private"),
+            rights(private_note="must not be exported"),
+        ]
+        for index, item_rights in enumerate(invalid):
+            with self.subTest(index=index):
+                path = self.make_zip([
+                    self.record("images/positive.jpg", [CLASS_SLUGS[0]], item_rights),
+                    self.record("images/negative.jpg", []),
+                ])
+                errors = validate(path)
+                self.assertTrue(any("rights.source" in error or "nicht unterstützte Felder" in error
+                                    for error in errors))
+
+    def test_requires_cc_by_attribution_and_explicit_permission_reference(self):
+        invalid = [
+            rights("CC-BY-4.0", attribution=""),
+            rights("LicenseRef-ExplicitPermission", permission_ref=""),
+            rights("LicenseRef-ExplicitPermission", permission_ref="https://private.example/permission"),
+            rights("LicenseRef-ExplicitPermission", private_note="sensitive"),
+        ]
+        for index, item_rights in enumerate(invalid):
+            with self.subTest(index=index):
+                path = self.make_zip([
+                    self.record("images/positive.jpg", [CLASS_SLUGS[0]], item_rights),
+                    self.record("images/negative.jpg", []),
+                ])
+                errors = validate(path)
+                self.assertTrue(any("attribution" in error or "permission_ref" in error or
+                                    "nicht unterstützte Felder" in error for error in errors))
 
     def test_rejects_duplicate_image_bytes(self):
         path = self.root / "duplicate.zip"
