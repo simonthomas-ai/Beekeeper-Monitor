@@ -12,7 +12,9 @@ REPO = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\Z")
 
 
 def validate(data):
-    if data.get("schema_version") != 1 or data.get("status") != "candidates_only_no_execution":
+    if not isinstance(data, dict) or set(data) != {"schema_version", "status", "models"}:
+        raise ValueError("Invalid catalog fields")
+    if type(data.get("schema_version")) is not int or data["schema_version"] != 1 or data.get("status") != "candidates_only_no_execution":
         raise ValueError("Model catalog must be explicitly non-deployable")
     models = data.get("models")
     if not isinstance(models, list) or not models:
@@ -21,6 +23,9 @@ def validate(data):
     tasks = set()
     rows = []
     for model in models:
+        required = {"id", "task", "upstream", "path", "bytes", "git_blob", "format"}
+        if not isinstance(model, dict) or not required <= set(model) <= required | {"commit"}:
+            raise ValueError("Invalid model fields")
         mid = model.get("id")
         if not isinstance(mid, str) or not re.fullmatch(r"[a-z0-9-]+", mid) or mid in ids:
             raise ValueError("Invalid or duplicate model ID")
@@ -29,7 +34,7 @@ def validate(data):
         if not isinstance(upstream, str) or not REPO.fullmatch(upstream):
             raise ValueError("Invalid upstream repository")
         path = model.get("path")
-        if not isinstance(path, str) or path.startswith("/") or any(p in ("", ".", "..") for p in path.split("/")):
+        if not isinstance(path, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*", path) or any(p in ("", ".", "..") for p in path.split("/")):
             raise ValueError("Unsafe model path")
         fmt = model.get("format")
         if fmt not in ("onnx", "pt") or not path.endswith("." + fmt):
@@ -44,7 +49,7 @@ def validate(data):
         if "sha256" in model or "license_approved" in model:
             raise ValueError("Unverified hashes and licenses must not be invented")
         task = model.get("task")
-        if task not in {"hornet_detection", "varroa_sticky_board", "varroa_on_bee"}:
+        if not isinstance(task, str) or task not in {"hornet_detection", "varroa_sticky_board", "varroa_on_bee"}:
             raise ValueError("Unknown model task")
         tasks.add(task)
         rows.append((mid, task, fmt, upstream, path, "pinned" if commit else "commit missing"))
