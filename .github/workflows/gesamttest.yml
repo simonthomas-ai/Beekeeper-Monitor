@@ -33,6 +33,7 @@ jobs:
         run: |
           python3 -m json.tool manifest.webmanifest >/dev/null
           python3 -m unittest scripts.test_audit_workflow_action_pins -v
+          python3 -m unittest scripts.test_cc0_workflow_publication_policy -v
           python3 -m unittest scripts.test_bridge_partner_pins -v
           python3 scripts/audit_workflow_action_pins.py
           python3 scripts/check_sources.py
@@ -220,7 +221,7 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           # Pin the integration partner to a reviewed commit; avoid moving-main CI drift.
-          ref: beb8fa94907f5093bedc8e37cfb053ab6a81670c
+          ref: 4d707d95b036b26b83077a3f2e0e8da3be2d8128
           path: beekeeper3000
           persist-credentials: false
       - name: Beekeeper-Monitor fuer repo-uebergreifenden Vertrag auschecken
