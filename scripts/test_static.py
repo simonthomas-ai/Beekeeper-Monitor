@@ -35,7 +35,7 @@ assert (root/"scripts/validate_field_dataset_zip.py").is_file()
 assert (root/"tests/test_field_dataset_zip.py").is_file()
 assert "Bilder noch Labels" in (root/"datenschutz.html").read_text()
 assert "./field-dataset.js" in sw
-assert "beekeeper-shell-v19" in sw
+assert "beekeeper-shell-v20" in sw
 assert "annotations.jsonl" in html
 assert "field-dataset.js" in pages
 for class_slug in ("vespa_velutina","vespa_crabro","other_vespidae","apis_mellifera","bombus_spp","syrphidae","other_insect"):
