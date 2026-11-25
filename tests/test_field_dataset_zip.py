@@ -148,6 +148,7 @@ class FieldDatasetZipTests(unittest.TestCase):
             rights(source="https://example.org/photo?token=example"),
             rights(source="https://example.org/photo#private"),
             rights(private_note="must not be exported"),
+            rights(publication_allowed=False),
         ]
         for index, item_rights in enumerate(invalid):
             with self.subTest(index=index):
@@ -175,6 +176,19 @@ class FieldDatasetZipTests(unittest.TestCase):
                 errors = validate(path)
                 self.assertTrue(any("attribution" in error or "permission_ref" in error or
                                     "nicht unterstützte Felder" in error for error in errors))
+
+
+    def test_rejects_duplicate_json_keys(self):
+        path = self.root / "duplicate-keys.zip"
+        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("images/positive.jpg", b"positive")
+            archive.writestr("images/negative.jpg", b"negative")
+            archive.writestr(
+                "annotations.jsonl",
+                '{"image":"images/positive.jpg","image":"images/negative.jpg"}\\n',
+            )
+        errors = validate(path)
+        self.assertTrue(any("doppelter Schlüssel" in error for error in errors))
 
     def test_rejects_duplicate_image_bytes(self):
         path = self.root / "duplicate.zip"
