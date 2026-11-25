@@ -11,6 +11,7 @@ sw=(root/"sw.js").read_text()
 manifest=json.loads((root/"manifest.webmanifest").read_text())
 catalog=json.loads((root/"sources/catalog.json").read_text())
 pages=(root/".github/workflows/pages.yml").read_text()
+private_build=(root/".github/workflows/private-pwa.yml").read_text()
 assert "<html lang=\"de\">" in html
 for path in ("backup-contract.js","app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","field-dataset.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
     assert (root/path).is_file(),path
@@ -54,7 +55,7 @@ assert "validObservation" in backup_contract
 assert "./backup-contract.js" in sw
 assert 'src="./backup-contract.js" defer' in html
 assert "async function remove(id)" in app
-assert re.search(r"beekeeper-shell-v\d+", sw)
+assert re.search(r"beekeeper-shell-v\\d+", sw)
 assert "./wissen/wissenschaft-hornissen-bienen.html" in sw
 assert (root/"wissen/wissenschaft-hornissen-bienen.html").is_file()
 assert 'href="./wissen/wissenschaft-hornissen-bienen.html"' in html
@@ -62,7 +63,7 @@ assert "./wissen/weltlage-vespa-velutina.html" in sw
 assert (root/"wissen/weltlage-vespa-velutina.html").is_file()
 assert 'href="./wissen/weltlage-vespa-velutina.html"' in html
 global_page=(root/"wissen/weltlage-vespa-velutina.html").read_text()
-for marker in ("id=\"weltweite-verbreitung\"", "id=\"nestlokalisierung\"", "id=\"quellen\"", "10.14411/eje.2026.022", "10.1038/s42003-024-05979-z"):
+for marker in ("id=\\"weltweite-verbreitung\\"","id=\\"nestlokalisierung\\"","id=\\"quellen\\"","10.14411/eje.2026.022","10.1038/s42003-024-05979-z"):
     assert marker in global_page, marker
 assert "./integrations-ui.js" in sw
 assert 'id="station-events-form"' in html
@@ -70,11 +71,11 @@ assert 'src="./integrations-ui.js"' in html
 assert "./live-media.js" in sw
 assert "SHELL.has(url.href)" in sw
 assert "path: _site" in pages
-assert r"grep -Eq '\[[^]]+\]'" in pages
-assert re.search(r"\[[^]]+\]", "[MISSING OPERATOR DETAILS]")
+assert r"grep -Eq '\\[[^]]+\\]'" in pages
+assert re.search(r"\\[[^]]+\\]", "[MISSING OPERATOR DETAILS]")
 assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js field-dataset.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg _site/" in pages
 assert "cp wissen/wissenschaft-hornissen-bienen.html _site/wissen/" in pages
-assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
+assert not re.search(r"99\\s*%\\s*(?:genau|erkennung)",html,re.I)
 # Local original-image byte verification runs only after Pages stages the
 # artifact into _site/review; this source-only static test has no binary assets.
 print("Static PWA and research catalog checks passed; real-device and AI tests remain outstanding.")
@@ -98,3 +99,7 @@ assert './hornet-onnx-decoder.js' not in sw
 assert 'src="./camera-onnx-runtime.js"' not in html
 assert './camera-onnx-runtime.js' not in sw
 assert 'camera-onnx-runtime.js' not in pages
+private_copy_lines = [line for line in private_build.splitlines() if line.lstrip().startswith("cp ")]
+assert private_copy_lines, "private PWA asset copy commands must remain explicit"
+assert all("camera-onnx-runtime.js" not in line for line in private_copy_lines)
+assert all("hornet-onnx-decoder.js" not in line for line in private_copy_lines)
