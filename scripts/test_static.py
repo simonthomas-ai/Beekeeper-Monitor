@@ -20,7 +20,7 @@ assert 'id="field-dataset"' in html
 assert 'src="./field-dataset.js" defer' in html
 assert 'accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"' in html
 assert "nicht automatisch geprüft" in html
-assert 'id="field-rights-basis"' in html and "<select id=\\"field-rights-basis\\" required>" in html
+assert 'id="field-rights-basis"' in html and '<select id="field-rights-basis" required>' in html
 for rights_basis in ("CC0-1.0", "CC-BY-4.0", "LicenseRef-ExplicitPermission"):
     assert f'value="{rights_basis}"' in html
 assert 'id="field-rights-attribution"' in html
