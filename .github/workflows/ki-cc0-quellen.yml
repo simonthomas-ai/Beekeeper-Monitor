@@ -113,3 +113,4 @@ jobs:
             training/velutina-photo-verification.csv
             training/*-visual-review.html
           if-no-files-found: ignore
+          retention-days: 14
