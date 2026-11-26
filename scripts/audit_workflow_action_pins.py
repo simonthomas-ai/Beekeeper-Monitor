@@ -57,6 +57,63 @@ def find_unpinned_images(text: str, filename: str = "<memory>") -> list[str]:
     return problems
 
 
+def find_permission_policy_violations(text: str, filename: str = "<memory>") -> list[str]:
+    """Require explicit least-privilege GITHUB_TOKEN permissions per workflow or job."""
+    lines = text.splitlines()
+    problems: list[str] = []
+
+    def permission_block(index: int, indent: int) -> str:
+        first = lines[index].split(":", 1)[1].strip()
+        collected = [first] if first else []
+        for candidate in lines[index + 1:]:
+            if candidate.strip():
+                candidate_indent = len(candidate) - len(candidate.lstrip())
+                if candidate_indent <= indent:
+                    break
+            collected.append(candidate.strip())
+        return " ".join(collected)
+
+    top_level = next(
+        (i for i, line in enumerate(lines) if re.match(r"^permissions\s*:", line)),
+        None,
+    )
+    if top_level is not None:
+        block = permission_block(top_level, 0)
+        if not block.strip():
+            problems.append(f"{filename}:{top_level + 1}: top-level permissions must be explicit")
+        if re.search(r"(?i)\bwrite-all\b", block):
+            problems.append(f"{filename}:{top_level + 1}: write-all is forbidden; declare only required scopes")
+        return problems
+
+    jobs_index = next((i for i, line in enumerate(lines) if line == "jobs:"), None)
+    if jobs_index is None:
+        return [f"{filename}: workflow has neither top-level permissions nor a jobs section"]
+
+    job_headers = [
+        i for i in range(jobs_index + 1, len(lines))
+        if re.match(r"^  [A-Za-z0-9_-]+:\s*$", lines[i])
+    ]
+    if not job_headers:
+        return [f"{filename}: jobs section contains no jobs to permission"]
+
+    for position, start in enumerate(job_headers):
+        end = job_headers[position + 1] if position + 1 < len(job_headers) else len(lines)
+        job_name = lines[start].strip().rstrip(":")
+        permission_index = next(
+            (i for i in range(start + 1, end) if re.match(r"^    permissions\s*:", lines[i])),
+            None,
+        )
+        if permission_index is None:
+            problems.append(f"{filename}:{start + 1}: job '{job_name}' has no explicit permissions")
+            continue
+        block = permission_block(permission_index, 4)
+        if not block.strip():
+            problems.append(f"{filename}:{permission_index + 1}: job '{job_name}' permissions must be explicit")
+        if re.search(r"(?i)\bwrite-all\b", block):
+            problems.append(f"{filename}:{permission_index + 1}: job '{job_name}' uses forbidden write-all permissions")
+    return problems
+
+
 def audit_workflows(workflow_root: Path) -> list[str]:
     files = sorted(
         path for path in workflow_root.rglob("*")
@@ -74,6 +131,7 @@ def audit_workflows(workflow_root: Path) -> list[str]:
             continue
         problems.extend(find_unpinned_actions(content, str(path)))
         problems.extend(find_unpinned_images(content, str(path)))
+        problems.extend(find_permission_policy_violations(content, str(path)))
     return problems
 
 
