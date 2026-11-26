@@ -51,14 +51,49 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
                 content = (WORKFLOWS / workflow_name).read_text(encoding="utf-8")
                 self.assertNotIn("actions/upload-artifact@", content)
 
-    def test_forbidden_candidate_artifact_names_are_absent_from_workflows(self):
-        workflow_text = "\n".join(
-            path.read_text(encoding="utf-8")
-            for path in sorted(WORKFLOWS.glob("*.yml"))
-        )
+    def test_forbidden_candidate_artifact_names_are_absent_from_upload_steps(self):
+        # A candidate filename may still be used locally to build a review page.
+        # Only the name assigned to an actions/upload-artifact step makes it a
+        # public Actions artifact. Inspect those step inputs, not every workflow
+        # reference to a local CSV/HTML filename.
+        import re
+
+        uploaded_names = set()
+        for path in sorted(WORKFLOWS.glob("*.yml")):
+            lines = path.read_text(encoding="utf-8").splitlines()
+            for index, line in enumerate(lines):
+                if "uses: actions/upload-artifact@" not in line:
+                    continue
+                uses_indent = len(line) - len(line.lstrip())
+                step_indent = max(0, uses_indent - 2)
+                step_lines = []
+                for following in lines[index + 1:]:
+                    stripped = following.lstrip()
+                    indent = len(following) - len(stripped)
+                    if stripped.startswith("- ") and indent <= step_indent:
+                        break
+                    step_lines.append(following)
+
+                with_index = next(
+                    (i for i, item in enumerate(step_lines)
+                     if item.strip() == "with:"),
+                    None,
+                )
+                if with_index is None:
+                    continue
+                with_indent = len(step_lines[with_index]) - len(step_lines[with_index].lstrip())
+                for item in step_lines[with_index + 1:]:
+                    if item.strip():
+                        indent = len(item) - len(item.lstrip())
+                        if indent <= with_indent:
+                            break
+                    match = re.match(r"^\\s+name:\\s*([^\\s#]+)", item)
+                    if match:
+                        uploaded_names.add(match.group(1).strip("\\"'"))
+
         for artifact_name in FORBIDDEN_PUBLIC_ARTIFACT_NAMES:
             with self.subTest(artifact=artifact_name):
-                self.assertNotIn(artifact_name, workflow_text)
+                self.assertNotIn(artifact_name, uploaded_names)
 
     def test_autonomous_control_artifact_excludes_candidate_queue(self):
         content = (WORKFLOWS / "autonomous-control.yml").read_text(encoding="utf-8")
