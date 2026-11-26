@@ -74,7 +74,7 @@ def validate_checkpoint_rights_approval(root, approval_path, checkpoint_sha256, 
         if candidate.is_symlink():
             raise ValueError("Checkpoint rights approval path must not contain symbolic links")
     if not candidate.is_file():
-        raise FileNotFoundError("A versioned checkpoint rights approval file is required before training")
+        raise FileNotFoundError("A local checkpoint rights approval file inside the repository is required before training")
     if candidate.stat().st_size > 64 * 1024:
         raise ValueError("Checkpoint rights approval file exceeds the 64 KiB limit")
 
