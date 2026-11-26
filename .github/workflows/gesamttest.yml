@@ -25,7 +25,7 @@ jobs:
       - name: Python-Abhaengigkeiten fuer KI-Pruefung
         run: |
           apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-yaml python3-pil
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-yaml python3-pil python3-venv
           python3 -c 'import yaml; from PIL import Image; print("PyYAML:", yaml.__version__, "Pillow:", Image.__version__)'
           python3 -m venv /tmp/vespaguard-pip-audit
           /tmp/vespaguard-pip-audit/bin/python -m pip install --disable-pip-version-check 'pip-audit==2.10.1'
