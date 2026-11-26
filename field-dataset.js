@@ -34,6 +34,7 @@
   const attributionInput = document.getElementById('field-rights-attribution');
   const permissionField = document.getElementById('field-rights-permission-field');
   const permissionInput = document.getElementById('field-rights-permission-ref');
+  const reviewerIdInput = document.getElementById('field-reviewer-id');
   let objectUrls = [];
 
   function id() {
@@ -157,9 +158,21 @@
     const reviewerId = typeof value === 'string' ? value.trim() : '';
     if (!reviewerId) return '';
     if (!REVIEWER_ID.test(reviewerId)) {
-      throw Error('Die pseudonyme Labeler-ID muss das Format reviewer:<opaque-id> verwenden. Keine Namen, E-Mail-Adressen oder URLs eintragen.');
+      throw Error('Die pseudonyme Kennung muss das Format reviewer:<opaque-id> verwenden. Keine Namen, E-Mail-Adressen oder URLs eintragen.');
     }
     return reviewerId;
+  }
+
+  function reviewProvenanceComplete(record) {
+    if (!record || typeof record !== 'object') return false;
+    const reviewerId = typeof record.reviewed_by === 'string' ? record.reviewed_by : '';
+    const capturedAt = Date.parse(record.captured_at || '');
+    const reviewedAt = Date.parse(record.reviewed_at || '');
+    const hasTimezone = typeof record.reviewed_at === 'string' &&
+      /(?:Z|[+-]\\d{2}:\\d{2})$/.test(record.reviewed_at);
+    return REVIEWER_ID.test(reviewerId) && hasTimezone &&
+      Number.isFinite(capturedAt) && Number.isFinite(reviewedAt) &&
+      reviewedAt >= capturedAt;
   }
 
   function normalizeRights(rights, requiredStatus) {
@@ -289,7 +302,7 @@
     const metadata = document.createElement('p');
     const rightsComplete = rightsContractComplete(record.rights);
     const approved = rightsComplete && record.review_status === 'approved' &&
-      record.rights.status === 'training_approved';
+      record.rights.status === 'training_approved' && reviewProvenanceComplete(record);
     setText(metadata, `${new Date(record.captured_at).toLocaleString('de-DE')} · ${approved ? 'Nutzerattestierung für Trainingsverwendung' : 'Prüfung ausstehend'} · Quelle: ${record.rights?.source || 'nicht angegeben'}`);
     const rights = document.createElement('p');
     setText(rights, rightsComplete
@@ -316,19 +329,36 @@
       approve.textContent = 'Manuelle Prüfung und Nutzungsattestierung speichern';
       approve.disabled = true;
       const updateApprovalButton = () => {
-        approve.disabled = !contentReview.checked || !rightsReview.checked;
+        let reviewerReady = false;
+        try {
+          reviewerReady = Boolean(normalizeReviewerId(reviewerIdInput?.value));
+        } catch {
+          reviewerReady = false;
+        }
+        approve.disabled = !contentReview.checked || !rightsReview.checked || !reviewerReady;
       };
       contentReview.addEventListener('change', updateApprovalButton);
       rightsReview.addEventListener('change', updateApprovalButton);
+      reviewerIdInput?.addEventListener('input', updateApprovalButton);
       approve.addEventListener('click', async () => {
         if (!contentReview.checked || !rightsReview.checked) {
           setText(status, 'Bitte Bild/Labels prüfen und die Nutzungsberechtigung ausdrücklich attestieren.');
           return;
         }
-        if (!window.confirm('Du bestätigst persönlich, dass du Bild und alle Labels geprüft hast und das Bild für Trainingszwecke verwenden darfst. Die App überprüft diese Erklärung nicht. Fortfahren?')) return;
+        let reviewerId;
+        try {
+          reviewerId = normalizeReviewerId(reviewerIdInput?.value);
+          if (!reviewerId) throw Error('Für die Freigabe ist eine pseudonyme Prüfer-ID erforderlich.');
+        } catch (error) {
+          setText(status, 'Freigabe nicht möglich: ' + error.message);
+          return;
+        }
+        if (!window.confirm('Du bestätigst persönlich, dass du Bild und alle Labels geprüft hast und das Bild für Trainingszwecke verwenden darfst. Die App überprüft weder diese Erklärung noch die Rechte unabhängig. Fortfahren?')) return;
         try {
           record.rights = normalizeRights({...record.rights, status:'training_approved'}, 'training_approved');
           record.review_status = 'approved';
+          record.reviewed_by = reviewerId;
+          record.reviewed_at = new Date().toISOString();
           await update(record);
           setText(status, 'Deine manuelle Prüfung und Nutzungsattestierung wurden gespeichert; die App hat sie nicht unabhängig verifiziert.');
         } catch (error) {
@@ -369,7 +399,8 @@
       const records = (await all()).sort((a, b) => b.captured_at.localeCompare(a.captured_at));
       for (const record of records) rows.append(renderRecord(record));
       const pending = records.filter(record => !rightsContractComplete(record.rights) ||
-        record.review_status !== 'approved' || record.rights.status !== 'training_approved');
+        record.review_status !== 'approved' || record.rights.status !== 'training_approved' ||
+        !reviewProvenanceComplete(record));
       exportButton.disabled = records.length === 0 || pending.length > 0;
       setText(document.getElementById('field-dataset-summary'),
         `${records.length} lokal${records.length === 1 ? 'e Aufnahme' : 'e Aufnahmen'} · ${pending.length} ohne abgeschlossene Nutzerprüfung`);
@@ -452,7 +483,8 @@
     if (!records.length) throw Error('Es gibt keine lokalen Aufnahmen zum Exportieren.');
     if (records.length >= 0xffff) throw Error('ZIP-Export abgebrochen: zu viele Aufnahmen für das Archivformat.');
     if (records.some(record => !rightsContractComplete(record.rights) ||
-        record.review_status !== 'approved' || record.rights.status !== 'training_approved')) {
+        record.review_status !== 'approved' || record.rights.status !== 'training_approved' ||
+        !reviewProvenanceComplete(record))) {
       throw Error('Export gesperrt: Jede Aufnahme benötigt vollständige strukturierte Rechteangaben sowie manuelle Bild-/Labelprüfung und ausdrückliche Nutzungsattestierung.');
     }
     const files = [];
@@ -477,6 +509,8 @@
         captured_at: record.captured_at,
         capture_session_id: record.capture_session_id,
         review_status: record.review_status,
+        reviewed_by: record.reviewed_by,
+        reviewed_at: record.reviewed_at,
         rights: normalizeRights(record.rights, 'training_approved')
       };
       if (record.labeler_id) {
