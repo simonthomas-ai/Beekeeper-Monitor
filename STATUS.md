@@ -1,3 +1,24 @@
+# Korrektur – finaler Stand nach PR #330, 27.11.2026 00:00 CET
+
+Die darunter archivierten Snapshots enthalten frühere PR-Zustände. Für den aktuellen Repository-Stand gilt:
+
+- **Beekeeper-Monitor main:** `d674e625289d5b90524b1c786e787d5767e77952`.
+- **BeeKeeper3000 main:** `4676649d3d248f5b950ac1eaef7673bbd1af9f26`.
+- Monitor [PR #328](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/328) ist inzwischen gemergt (Statusdokumentation).
+- Monitor [PR #329](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/329) ist gemergt: explizite Token-Berechtigungen auf Workflow-/Job-Ebene, kein `write-all`.
+- Monitor [PR #330](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/330) ist gemergt: jeder `actions/checkout`-Schritt muss `persist-credentials: false` setzen. PR-CI vollständig erfolgreich; der Log bestätigt 21 Workflow-Audit-Tests mit `OK` und `PASS` für alle 42 Monitor-Workflowdateien.
+- Monitor-Post-Merge-Checks für `d674e625` waren beim letzten Abruf noch in Initialisierung/in Bearbeitung; kein Post-Merge-Erfolg behauptet.
+- BeeKeeper3000 [PR #130](https://github.com/simonthomas-ai/BeeKeeper3000/pull/130) ist gemergt: der selbstgehostete LLM-Council läuft nur noch auf `refs/heads/main`.
+- BeeKeeper3000 [PR #131](https://github.com/simonthomas-ai/BeeKeeper3000/pull/131) ist gemergt: explizite Token-Berechtigungen und Verbot von `write-all`. PR- und Post-Merge-CI vollständig erfolgreich; 22 Workflow-Audit-Tests mit `OK`, alle 10 BeeKeeper-Workflowdateien bestanden.
+- Der LLM-Council hat weiterhin lokale Ollama- und externe Provider deaktiviert. Kein Provider wurde aufgerufen.
+- PWA-Historie: 224 Workflow-Läufe (212 erfolgreich, 12 fehlgeschlagen); 20 aktive PWA-Artefakte wurden einzeln bestätigt, exakte Gesamtzahl nicht enumeriert. Die 12 fehlgeschlagenen Läufe hatten keine Artefakte. Die alten Artefakte wurden nicht heruntergeladen oder gelöscht.
+- Pages-Einstellung bleibt aktiviert (`has_pages=true`), der Deploy-Job bleibt mit `if: false` gesperrt und besitzt keine `pages:write`-/OIDC-Deploy-Rechte. Kein öffentliches Deployment ausgelöst.
+- Beide Hauptzweige bleiben ungeschützt (`protected=false`); die verfügbaren GitHub-Aktionen erlauben keine Änderung von Branch Protection oder Pages-Einstellungen.
+
+**KI-Freigabe unverändert blockiert:** sechs Modellkandidaten mit `rights_and_runtime_pending`; keine Gewichte, kein freigegebener Trainingsdatensatz, keine unabhängigen Annotationen oder Holdout-Metriken. Die Formverträge `[1,7]` und `[1,9,8400]` bleiben inkompatibel. Keine 99-%-Erkennungsleistung oder Feldreife nachgewiesen.
+
+---
+
 # Nachtrag – 26.11.2026, 23:55 CET
 
 ## Nach PR #131
