@@ -102,3 +102,63 @@ test('rejects too many observations and invalid backup entries', () => {
   assert.throws(() => contract.parseBackupText(backupText(rows)), /zu viele Beobachtungen/);
   assert.throws(() => contract.parseBackupText(backupText([null])), /ungültige Beobachtung/);
 });
+
+test('exports only UTC month, observation type and count in the privacy-minimized summary', () => {
+  const rows = [
+    observation({
+      id: 'private-id-one',
+      at: '2026-11-21T08:00:00.000Z',
+      note: 'PRIVATE NOTE ONE',
+      photo: photo(),
+      location: {latitude: 51.5, longitude: 7.4, accuracyMeters: 3}
+    }),
+    observation({
+      id: 'private-id-two',
+      at: '2026-11-22T09:30:00.000Z',
+      type: 'Varroa',
+      note: 'PRIVATE NOTE TWO',
+      location: {latitude: 51.6, longitude: 7.5, accuracyMeters: 4}
+    }),
+    observation({
+      id: 'private-id-three',
+      at: '2026-11-30T23:59:00.000Z',
+      note: 'PRIVATE NOTE THREE'
+    }),
+    observation({
+      id: 'private-id-four',
+      at: '2026-12-01T00:00:00.000Z',
+      type: 'Pollen',
+      note: 'PRIVATE NOTE FOUR'
+    })
+  ];
+
+  const csv = contract.buildPrivacySummaryCsv(rows);
+  assert.equal(csv,
+    String.fromCharCode(0xfeff) + '"Monat (UTC)";"Beobachtungstyp";"Anzahl"' + String.fromCharCode(13, 10) +
+    '"2026-11";"Asiatische Hornisse";"2"' + String.fromCharCode(13, 10) +
+    '"2026-11";"Varroa";"1"' + String.fromCharCode(13, 10) +
+    '"2026-12";"Pollen";"1"' + String.fromCharCode(13, 10)
+  );
+  for (const secret of [
+    'private-id-', 'PRIVATE NOTE', 'data:image/', '51.5', '7.4',
+    'reviewer:', 'latitude', 'longitude'
+  ]) {
+    assert.equal(csv.includes(secret), false, secret);
+  }
+});
+
+test('rejects invalid rows and oversized inputs for the privacy summary', () => {
+  assert.throws(
+    () => contract.buildPrivacySummaryCsv([observation({type: '=HYPERLINK("https://example.invalid")'})]),
+    /ungültige Beobachtung/
+  );
+  assert.throws(
+    () => contract.buildPrivacySummaryCsv(null),
+    /ungültige oder zu viele Beobachtungen/
+  );
+  assert.throws(
+    () => contract.buildPrivacySummaryCsv(Array(contract.MAX_OBSERVATIONS + 1).fill(observation())),
+    /ungültige oder zu viele Beobachtungen/
+  );
+});
+
