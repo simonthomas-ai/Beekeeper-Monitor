@@ -89,6 +89,16 @@ assert 'src="./integrations-ui.js"' in html
 assert "./live-media.js" in sw
 assert "SHELL.has(url.href)" in sw
 assert "path: _site" in pages
+
+# Safety regression: public Pages deployment must remain explicitly disabled.
+# The repository-level has_pages setting is separate and must be checked manually.
+pages_triggers = pages.split("permissions:", 1)[0]
+assert re.search(
+    r"(?ms)^jobs:\s*\n\s+deploy:\s*\n\s+if:\s*\$\{\{\s*false\s*\}\}(?:\s*#.*)?$",
+    pages,
+), "Public Pages deploy job must remain explicitly disabled"
+assert re.search(r"(?m)^  workflow_dispatch:\s*$", pages_triggers), "Pages workflow must remain manual-only"
+assert not re.search(r"(?m)^  (?:push|pull_request|schedule):", pages_triggers), "Pages workflow must not gain automatic publish triggers"
 assert 'href="./review/index.html"' in html
 assert "Öffentliche Fotoprüfung derzeit nicht verfügbar" in review_status
 assert "<img" not in review_status.lower()
