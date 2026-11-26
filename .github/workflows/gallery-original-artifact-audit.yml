@@ -56,8 +56,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
+          source_workflow="$(gh api "repos/${GITHUB_REPOSITORY}/contents/.github/workflows/ki-cc0-quellen.yml?ref=${SOURCE_SHA}" --jq '.content' | base64 --decode)"
+          if grep -q 'actions/upload-artifact@' <<< "$source_workflow"; then
+            echo "::notice::This successful CC0 run predates the no-artifact policy; legacy artifacts are tracked separately for manual deletion."
+            exit 0
+          fi
           artifact_names="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}/artifacts" --paginate --jq '.artifacts[] | select(.expired == false) | .name')"
           if [[ -n "$artifact_names" ]]; then
             echo "::error::CC0 discovery run published an unexpected artifact."
