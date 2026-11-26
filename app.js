@@ -37,3 +37,25 @@ document.getElementById('import').addEventListener('change',async event=>{
  finally{input.value=''}
 });
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));render();
+document.getElementById('privacy-summary-export').addEventListener('click',async()=>{
+ if(!window.confirm('Diese datensparsame CSV enthält nur UTC-Monat, Beobachtungstyp und Anzahl. IDs, Freitextnotizen, Fotos und GPS-Koordinaten werden nicht exportiert. Monatliche Muster können trotzdem Rückschlüsse zulassen. Die Datei wird lokal heruntergeladen und nicht hochgeladen. Fortfahren?')){
+  status.textContent='Datensparsamer Export abgebrochen. Es wurden keine Daten heruntergeladen.';
+  return;
+ }
+ try{
+  const items=await all();
+  if(!items.length)throw Error('Es sind noch keine Beobachtungen vorhanden.');
+  const csv=window.BeekeeperBackupContract.buildPrivacySummaryCsv(items);
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='beekeeper-monatsuebersicht-datensparsam.csv';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+  status.textContent='Datensparsame Monatsübersicht erstellt: nur Monat, Beobachtungstyp und Anzahl; keine IDs, Notizen, Fotos oder GPS-Daten.';
+ }catch(err){
+  status.textContent='Datensparsame Übersicht fehlgeschlagen: '+err.message;
+ }
+});
+
