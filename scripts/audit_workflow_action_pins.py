@@ -13,6 +13,9 @@ ACTION_SHA_RE = re.compile(
 )
 DOCKER_DIGEST_RE = re.compile(r"^docker://\S+@sha256:[0-9a-fA-F]{64}$")
 OCI_DIGEST_RE = re.compile(r"^\S+@sha256:[0-9a-fA-F]{64}$")
+STEP_START_RE = re.compile(r"^(\s*)-\s*(?:name:|uses:)")
+CHECKOUT_USE_RE = re.compile(r"^\s*(?:-\s*)?uses:\s*actions/checkout@")
+PERSIST_RE = re.compile(r"^\s*persist-credentials:\s*(\S+)\s*(?:#.*)?$")
 
 
 def find_unpinned_actions(text: str, filename: str = "<memory>") -> list[str]:
