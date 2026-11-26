@@ -56,7 +56,7 @@ The ZIP is available only after the user separately attests to image/label revie
 and training-use permission for every record and confirms awareness that original
 images may contain EXIF metadata such as GPS, capture time and camera/device
 identifiers. The application does not inspect or strip EXIF metadata; image bytes
-remain unchanged for provenance checks. This status records the operator's this status records the operator's
+remain unchanged for provenance checks. This status records the operator's
 attestation and is not an independent verification or proof of image rights. The export contains image bytes and
 `annotations.jsonl`; it is sensitive data and is outside the PWA's storage controls
 after download. Deleting a record removes it from this field-capture database, but
