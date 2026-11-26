@@ -134,6 +134,18 @@ jobs:
 """
         self.assertTrue(find_permission_policy_violations(text))
 
+    def test_rejects_job_write_all_override_even_with_read_only_workflow_default(self):
+        text = """name: test
+permissions:
+  contents: read
+jobs:
+  build:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps: []
+"""
+        self.assertTrue(find_permission_policy_violations(text))
+
     def test_every_repository_workflow_declares_explicit_permissions(self):
         root = Path(__file__).resolve().parents[1]
         for path in sorted((root / ".github" / "workflows").glob("*.y*ml")):
