@@ -156,7 +156,7 @@ class CheckpointRightsApprovalTests(unittest.TestCase):
                 approval = self._approval()
                 approval["spdx_license_expression"] = expression
                 relative, _ = self._write(tmp, approval)
-                with self.assertRaisesRegex(ValueError, "SPDX licence expression"):
+                with self.assertRaisesRegex(ValueError, "non-NOASSERTION licence expression"):
                     validate_checkpoint_rights_approval(
                         tmp, relative, self.CHECKPOINT_SHA256, self.SOURCE_URL
                     )
