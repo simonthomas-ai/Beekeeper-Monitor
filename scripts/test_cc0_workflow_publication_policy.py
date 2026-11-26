@@ -47,6 +47,7 @@ class CC0WorkflowPublicationPolicyTests(unittest.TestCase):
         self.assertIn("GITHUB_PATH", e2e)
         self.assertNotIn("python3-yaml", e2e)
         self.assertNotIn("python3-pil", e2e)
+        self.assertNotIn("python3 -c 'import yaml", e2e)
         self.assertIn("--requirement training/requirements-ci-validation.txt --strict", e2e)
 
     @classmethod
