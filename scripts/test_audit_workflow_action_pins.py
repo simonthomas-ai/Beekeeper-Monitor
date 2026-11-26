@@ -1,7 +1,31 @@
-"""Regression tests for immutable GitHub Actions and container image pins."""
+"""Regression tests for immutable Actions pins and checkout credential hygiene."""
+import re
 import unittest
+from pathlib import Path
 
 from scripts.audit_workflow_action_pins import find_unpinned_actions, find_unpinned_images
+
+
+def checkout_step_blocks(text):
+    """Return complete YAML step blocks for actions/checkout."""
+    lines = text.splitlines()
+    blocks = []
+    for index, line in enumerate(lines):
+        match = re.match(r"^(\\s*)-\\s*uses:\\s*actions/checkout@", line)
+        if not match:
+            continue
+        step_indent = len(match.group(1))
+        end = len(lines)
+        for next_index in range(index + 1, len(lines)):
+            candidate = lines[next_index]
+            if not candidate.strip() or candidate.lstrip().startswith("#"):
+                continue
+            indent = len(candidate) - len(candidate.lstrip())
+            if indent <= step_indent and candidate.lstrip().startswith("- "):
+                end = next_index
+                break
+        blocks.append("\\n".join(lines[index:end]))
+    return blocks
 
 
 class ActionPinTests(unittest.TestCase):
@@ -28,7 +52,7 @@ class ActionPinTests(unittest.TestCase):
         self.assertEqual(find_unpinned_actions(immutable), [])
 
     def test_ignores_action_comments_and_run_lines(self):
-        text = "# uses: actions/checkout@v4\n      - run: echo done"
+        text = "# uses: actions/checkout@v4\\n      - run: echo done"
         self.assertEqual(find_unpinned_actions(text), [])
 
     def test_accepts_container_image_with_oci_digest(self):
@@ -44,8 +68,24 @@ class ActionPinTests(unittest.TestCase):
         self.assertEqual(find_unpinned_images(text), [])
 
     def test_ignores_image_comments_and_run_lines(self):
-        text = "# image: ubuntu:latest\n      - run: echo done"
+        text = "# image: ubuntu:latest\\n      - run: echo done"
         self.assertEqual(find_unpinned_images(text), [])
+
+
+class CheckoutCredentialTests(unittest.TestCase):
+    def test_release_and_private_build_checkouts_do_not_persist_tokens(self):
+        root = Path(__file__).resolve().parents[1]
+        for workflow in ("private-pwa.yml", "pages.yml"):
+            with self.subTest(workflow=workflow):
+                path = root / ".github" / "workflows" / workflow
+                blocks = checkout_step_blocks(path.read_text(encoding="utf-8"))
+                self.assertTrue(blocks, f"{workflow} must contain a checkout step")
+                for block in blocks:
+                    self.assertRegex(
+                        block,
+                        r"(?m)^\\s+persist-credentials:\\s*false\\s*(?:#.*)?$",
+                        f"{workflow} checkout must disable persisted credentials",
+                    )
 
 
 if __name__ == "__main__":
