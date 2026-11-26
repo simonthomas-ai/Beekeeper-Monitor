@@ -29,6 +29,8 @@ class BeeKeeperImporterRoundTripTests(unittest.TestCase):
                 "capture_session_id": "capture-session-pseudonym",
                 "labeler_id": "reviewer:field-0001",
                 "review_status": "approved",
+                "reviewed_by": "reviewer:field-reviewer-0001",
+                "reviewed_at": "2026-11-23T08:30:00+01:00",
                 "rights": {
                     "source": "Eigene Feldaufnahme",
                     "basis": "LicenseRef-ExplicitPermission",
@@ -42,6 +44,8 @@ class BeeKeeperImporterRoundTripTests(unittest.TestCase):
                 "captured_at": "2026-11-23T08:05:00+01:00",
                 "capture_session_id": "capture-session-pseudonym",
                 "review_status": "approved",
+                "reviewed_by": "reviewer:field-reviewer-0001",
+                "reviewed_at": "2026-11-23T08:35:00+01:00",
                 "rights": {
                     "source": "https://example.org/photos/negative",
                     "basis": "CC-BY-4.0",
@@ -64,6 +68,10 @@ class BeeKeeperImporterRoundTripTests(unittest.TestCase):
         self.assertEqual(len(accepted), 2)
         self.assertEqual(accepted[0]["labels"], ["vespa_velutina", "apis_mellifera"])
         self.assertEqual(accepted[1]["labels"], [])
+        self.assertEqual(accepted[0]["reviewed_by"], "reviewer:field-reviewer-0001")
+        self.assertEqual(accepted[0]["reviewed_at"], "2026-11-23T08:30:00+01:00")
+        self.assertEqual(len(accepted[0]["image_sha256"]), 64)
+        self.assertEqual(accepted[1]["rights"]["basis"], "CC-BY-4.0")
 
 
 if __name__ == "__main__":

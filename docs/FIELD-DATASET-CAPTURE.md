@@ -19,7 +19,7 @@ Der Zeitstempel bezeichnet das Hinzufügen in der PWA und wird nicht aus EXIF ab
 
 ## Exportvertrag
 
-Jede Zeile von `annotations.jsonl` enthält die Bildreferenz, Klassen, einen zeitzonenbewussten Zeitstempel, eine zufällige Sitzungs-ID, den manuellen Prüfstatus und strukturierte Rechteangaben. `labeler_id` ist optional und muss das Format `reviewer:<opaque-id>` verwenden; Namen, E-Mail-Adressen und URLs sind unzulässig.
+Jede Zeile von `annotations.jsonl` enthält Bildreferenz, Klassen, Erfassungszeit, zufällige Sitzungs-ID, Prüfstatus, strukturierte Rechteangaben sowie `reviewed_by` und `reviewed_at`. `reviewed_by` muss eine pseudonyme Kennung im Format `reviewer:<opaque-id>` sein; `reviewed_at` ist ein eigener zeitzonenbewusster Zeitpunkt der manuellen Prüfung und darf nicht vor `captured_at` liegen. `labeler_id` bleibt optional und bezeichnet getrennt die Labeler-Kennung. Namen, E-Mail-Adressen und URLs sind unzulässig. Diese Review-Metadaten belegen weder unabhängige Rechteprüfung noch entomologische Bestätigung. `reviewed_at` stammt aus der lokalen Browser-Uhr und ist nicht kryptografisch signiert oder als vertrauenswürdige Zeit bestätigt.
 
 Beispiel für eine eigene Aufnahme mit dokumentierter individueller Erlaubnis:
 
@@ -30,6 +30,8 @@ Beispiel für eine eigene Aufnahme mit dokumentierter individueller Erlaubnis:
   "captured_at": "2026-11-26T08:00:00Z",
   "capture_session_id": "<zufällige Sitzungs-ID>",
   "review_status": "approved",
+  "reviewed_by": "reviewer:field-reviewer-0001",
+  "reviewed_at": "2026-11-26T08:30:00Z",
   "rights": {
     "source": "Eigene Feldaufnahme",
     "basis": "LicenseRef-ExplicitPermission",
@@ -48,6 +50,8 @@ Beispiel für eine externe CC-BY-4.0-Quelle:
   "captured_at": "2026-11-26T08:05:00Z",
   "capture_session_id": "<zufällige Sitzungs-ID>",
   "review_status": "approved",
+  "reviewed_by": "reviewer:field-reviewer-0001",
+  "reviewed_at": "2026-11-26T08:35:00Z",
   "rights": {
     "source": "https://example.org/photos/example",
     "basis": "CC-BY-4.0",
@@ -68,7 +72,7 @@ Vor dem strukturierten Rechtevertrag gespeicherte Freitextangaben wie `Nutzerang
 
 ## Repository-übergreifende Prüfung
 
-Der Monitor prüft den Browser-ZIP-Export in `tests/field-dataset.spec.cjs`. Im Ein-Klick-Gesamttest wird derselbe Browser-Export gegen den unveränderlich gepinnten BeeKeeper3000-Validator aus Commit `925bb7e44ed3064007e2be769694d601718eca2d` geprüft. Dieser Stand erzwingt zusätzlich pseudonyme `labeler_id`-Kennungen im Format `reviewer:<opaque-id>` und enthält den fail-closed Modellmanifest-v2-Rechtevalidator. Er lehnt außerdem Modellquellen-, Lizenznachweis- und Validierungsbericht-URLs mit Query oder Fragment ab, damit keine signierten URLs oder privaten Referenzen in Provenienzmetadaten gelangen. Der Monitor-ZIP-Export enthält weiterhin `images/` und `annotations.jsonl`; der getrennte `provenance.jsonl`-Konverter aus BeeKeeper3000 Issue #120 fehlt noch. Der Job führt zusätzlich Validator-Unit-Tests und den Python-Fixture-Roundtrip aus. Die Testbilder sind künstliche Byte-Fixtures; es werden keine privaten Fotos, realen Rechteunterlagen oder Trainingsdaten in CI hochgeladen.
+Der Monitor prüft den Browser-ZIP-Export in `tests/field-dataset.spec.cjs`. Im Ein-Klick-Gesamttest wird derselbe Browser-Export gegen den unveränderlich gepinnten BeeKeeper3000-Validator aus Commit `031c91370da85c6fa42dd8992b6adfc20ddf06c7` geprüft. Dieser Stand erzwingt zusätzlich pseudonyme `labeler_id`-Kennungen im Format `reviewer:<opaque-id>` und enthält den fail-closed Modellmanifest-v2-Rechtevalidator. Er lehnt außerdem Modellquellen-, Lizenznachweis- und Validierungsbericht-URLs mit Query oder Fragment ab, damit keine signierten URLs oder privaten Referenzen in Provenienzmetadaten gelangen. Der Monitor-ZIP-Export enthält weiterhin `images/` und `annotations.jsonl`; der getrennte `provenance.jsonl`-Konverter aus BeeKeeper3000 Issue #120 fehlt noch. Der Job führt zusätzlich Validator-Unit-Tests und den Python-Fixture-Roundtrip aus. Die Testbilder sind künstliche Byte-Fixtures; es werden keine privaten Fotos, realen Rechteunterlagen oder Trainingsdaten in CI hochgeladen.
 
 Lokaler Cross-Repo-Fixturetest:
 

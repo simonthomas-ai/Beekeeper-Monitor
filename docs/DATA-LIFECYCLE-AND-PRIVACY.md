@@ -50,7 +50,10 @@ described above. The active camera/microphone streams stop on page exit.
 The separate manual field-classification workflow stores selected JPEG, PNG or
 WebP image bytes and MIME types in `beekeeper-field-dataset-v1`, object store `images`. It stores the chosen seven-class
 image labels, an app-addition timestamp, a random tab-session ID, optional pseudonymous
-labeler ID, and the entered source/rights review. It does not read GPS or transmit
+labeler ID, and the entered source/rights review. A separate pseudonymous
+`reviewed_by` ID and `reviewed_at` timestamp are recorded only when the user
+manually approves the image/labels and attests training use. The timestamp is
+read from the local browser clock; it is not signed or independently trusted. It does not read GPS or transmit
 images or labels. Records remain on-device until the user explicitly exports a ZIP.
 The ZIP is available only after the user separately attests to image/label review
 and training-use permission for every record and confirms awareness that original

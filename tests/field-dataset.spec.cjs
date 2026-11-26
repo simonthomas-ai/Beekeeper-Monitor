@@ -59,6 +59,7 @@ async function fillRights(page, {
 }
 
 async function attestEveryRecord(page) {
+  await page.locator('#field-reviewer-id').fill('reviewer:field-reviewer-0001');
   const approval = page.getByRole('button', {name:'Manuelle Prüfung und Nutzungsattestierung speichern'});
   await expect(approval.first()).toBeVisible();
   while (await approval.count()) {
@@ -76,6 +77,7 @@ test('stores multi-label and negative images locally and exports the reviewed co
   const requests = [];
   page.on('request', request => requests.push({url:request.url(), method:request.method()}));
   await page.goto('/');
+  await page.locator('#field-reviewer-id').fill('reviewer:field-reviewer-0001');
   await expect(page.locator('#field-dataset-classes input[name="class-label"]')).toHaveCount(7);
   expect(await page.locator('#field-dataset-classes input[name="class-label"]').evaluateAll(inputs =>
     inputs.map(input => input.value)
@@ -125,7 +127,7 @@ test('stores multi-label and negative images locally and exports the reviewed co
     const python = process.platform === 'win32' ? 'python' : 'python3';
     try {
       execFileSync(python, ['-c',
-        'import importlib.util,sys; p=sys.argv[1]; s=importlib.util.spec_from_file_location("beekeeper_multilabel_dataset",p); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); rows=m.validate_dataset_archive(sys.argv[2]); assert len(rows)==2; assert rows[0]["labels"] or rows[1]["labels"]',
+        'import importlib.util,sys; p=sys.argv[1]; s=importlib.util.spec_from_file_location("beekeeper_multilabel_dataset",p); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); rows=m.validate_dataset_archive(sys.argv[2]); assert len(rows)==2; assert rows[0]["labels"] or rows[1]["labels"]; assert all(row["reviewed_by"] == "reviewer:field-reviewer-0001" and row["reviewed_at"].endswith("Z") and len(row["image_sha256"]) == 64 for row in rows)',
         process.env.BEEKEEPER_MULTILABEL_VALIDATOR, zipPath
       ], {stdio:'pipe', env:{...process.env, PYTHONDONTWRITEBYTECODE:'1'}});
     } finally {
@@ -145,6 +147,8 @@ test('stores multi-label and negative images locally and exports the reviewed co
       captured_at: expect.stringMatching(/Z$/),
       capture_session_id: expect.any(String),
       review_status: 'approved',
+      reviewed_by: 'reviewer:field-reviewer-0001',
+      reviewed_at: expect.stringMatching(/Z$/),
       rights: {
         source:'Eigene Feldaufnahme',
         basis:'LicenseRef-ExplicitPermission',
@@ -192,6 +196,28 @@ test('requires opaque pseudonymous labeler IDs and exports only the accepted for
   const lines = files.get('annotations.jsonl').toString('utf8').trim().split('\\n').map(line => JSON.parse(line));
   expect(lines).toHaveLength(1);
   expect(lines[0].labeler_id).toBe('reviewer:field-0001');
+  expect(lines[0].reviewed_by).toBe('reviewer:field-reviewer-0001');
+  expect(lines[0].reviewed_at).toMatch(/Z$/);
+});
+
+test('requires a separate pseudonymous reviewer identity before approval', async ({page}) => {
+  await page.goto('/');
+  await addImage(page, 'review-provenance.jpg', [0xff, 0xd8, 0xff, 0x41, 0xff, 0xd9]);
+  await page.locator('input[name="image-kind"][value="negative"]').check();
+  await fillRights(page);
+  await page.locator('#field-dataset-form button[type="submit"]').click();
+  const row = page.locator('.field-dataset-record').first();
+  await row.getByRole('checkbox', {name:'Bildinhalt und sämtliche Klassen manuell geprüft'}).check();
+  await row.getByRole('checkbox', {name:'Ich attestiere, dass ich das Bild für Trainingszwecke verwenden darf'}).check();
+  const approval = row.getByRole('button', {name:'Manuelle Prüfung und Nutzungsattestierung speichern'});
+  await page.locator('#field-reviewer-id').fill('Simon Thomas');
+  await expect(approval).toBeDisabled();
+  await page.locator('#field-reviewer-id').fill('reviewer:field-reviewer-0001');
+  await expect(approval).toBeEnabled();
+  page.once('dialog', dialog => dialog.accept());
+  await approval.click();
+  await expect(page.locator('#field-dataset-summary')).toContainText('0 ohne abgeschlossene Nutzerprüfung');
+  await expect(page.locator('#field-dataset-export')).toBeEnabled();
 });
 
 test('requires explicit EXIF metadata confirmation before ZIP export', async ({page}) => {

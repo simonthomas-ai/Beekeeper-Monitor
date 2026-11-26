@@ -58,6 +58,8 @@ class FieldDatasetZipTests(unittest.TestCase):
             "capture_session_id": "session-pseudonym-1",
             "labeler_id": "reviewer:field-0001",
             "review_status": "approved",
+            "reviewed_by": "reviewer:field-reviewer-0001",
+            "reviewed_at": "2026-11-23T08:30:00+01:00",
             "rights": rights_data or rights(),
         }
 
@@ -87,6 +89,34 @@ class FieldDatasetZipTests(unittest.TestCase):
                 path = self.make_zip([positive, self.record("images/negative.jpg", [])])
                 errors = validate(path)
                 self.assertTrue(any("labeler_id" in error for error in errors))
+
+    def test_requires_pseudonymous_review_identity_and_separate_timezone_aware_time(self):
+        invalid_rows = [
+            ({"reviewed_by": "Simon Thomas"}, "reviewed_by muss reviewer:<opaque-id> verwenden"),
+            ({"reviewed_by": "reviewer:short"}, "reviewed_by muss reviewer:<opaque-id> verwenden"),
+            ({"reviewed_at": "2026-11-23T08:30:00"}, "reviewed_at ist kein ISO-8601-Zeitstempel"),
+            ({"reviewed_at": "2026-11-23T06:59:59Z"}, "reviewed_at liegt vor captured_at"),
+            ({"reviewed_at": None}, "reviewed_at ist kein ISO-8601-Zeitstempel"),
+        ]
+        for index, (changes, expected) in enumerate(invalid_rows):
+            with self.subTest(index=index):
+                positive = self.record("images/positive.jpg", [CLASS_SLUGS[0]])
+                positive.update(changes)
+                path = self.make_zip([
+                    positive,
+                    self.record("images/negative.jpg", []),
+                ])
+                errors = validate(path)
+                self.assertTrue(any(expected in error for error in errors))
+
+        missing = self.record("images/positive.jpg", [CLASS_SLUGS[0]])
+        missing.pop("reviewed_by")
+        path = self.make_zip([
+            missing,
+            self.record("images/negative.jpg", []),
+        ])
+        errors = validate(path)
+        self.assertTrue(any("Pflichtfelder" in error for error in errors))
 
     def test_rejects_unapproved_and_unknown_labels(self):
         positive = self.record("images/positive.jpg", ["not_a_project_class"])
