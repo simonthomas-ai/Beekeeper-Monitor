@@ -1,3 +1,16 @@
+# Nachtrag – 26.11.2026, 23:55 CET
+
+## Nach PR #131
+
+- **BeeKeeper3000 main:** `4676649d3d248f5b950ac1eaef7673bbd1af9f26` (PR #131).
+- [PR #131](https://github.com/simonthomas-ai/BeeKeeper3000/pull/131) wurde nach erfolgreicher PR-CI gemergt. Der vorhandene Workflow-Audit prüft jetzt auch in BeeKeeper3000 explizite Token-Berechtigungen auf Workflow- oder Job-Ebene und weist `write-all` einschließlich Job-Level-Overrides zurück.
+- PR-CI: [Quality Gates #45907405776](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45907405776), [Supply Chain / SBOM #45907405729](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45907405729) und [CodeQL #45907405795](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45907405795) sind erfolgreich.
+- Der Quality-Gates-Log bestätigt 22 Workflow-Audit-Tests mit `OK` und `PASS` für alle 10 BeeKeeper3000-Workflowdateien.
+- Post-Merge-Prüfungen für `4676649d` wurden gerade ausgelöst; noch kein Post-Merge-Erfolg behauptet.
+- **Beekeeper-Monitor main:** `c2ad973231d734936df78bc1eeb4ff74b09037e8`; Gesamttest, Bridge, Feld-Dataset-Validator und beide CodeQL-Sprachen sind vollständig erfolgreich.
+- Monitor [PR #328](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/328) ist weiterhin ein reiner Dokumentations-PR. Bridge, Feld-Dataset-Validator und CodeQL sind erfolgreich; der Gesamttest läuft noch. Noch nicht gemergt.
+- Der PWA-Artefaktumfang ist oben korrigiert: 224 erfolgreiche Workflow-Läufe, mindestens 20 aktive Artefakte über die Laufhistorie bestätigt, exakte Gesamtzahl nicht enumeriert.
+
 # Korrektur – öffentliche PWA-Artefakte, 26.11.2026 23:50 CET
 
 Die frühere Aufzählung von neun historischen Artefakten war unvollständig. Eine erneute Paginierung der Actions-Run-Historie zeigt **224 erfolgreiche Läufe** des Workflows `.github/workflows/private-pwa.yml` (Run-Nummern 1–224), erstellt vom 21.11.2026 16:17:26 UTC bis 26.11.2026 20:39:49 UTC. Das ist eine Anzahl von Workflow-Läufen, nicht automatisch eine bestätigte Anzahl von Artefakten.
