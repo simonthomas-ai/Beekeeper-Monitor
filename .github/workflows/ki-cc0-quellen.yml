@@ -37,7 +37,7 @@ jobs:
           python-version: '3.12'
       - name: Install Pillow for transient in-memory image inspection
         run: |
-          python3 -m pip install --only-binary=:all: 'Pillow>=10,<13'
+          python3 -m pip install --disable-pip-version-check --only-binary=:all: Pillow==12.3.0
       - name: Offline-Test der Bildqualitaetspruefung
         run: python3 -m unittest training.test_screen_inaturalist_image_quality -v
       - name: Offline-Test der paginierten Bildrecherche und Bildquellen-Normalisierung
