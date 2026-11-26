@@ -33,7 +33,7 @@ class CC0CandidateAuditTests(unittest.TestCase):
         with path.open("w", newline="", encoding="utf-8") as handle:
             writer = csv.DictWriter(handle, fieldnames=fields)
             writer.writeheader()
-            writer.writerows(rows)
+            writer.writerows([{key: row.get(key, "") for key in fields} for row in rows])
         return path
 
     def test_audit_schema_is_the_discovery_schema(self):
