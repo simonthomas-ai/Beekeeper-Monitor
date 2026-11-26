@@ -1,3 +1,66 @@
+# Aktuell verifizierter Stand – 26.11.2026, 23:40 CET
+
+Dieser Nachtrag ersetzt für die aktuelle Lage die darunter archivierten Snapshots. Die GitHub-API wurde erneut direkt abgefragt; Status, CI und KI-Freigabe bleiben getrennt.
+
+## Hauptzweige und abgeschlossene Post-Merge-Prüfungen
+
+- **Beekeeper-Monitor main:** `ba20e5627afdabedba3692666ca4564fc56781f2`.
+- **BeeKeeper3000 main:** `b841d2adb1586ab88a82cef67e8be4e1523a2f21`.
+- Monitor PR #327 ist gemergt: öffentliche PWA-Vorschau nur noch manuell, Aufbewahrung 1 Tag; keine Website-Veröffentlichung.
+- BeeKeeper3000 PR #129 ist gemergt: Waspinator-AGPL-3.0-Quelle/Modellmetadaten dokumentiert; Gewichte und Bildrechte bleiben ungeklärt und der Kandidat bleibt nicht integriert.
+
+**Monitor auf main `ba20e562`:**
+- [Gesamttest #45900540463](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45900540463): completed / success.
+- [CC0-Quellenprüfung #45900540474](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45900540474): completed / success.
+- [CodeQL #45900540516](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45900540516): completed / success.
+- [CC0-Artefakt-Rücklese #45901791020](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45901791020): completed / success; die Artefaktliste dieses Laufs ist leer.
+- Der Gesamttest trennt Softwareerfolg von KI-Freigabe: `TRAINING: failure`, `ANNOTATIONS: failure`; Trainingsbilder und freigegebene Annotationen fehlen weiterhin.
+
+**BeeKeeper3000 auf main `b841d2ad`:**
+- [Quality Gates #45900617855](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45900617855): completed / success.
+- [CodeQL #45900617816](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45900617816): completed / success.
+- [Supply Chain / SBOM #45900617790](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45900617790): completed / success.
+- Der SBOM-Umfang bleibt partiell; nicht enthalten sind u. a. vollständige geerbte C++-Quellen, Firmware, Modellgewichte und Datensätze.
+
+## Neue Workflow-Berechtigungsprüfung
+
+- Die Inventur aller 42 Monitor-Workflows und 10 BeeKeeper3000-Workflows fand explizite Token-Berechtigungen auf Workflow- oder Job-Ebene; der KiCad-ERC-Workflow verwendet Job-Level `contents: read`.
+- Die Suche fand keine Verwendung von `permissions: write-all` und keine `pull_request_target`-Trigger.
+- Monitor PR [#329](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/329) ergänzt einen Regressionstest, der explizite Workflow-/Job-Berechtigungen und verbotene `write-all`-Overrides künftig prüft.
+- PR #329 ist **nicht gemergt**. Die ersten Actions-Läufe starteten auf einem älteren Branch-Commit und blieben bei der Runner-/Container-Initialisierung stehen. Danach wurde der Branch aktualisiert; für den aktuellen Head `26103f559d6adbad15b1cfdc70cf3d96c137183e` lagen zum Snapshot noch keine Check-Runs vor. Die lokalen synthetischen Testfälle für erlaubte/fehlende/zu weitreichende Berechtigungen wurden separat geprüft; das ersetzt keinen GitHub-CI-Lauf.
+
+## Historische öffentliche Actions-Artefakte – weiterhin offen
+
+Die neun bekannten Artefakte wurden einzeln erneut über ihre Run-Artefaktlisten geprüft; alle meldeten `expired=false`. Sie wurden nicht heruntergeladen oder gelöscht.
+
+| Run | Artefakt-ID | Inhalt | Größe | Ablauf (UTC) |
+|---|---:|---|---:|---|
+| [#45835039321](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45835039321) | 15124542124 | alte PWA-Vorschau | 65.655 B | 2026-12-03 14:02:46 |
+| [#45823611579](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45823611579) | 15118529028 | alte PWA-Vorschau | 65.655 B | 2026-12-03 12:51:51 |
+| [#45817855487](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45817855487) | 15115678841 | alte PWA-Vorschau | 65.655 B | 2026-12-03 12:14:54 |
+| [#45816613770](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45816613770) | 15115577897 | alte PWA-Vorschau | 65.655 B | 2026-12-03 12:06:51 |
+| [#45803405754](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45803405754) | 15108012720 | alte PWA-Vorschau | 65.655 B | 2026-12-03 10:39:53 |
+| [#45803405634](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45803405634) | 15108851881 | iNaturalist-Reviewqueue | 89.737 B | 2026-12-10 10:42:29 |
+| [#45803405656](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45803405656) | 15107897872 | Insekten-Reviewqueue | 163.198 B | 2026-12-10 10:42:12 |
+| [#45689841927](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45689841927) | 15058597151 | Originalbilder | 161.230.685 B | 2026-12-09 20:03:37 |
+| [#45689841927](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45689841927) | 15058522636 | CC0-Prüflisten | 169.351 B | 2026-12-09 20:03:42 |
+
+Die verbundene GitHub-Aktionsschnittstelle stellt keine Artefakt-Löschoperation bereit. Manuelle Löschung und API-Rücklese bleiben offen. Der neue CC0-Lauf #45901791020 hat keine Artefakte erzeugt.
+
+## Weiterhin unveränderte Release-Blocker
+
+- Beide Repositories sind öffentlich; GitHub meldet `license=null`; beide Root-`LICENSE`-Dateien fehlen.
+- Beide `main`-Branches melden `protected=false`; Pages-Einstellung des Monitors ist weiterhin aktiviert (`has_pages=true)), der Pages-Deploy-Job bleibt aber mit `if: false` gesperrt. Kein öffentliches Pages-Deployment wurde ausgelöst.
+- Monitor `models/candidates.json`: sechs Kandidaten, alle `rights_and_runtime_pending`; keine Modellgewichte und kein freigegebener Datensatz im Repository.
+- BeeKeeper-Klassifikatorvertrag `[1,7]` und Monitor-Detektionsvertrag `[1,9,8400]` bleiben inkompatibel; kein produktiv validierter Adapter.
+- Browser-IndexedDB und lokale SQLite-Daten sind nicht anwendungsseitig im Ruhezustand verschlüsselt; JSON-Backups können Fotos und GPS enthalten. Betriebssystem-/Datenträgerverschlüsselung und restriktive Dateirechte sind erforderlich.
+- BeeKeeper3000 LLM Council: lokale Ollama- und alle externen Provider sind in der aktuellen Konfiguration deaktiviert. Der Workflow läuft auf einem selbstgehosteten Windows-Runner; kein externer Provider wurde in dieser Prüfung aufgerufen.
+- Keine unabhängig annotierten Holdoutdaten, keine gemessenen Precision-/Recall-/Fehlalarmraten, kein Nachweis von 99 % Erkennung und keine vollständige reale Kamera-/Dauerlaufabnahme.
+
+**Status:** Software-CI für die beiden aktuellen Hauptzweige ist für die genannten Läufe erfolgreich. Modell-/Datensatzrechte, Datenbasis, lokale Verschlüsselung, Branch-Schutz, historische Artefakte und reale Feldabnahme bleiben offen. Kein Modell aktiviert, keine sensiblen Standort- oder Kameradaten übertragen, kein öffentliches Deployment ausgelöst.
+
+---
+
 # Aktuell verifizierter Stand – 26.11.2026, GitHub-API-Snapshot 21:48 UTC
 
 Dieser Snapshot ergänzt und ersetzt für den aktuellen Stand den darunter archivierten 20:36-CET-Snapshot. Er trennt PR-Prüfungen von noch laufenden Post-Merge-Prüfungen und von der KI-Feldfreigabe.
