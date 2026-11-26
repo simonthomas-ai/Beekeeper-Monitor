@@ -97,6 +97,8 @@ assert "ki-cc0-quellen-prueflisten" not in pages
 assert "public-review-assets" not in pages
 assert "actions/download-artifact" not in pages
 assert "cp review/index.html _site/review/index.html" in pages
+for gallery in ("all", "velutina", "crabro", "apis", "bombus", "vespula"):
+    assert not (root/"review"/f"{gallery}.html").exists(), gallery
 assert r"grep -Eq '\[[^]]+\]'" in pages
 assert re.search(r"\[[^]]+\]", "[MISSING OPERATOR DETAILS]")
 assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js field-image-privacy.js field-dataset.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg _site/" in pages
