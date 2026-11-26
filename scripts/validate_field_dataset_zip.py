@@ -31,7 +31,7 @@ MAX_IMAGE_BYTES = 8 * 1024 * 1024
 PSEUDONYMOUS_LABELER_ID = re.compile(r"^reviewer:[A-Za-z0-9][A-Za-z0-9._:-]{7,79}$")
 ALLOWED_ANNOTATION_FIELDS = {
     "image", "labels", "captured_at", "capture_session_id",
-    "labeler_id", "review_status", "rights",
+    "labeler_id", "review_status", "reviewed_by", "reviewed_at", "rights",
 }
 RIGHTS_BASES = {"CC0-1.0", "CC-BY-4.0", "LicenseRef-ExplicitPermission"}
 LICENSE_URLS = {
@@ -119,7 +119,7 @@ def iso_timestamp(value: object) -> bool:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return False
-    return parsed.tzinfo is not None
+    return parsed.tzinfo is not None and parsed.utcoffset() is not None
 
 
 def validate(zip_path: Path) -> list[str]:
@@ -196,6 +196,26 @@ def validate(zip_path: Path) -> list[str]:
                     errors.append(
                         f"Zeile {line_number}: labeler_id muss reviewer:<opaque-id> verwenden"
                     )
+                reviewed_by = record.get("reviewed_by")
+                if (
+                    not isinstance(reviewed_by, str)
+                    or not PSEUDONYMOUS_LABELER_ID.fullmatch(reviewed_by)
+                ):
+                    errors.append(
+                        f"Zeile {line_number}: reviewed_by muss reviewer:<opaque-id> verwenden"
+                    )
+                reviewed_at = record.get("reviewed_at")
+                if not iso_timestamp(reviewed_at):
+                    errors.append(
+                        f"Zeile {line_number}: reviewed_at ist kein ISO-8601-Zeitstempel mit Zeitzone"
+                    )
+                elif iso_timestamp(record.get("captured_at")):
+                    captured_stamp = datetime.fromisoformat(record["captured_at"].replace("Z", "+00:00"))
+                    reviewed_stamp = datetime.fromisoformat(reviewed_at.replace("Z", "+00:00"))
+                    if reviewed_stamp < captured_stamp:
+                        errors.append(
+                            f"Zeile {line_number}: reviewed_at liegt vor captured_at"
+                        )
 
                 forbidden = {"bbox", "boxes", "location", "gps", "station_id"}
                 present_forbidden = sorted(forbidden.intersection(record))
