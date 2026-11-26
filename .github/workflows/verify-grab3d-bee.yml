@@ -54,15 +54,17 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends blender
           blender -b -t 2 --python training/render_glb_textured_review.py -- /tmp/vespaguard-bee/bee.glb training/grab3d-bee-textured-review
-      - name: Upload review reports and preview only, never model files
+      - name: Keep review outputs runner-local and remove temporary files
         if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: grab3d-bee-provenance-review
-          path: |
-            training/grab3d-bee-provenance-review.json
-            training/grab3d-bee-geometry-preview.png
-            training/grab3d-bee-geometry-preview.json
-            training/grab3d-bee-textured-review/
-          if-no-files-found: warn
-          retention-days: 14
+        run: |
+          {
+            echo '## Grab3D bee asset review'
+            echo '- Review reports and rendered previews are runner-local only.'
+            echo '- No third-party model, mesh, preview image, or review manifest is published as an Actions artifact.'
+            echo '- A publisher-reported CC0 marker is not a legal or training approval.'
+          } >> "$GITHUB_STEP_SUMMARY"
+          rm -rf training/grab3d-bee-textured-review
+          rm -f training/grab3d-bee-provenance-review.json
+          rm -f training/grab3d-bee-geometry-preview.png
+          rm -f training/grab3d-bee-geometry-preview.json
+          rm -rf /tmp/vespaguard-bee
