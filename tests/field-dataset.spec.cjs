@@ -548,5 +548,5 @@ test('blocks export when the same image bytes were captured twice', async ({page
   await expect(page.locator('#field-dataset-export')).toBeEnabled();
   page.once('dialog', dialog => dialog.accept());
   await page.locator('#field-dataset-export').click();
-  await expect(page.locator('#field-dataset-status')).toContainText('derselbe Bildinhalt wurde mehrfach erfasst');
+  await expect(page.locator('#field-dataset-status')).toContainText('derselbe bereinigte Bildinhalt wurde mehrfach erfasst');
 });
