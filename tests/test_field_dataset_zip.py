@@ -56,7 +56,7 @@ class FieldDatasetZipTests(unittest.TestCase):
             "labels": labels,
             "captured_at": "2026-11-23T08:00:00+01:00",
             "capture_session_id": "session-pseudonym-1",
-            "labeler_id": "reviewer-1",
+            "labeler_id": "reviewer:field-0001",
             "review_status": "approved",
             "rights": rights_data or rights(),
         }
