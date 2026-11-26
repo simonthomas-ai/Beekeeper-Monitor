@@ -49,6 +49,20 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
         self.assertIn("Keine gehostete Website.", PWA_BUILD)
         self.assertNotIn("vespaguard-private-pwa", PWA_BUILD)
 
+    def test_image_review_workflows_pin_pillow_exactly(self):
+        image_review_workflows = (
+            "training-data.yml",
+            "ki-cc0-quellen.yml",
+            "model-training-readiness.yml",
+            "hornet-photo-discovery.yml",
+            "inaturalist-balanced-discovery.yml",
+        )
+        for workflow_name in image_review_workflows:
+            with self.subTest(workflow=workflow_name):
+                content = (WORKFLOWS / workflow_name).read_text(encoding="utf-8")
+                self.assertIn("Pillow==12.3.0", content)
+                self.assertNotRegex(content, r"Pillow\\s*(?:>=|<=|>|<|~=)")
+
     def test_cc0_discovery_uploads_no_candidate_artifacts(self):
         self.assertNotIn("actions/upload-artifact@", CC0)
         self.assertNotIn("name: original-velutina-images", CC0)
