@@ -37,7 +37,7 @@ function makePngFixture(seed, width = 1, height = 1, animated = false) {
   const chunks = [
     pngChunk('IHDR', header),
     pngChunk('eXIf', tiff),
-    pngChunk('tEXt', Buffer.from('Location\\0GPS=51.5,7.9'))
+    pngChunk('tEXt', Buffer.from('Location\0GPS=51.5,7.9'))
   ];
   if (animated) chunks.push(pngChunk('acTL', Buffer.from([0, 0, 0, 1, 0, 0, 0, 0])));
   chunks.push(pngChunk('IDAT', zlib.deflateSync(Buffer.from([0, marker, (marker + 31) & 0xff, (marker + 67) & 0xff, 255]))));
@@ -88,7 +88,7 @@ function extractStoredZip(buffer) {
 
 async function addImage(page, name, bytes) {
   await page.locator('#field-dataset-photo').setInputFiles({
-    name: name.replace(/\\.(?:jpe?g|webp)$/i, '.png'),
+    name: name.replace(/\.(?:jpe?g|webp)$/i, '.png'),
     mimeType: 'image/png',
     buffer: makePngFixture(bytes)
   });
@@ -293,7 +293,7 @@ test('stores multi-label and negative images locally and exports the reviewed co
   }
   for (const row of lines) {
     const exported = files.get(row.image);
-    expect(row.image).toMatch(/\\.png$/);
+    expect(row.image).toMatch(/\.png$/);
     expect(exported.subarray(0, 8)).toEqual(PNG_SIGNATURE);
     const chunks = pngChunkTypes(exported);
     expect(chunks).not.toContain('eXIf');
