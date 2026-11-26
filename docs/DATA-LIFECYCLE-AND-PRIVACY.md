@@ -56,14 +56,19 @@ manually approves the image/labels and attests training use. The timestamp is
 read from the local browser clock; it is not signed or independently trusted. It does not read GPS or transmit
 images or labels. Records remain on-device until the user explicitly exports a ZIP.
 The ZIP is available only after the user separately attests to image/label review
-and training-use permission for every record and confirms awareness that original
-images may contain EXIF metadata such as GPS, capture time and camera/device
-identifiers. The application does not inspect or strip EXIF metadata; image bytes
-remain unchanged for provenance checks. This status records the operator's
-attestation and is not an independent verification or proof of image rights. The export contains image bytes and
-`annotations.jsonl`; it is sensitive data and is outside the PWA's storage controls
-after download. Deleting a record removes it from this field-capture database, but
-does not remove an existing export or copies made elsewhere.
+and training-use permission for every record. Before export, the browser locally
+decodes each source image and re-encodes it as PNG; EXIF/GPS, XMP and embedded
+text/time metadata are not copied into the exported PNG. PNG ancillary chunks are
+removed after re-encoding, while required image-data chunks are retained and CRC-checked.
+Animated PNG/WebP, images above 16 megapixels, malformed files and oversized
+outputs fail closed; there is no fallback to the original bytes. The browser may
+normalize orientation and decoded pixel/color representation. Original image bytes
+remain unchanged in IndexedDB and are not included in the ZIP. This status records
+the operator's attestation and is not an independent verification or proof of image
+rights. The export contains sanitized image copies and `annotations.jsonl`; it is
+sensitive data and is outside the PWA's storage controls after download. Deleting
+a record removes it from this field-capture database, but does not remove an existing
+export or copies made elsewhere.
 
 ### Local station PWA and Monitor receiver
 
@@ -146,7 +151,7 @@ therefore be governed across every copy, not only one database.
 |---|---|---|
 | Insect candidate label, confidence, time, station ID | Local metadata event; unverified until reviewed | Restrict access; retain only as long as operationally justified |
 | Manual notes | Browser IndexedDB; free text | Do not enter names, health details, passwords or unnecessary personal data |
-| Photo | Optional browser-local data URL; JSON export includes it | Protect device and exports; check image rights and remove EXIF/location metadata before any authorized reuse |
+| Photo | Optional browser-local data URL; general JSON export may include it; field ZIP export uses re-encoded metadata-clean PNG copies | Protect device and exports; check image rights; independently inspect other image sources before reuse |
 | Exact GPS | Optional browser observation only; prohibited from station event contract and MeshCore packet | Keep private; never publish exact apiary/nest coordinates without an explicit reviewed need |
 | Station ID / radio station hash | Technical identifier | Pseudonymise public identifiers and protect the local coordinate registry |
 | API tokens / signing keys | Environment/config files; excluded from backups | OS ACLs, rotation, separate credentials, no logs/repository commits |
