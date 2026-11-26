@@ -95,7 +95,7 @@ class FieldDatasetZipTests(unittest.TestCase):
             ({"reviewed_by": "Simon Thomas"}, "reviewed_by muss reviewer:<opaque-id> verwenden"),
             ({"reviewed_by": "reviewer:short"}, "reviewed_by muss reviewer:<opaque-id> verwenden"),
             ({"reviewed_at": "2026-11-23T08:30:00"}, "reviewed_at ist kein ISO-8601-Zeitstempel"),
-            ({"reviewed_at": "2026-11-23T07:59:59Z"}, "reviewed_at liegt vor captured_at"),
+            ({"reviewed_at": "2026-11-23T06:59:59Z"}, "reviewed_at liegt vor captured_at"),
             ({"reviewed_at": None}, "reviewed_at ist kein ISO-8601-Zeitstempel"),
         ]
         for index, (changes, expected) in enumerate(invalid_rows):
