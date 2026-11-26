@@ -20,6 +20,7 @@ CANDIDATE_REVIEW_WORKFLOWS = (
     "open-3d-metadata.yml",
     "commons-importer.yml",
     "cc0-insect-3d.yml",
+    "verify-grab3d-bee.yml",
 )
 FORBIDDEN_PUBLIC_ARTIFACT_NAMES = (
     "cc0-metadata-integrity-audit",
@@ -31,6 +32,7 @@ FORBIDDEN_PUBLIC_ARTIFACT_NAMES = (
     "unverified-sketchfab-3d-metadata",
     "commons-multiclass-metadata",
     "cc0-insect-3d-review",
+    "grab3d-bee-provenance-review",
 )
 
 
