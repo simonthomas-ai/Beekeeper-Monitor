@@ -68,6 +68,10 @@ class BeeKeeperImporterRoundTripTests(unittest.TestCase):
         self.assertEqual(len(accepted), 2)
         self.assertEqual(accepted[0]["labels"], ["vespa_velutina", "apis_mellifera"])
         self.assertEqual(accepted[1]["labels"], [])
+        self.assertEqual(accepted[0]["reviewed_by"], "reviewer:field-reviewer-0001")
+        self.assertEqual(accepted[0]["reviewed_at"], "2026-11-23T08:30:00+01:00")
+        self.assertEqual(len(accepted[0]["image_sha256"]), 64)
+        self.assertEqual(accepted[1]["rights"]["basis"], "CC-BY-4.0")
 
 
 if __name__ == "__main__":
