@@ -21,7 +21,8 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install pinned validation-only dependencies
-        run: python -m pip install --only-binary=:all: --disable-pip-version-check -r training/requirements-ci-validation.txt
+        run: |
+          python -m pip install --only-binary=:all: --disable-pip-version-check -r training/requirements-ci-validation.txt
       - name: Test human-reviewed annotation schema, image integrity, provenance and per-class evidence
         run: python -m unittest training.test_validate_reviewed_annotations training.test_evaluation training.test_provenance training.test_train -v
       - name: Inventory real train, validation and test files (no mock data)
