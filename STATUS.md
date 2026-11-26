@@ -1,3 +1,20 @@
+# Korrektur – öffentliche PWA-Artefakte, 26.11.2026 23:50 CET
+
+Die frühere Aufzählung von neun historischen Artefakten war unvollständig. Eine erneute Paginierung der Actions-Run-Historie zeigt **224 erfolgreiche Läufe** des Workflows `.github/workflows/private-pwa.yml` (Run-Nummern 1–224), erstellt vom 21.11.2026 16:17:26 UTC bis 26.11.2026 20:39:49 UTC. Das ist eine Anzahl von Workflow-Läufen, nicht automatisch eine bestätigte Anzahl von Artefakten.
+
+Über die Artefakt-API wurden **20 eindeutige PWA-Artefakte** über frühe, mittlere und aktuelle Läufe hinweg einzeln bestätigt; alle meldeten `expired=false`:
+- Ältere Stichproben: `14715215560`, `14716389937`, `14718636138`, `14719580500`, `14721515981`, `14744707898`, `15087247299`.
+- Die zuvor erfassten fünf: `15124542124`, `15118529028`, `15115678841`, `15115577897`, `15108012720`.
+- Neuere acht: `15127033729`, `15127464985`, `15134318088`, `15135695760`, `15137419854`, `15142681903`, `15146326999`, `15151807914`.
+
+Die acht neueren Artefakte laufen am 03.12.2026 ab; die ältesten Stichproben am 28.11.2026. **Die exakte Gesamtzahl aktiver PWA-Artefakte ist noch nicht vollständig enumeriert.** Die Artefaktinhalte wurden nicht heruntergeladen oder inspiziert; daher wird keine Aussage getroffen, ob jedes historische Artefakt personenbezogene Daten enthält. Bei einem öffentlichen Repository sind Actions-Artefakte als öffentlich lesbar zu behandeln.
+
+PR #327 hat den Workflow inzwischen auf manuelle Auslösung und 1 Tag Aufbewahrung begrenzt. Nach dem Merge wurde kein neuer PWA-Vorschau-Lauf gefunden. Die alten Artefakte sind davon nicht betroffen. Die verbundene GitHub-Schnittstelle bietet keine Artefakt-Löschaktion; es wurde nichts heruntergeladen oder gelöscht.
+
+[Issue #318](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/318) wurde mit dieser korrigierten Reichweite aktualisiert. Der alte Abschnitt darunter enthält die frühere, unvollständige Neuner-Liste und ist nur noch als historischer Snapshot zu lesen.
+
+---
+
 # Nachtrag – 26.11.2026, 23:47 CET
 
 ## Nach PR #130
