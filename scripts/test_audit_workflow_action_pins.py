@@ -11,7 +11,7 @@ def checkout_step_blocks(text):
     lines = text.splitlines()
     blocks = []
     for index, line in enumerate(lines):
-        match = re.match(r"^(\\s*)-\\s*uses:\\s*actions/checkout@", line)
+        match = re.match(r"^(\s*)-\s*uses:\s*actions/checkout@", line)
         if not match:
             continue
         step_indent = len(match.group(1))
@@ -24,7 +24,7 @@ def checkout_step_blocks(text):
             if indent <= step_indent and candidate.lstrip().startswith("- "):
                 end = next_index
                 break
-        blocks.append("\\n".join(lines[index:end]))
+        blocks.append("\n".join(lines[index:end]))
     return blocks
 
 
@@ -39,7 +39,7 @@ class ActionPinTests(unittest.TestCase):
 
     def test_rejects_short_commit_reference(self):
         text = "      - uses: owner/action@abcdef123456"
-        self.assertEqual(len(find_unpinned_actions(text), 1)
+        self.assertEqual(len(find_unpinned_actions(text)), 1)
 
     def test_accepts_local_action_path(self):
         text = "      - uses: ./.github/actions/my-action"
@@ -52,7 +52,7 @@ class ActionPinTests(unittest.TestCase):
         self.assertEqual(find_unpinned_actions(immutable), [])
 
     def test_ignores_action_comments_and_run_lines(self):
-        text = "# uses: actions/checkout@v4\\n      - run: echo done"
+        text = "# uses: actions/checkout@v4\n      - run: echo done"
         self.assertEqual(find_unpinned_actions(text), [])
 
     def test_accepts_container_image_with_oci_digest(self):
@@ -68,7 +68,7 @@ class ActionPinTests(unittest.TestCase):
         self.assertEqual(find_unpinned_images(text), [])
 
     def test_ignores_image_comments_and_run_lines(self):
-        text = "# image: ubuntu:latest\\n      - run: echo done"
+        text = "# image: ubuntu:latest\n      - run: echo done"
         self.assertEqual(find_unpinned_images(text), [])
 
 
@@ -83,7 +83,7 @@ class CheckoutCredentialTests(unittest.TestCase):
                 for block in blocks:
                     self.assertRegex(
                         block,
-                        r"(?m)^\\s+persist-credentials:\\s*false\\s*(?:#.*)?$",
+                        r"(?m)^\s+persist-credentials:\s*false\s*(?:#.*)?$",
                         f"{workflow} checkout must disable persisted credentials",
                     )
 
