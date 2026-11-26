@@ -1,3 +1,14 @@
+# Nachtrag – 26.11.2026, 23:47 CET
+
+## Nach PR #130
+
+- **BeeKeeper3000 main:** `04200eb8612a00a0e16f79ac0984dcaa70ef612b` (PR #130).
+- [PR #130](https://github.com/simonthomas-ai/BeeKeeper3000/pull/130) wurde nach erfolgreicher PR-CI gemergt. Der selbstgehostete LLM-Council-Job läuft jetzt nur noch bei `github.ref == refs/heads/main`; manuelle Dispatches auf Feature-Branches werden am Job-Gate gestoppt.
+- Der PR-Testlauf [#45907095395](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45907095395) bestand Python-Kern-/LLM-Sicherheitstests, Kamera-Runtime, Bridge und Windows-Kompatibilität. Der Log bestätigt `test_self_hosted_council_only_runs_from_main` als `ok`; insgesamt 31 Tests im Python-Kernjob bestanden. Beide CodeQL-Sprachen waren erfolgreich.
+- Post-Merge-Prüfungen auf `04200eb8` wurden ausgelöst und waren beim letzten Abruf noch queued; noch kein Post-Merge-Erfolg behauptet.
+- **Beekeeper-Monitor main:** `c2ad973231d734936df78bc1eeb4ff74b09037e8`. Nach-Merge-Bridge und Feld-Dataset-Validator sind erfolgreich; Gesamttest und JavaScript-CodeQL laufen noch. Python-CodeQL ist erfolgreich.
+- Keine externen LLM-Provider aktiviert oder aufgerufen; Ollama und sämtliche externen Provider bleiben in `llm-council/config.json` deaktiviert.
+
 # Nachtrag – 26.11.2026, 23:45 CET
 
 ## Nach PR #329 und aktuelle offene Sicherheitsänderungen
