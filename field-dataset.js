@@ -22,8 +22,7 @@
   const status = document.getElementById('field-dataset-status');
   const rows = document.getElementById('field-dataset-entries');
   const exportButton = document.getElementById('field-dataset-export');
-  const exportConsent = document.getElementById('field-dataset-export-consent');
-  if (!exportButton || !exportConsent) return;
+  if (!exportButton) return;
   const kindRadios = [...form.querySelectorAll('input[name="image-kind"]')];
   const classInputs = [...form.querySelectorAll('input[name="class-label"]')];
   const classGroup = document.getElementById('field-dataset-classes');
@@ -35,7 +34,6 @@
   const permissionField = document.getElementById('field-rights-permission-field');
   const permissionInput = document.getElementById('field-rights-permission-ref');
   let objectUrls = [];
-  let recordsReadyForExport = false;
 
   function id() {
     if (crypto.randomUUID) return crypto.randomUUID();
@@ -362,12 +360,10 @@
       for (const record of records) rows.append(renderRecord(record));
       const pending = records.filter(record => !rightsContractComplete(record.rights) ||
         record.review_status !== 'approved' || record.rights.status !== 'training_approved');
-      recordsReadyForExport = records.length > 0 && pending.length === 0;
-      exportButton.disabled = !recordsReadyForExport || !exportConsent.checked;
+      exportButton.disabled = records.length === 0 || pending.length > 0;
       setText(document.getElementById('field-dataset-summary'),
         `${records.length} lokal${records.length === 1 ? 'e Aufnahme' : 'e Aufnahmen'} · ${pending.length} ohne abgeschlossene Nutzerprüfung`);
     } catch (error) {
-      recordsReadyForExport = false;
       exportButton.disabled = true;
       setText(status, 'Lokaler Aufnahmespeicher nicht verfügbar: ' + error.message);
     }
@@ -438,8 +434,9 @@
   }
 
   async function exportDataset() {
-    if (!exportConsent.checked) {
-      throw Error('Export gesperrt: Bitte bestätige zuerst, dass Originalbilder EXIF-Metadaten wie GPS- und Geräteinformationen enthalten können.');
+    if (!window.confirm('Der ZIP-Export enthält unveränderte Originalbilder. Diese können EXIF-Metadaten wie GPS-Koordinaten, Aufnahmezeit und Kamera-/Geräteinformationen enthalten. Die App lädt die Datei nicht hoch und entfernt diese Metadaten nicht. Vor jeder Weitergabe bitte lokal prüfen. Fortfahren?')) {
+      setText(status, 'Export abgebrochen. Es wurde keine Datei heruntergeladen.');
+      return;
     }
     const records = await all();
     if (!records.length) throw Error('Es gibt keine lokalen Aufnahmen zum Exportieren.');
@@ -484,7 +481,6 @@
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 30000);
     setText(status, `${records.length} attestierte Aufnahme(n) exportiert. Bildinhalte und Rechte wurden nicht unabhängig verifiziert; die lokale Sammlung bleibt erhalten.`);
-    exportConsent.checked = false;
   }
 
   for (const radio of kindRadios) radio.addEventListener('change', updateKind);
@@ -526,9 +522,6 @@
     } finally {
       button.disabled = false;
     }
-  });
-  exportConsent.addEventListener('change', () => {
-    exportButton.disabled = !recordsReadyForExport || !exportConsent.checked;
   });
   exportButton.addEventListener('click', async () => {
     exportButton.disabled = true;
