@@ -39,7 +39,7 @@ class ActionPinTests(unittest.TestCase):
 
     def test_rejects_short_commit_reference(self):
         text = "      - uses: owner/action@abcdef123456"
-        self.assertEqual(len(find_unpinned_actions(text)), 1)
+        self.assertEqual(len(find_unpinned_actions(text), 1)
 
     def test_accepts_local_action_path(self):
         text = "      - uses: ./.github/actions/my-action"
