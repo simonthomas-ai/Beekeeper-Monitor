@@ -46,7 +46,11 @@ class CC0WorkflowPublicationPolicyTests(unittest.TestCase):
         self.assertNotIn("actions/upload-artifact", self.content)
         self.assertNotIn("name: original-velutina-images", self.content)
         self.assertNotIn("name: ki-cc0-quellen-prueflisten", self.content)
-        self.assertIn("rm -rf public-review-assets", self.content)
+        self.assertIn('review_dir="${RUNNER_TEMP:?}/vespaguard-review-assets"', self.content)
+        self.assertIn('--output-dir "${review_dir}/images/velutina"', self.content)
+        self.assertIn('rm -rf -- "${RUNNER_TEMP:?}/vespaguard-review-assets"', self.content)
+        self.assertIn("ephemeren GitHub-Runner", self.content)
+        self.assertNotIn("keine Bildbytes gespeichert", self.content)
         self.assertIn("Generierte Review-Metadaten nach Ergebnisbericht entfernen", self.content)
 
 

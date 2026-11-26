@@ -64,13 +64,14 @@ jobs:
         run: python3 training/screen_inaturalist_image_quality.py --input training/inaturalist-review-queue.csv --output training/inaturalist-quality-screen.csv --pause 0.15 --timeout 15
       - name: Unveraenderte CC0-Originaldateien fuer Vespa velutina herunterladen
         run: |
-          mkdir -p public-review-assets/images/velutina
+          review_dir="${RUNNER_TEMP:?}/vespaguard-review-assets"
+          mkdir -p "${review_dir}/images/velutina"
           python3 training/download_original_inaturalist_images.py \
             --input training/inaturalist-quality-screen.csv \
             --verification training/velutina-photo-verification.csv \
             --species 'Vespa velutina' \
-            --output-dir public-review-assets/images/velutina \
-            --manifest public-review-assets/velutina-original-images-manifest.csv
+            --output-dir "${review_dir}/images/velutina" \
+            --manifest "${review_dir}/velutina-original-images-manifest.csv"
       - name: Pruefgalerie fuer alle fuenf Arten erstellen
         run: |
           python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/velutina-visual-review.html --species 'Vespa velutina'
@@ -81,7 +82,9 @@ jobs:
           python3 training/prepare_visual_review_gallery.py --input training/inaturalist-quality-screen.csv --output training/all-visual-review.html --species ALL
       - name: Originalbildbytes nach temporaerer Pruefung entfernen
         if: always()
-        run: rm -rf public-review-assets
+        run: |
+          set -euo pipefail
+          rm -rf -- "${RUNNER_TEMP:?}/vespaguard-review-assets"
       - name: Ergebnis
         if: always()
         run: |
@@ -93,7 +96,7 @@ jobs:
             echo '### Einzelpruefung Asiatische Hornisse' >> "$GITHUB_STEP_SUMMARY"
             python3 -c 'import csv; p="training/velutina-photo-verification.csv"; r=list(csv.DictReader(open(p))); ok=sum(x["api_photo_found"]=="YES" and x["license_metadata_match"]=="YES" and x["api_taxon"]=="Vespa velutina" and x["api_quality_grade"]=="research" for x in r); print(f"API-Metadaten bestaetigt: {ok}/{len(r)}; visuelle Artenpruefung weiterhin offen")' >> "$GITHUB_STEP_SUMMARY"
           fi
-          echo 'Bilddateien nur temporär im Arbeitsspeicher geprüft, keine Bildbytes gespeichert. Keine Artbestimmung fachlich verifiziert. Keine Annotationen erzeugt. 0 freigegebene Trainingsbilder; keine gemessene Modellgenauigkeit.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Qualifizierende Originalbildbytes werden für den bytegenauen Audit vorübergehend unter RUNNER_TEMP im ephemeren GitHub-Runner gespeichert und im always()-Cleanup entfernt. Sie werden weder als Actions-Artefakt hochgeladen noch in Pages übernommen. Die separate Qualitätsprüfung liest Bildbytes zusätzlich temporär in den Arbeitsspeicher. Keine Artbestimmung fachlich verifiziert. Keine Annotationen erzeugt. 0 freigegebene Trainingsbilder; keine gemessene Modellgenauigkeit.' >> "$GITHUB_STEP_SUMMARY"
       - name: Generierte Review-Metadaten nach Ergebnisbericht entfernen
         if: always()
         run: |
