@@ -68,7 +68,7 @@ Vor dem strukturierten Rechtevertrag gespeicherte Freitextangaben wie `Nutzerang
 
 ## Repository-übergreifende Prüfung
 
-Der Monitor prüft den Browser-ZIP-Export in `tests/field-dataset.spec.cjs`. Im Ein-Klick-Gesamttest wird derselbe Browser-Export gegen den unveränderlich gepinnten BeeKeeper3000-Validator aus Commit `1f484025600951c359a573a410bb3b239cfbe6ae` geprüft. Der Job führt zusätzlich die Validator-Unit-Tests und den Python-Fixture-Roundtrip aus. Die Testbilder sind künstliche Byte-Fixtures; es werden keine privaten Fotos, realen Rechteunterlagen oder Trainingsdaten in CI hochgeladen.
+Der Monitor prüft den Browser-ZIP-Export in `tests/field-dataset.spec.cjs`. Im Ein-Klick-Gesamttest wird derselbe Browser-Export gegen den unveränderlich gepinnten BeeKeeper3000-Validator aus Commit `2d32e037bcbfec7e60e9f952cc3309001edf12f5` geprüft. Der Job führt zusätzlich die Validator-Unit-Tests und den Python-Fixture-Roundtrip aus. Die Testbilder sind künstliche Byte-Fixtures; es werden keine privaten Fotos, realen Rechteunterlagen oder Trainingsdaten in CI hochgeladen.
 
 Lokaler Cross-Repo-Fixturetest:
 
