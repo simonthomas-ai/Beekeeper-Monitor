@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Train one experimental seven-class Vespa-focused YOLO baseline on licensed, verified images.
-Fails closed if per-image provenance, splits, annotations or rights metadata are absent.
+Fails closed if per-image provenance, splits, annotations, dataset rights, or a SHA-bound human checkpoint-rights approval are absent.
 """
 import argparse
 import hashlib
@@ -55,6 +55,85 @@ def validate_image_file(path):
             f'expected {expected_format}, got {actual_format}'
         )
     return {'format': actual_format, 'width': width, 'height': height}
+
+
+def validate_checkpoint_rights_approval(root, approval_path, checkpoint_sha256, source_url):
+    """Validate a versioned human rights-review record bound to one exact checkpoint.
+
+    This checks the record's structure and byte/source binding only. It does not
+    verify the referenced licence evidence or provide legal clearance.
+    """
+    root = Path(root).resolve()
+    relative = Path(approval_path)
+    if relative.is_absolute() or any(part in {"", ".", ".."} for part in relative.parts):
+        raise ValueError("Checkpoint rights approval must be a clean relative path inside the repository")
+
+    candidate = root
+    for part in relative.parts:
+        candidate = candidate / part
+        if candidate.is_symlink():
+            raise ValueError("Checkpoint rights approval path must not contain symbolic links")
+    if not candidate.is_file():
+        raise FileNotFoundError("A versioned checkpoint rights approval file is required before training")
+    if candidate.stat().st_size > 64 * 1024:
+        raise ValueError("Checkpoint rights approval file exceeds the 64 KiB limit")
+
+    try:
+        approval = json.loads(candidate.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("Checkpoint rights approval must be valid UTF-8 JSON") from exc
+    if not isinstance(approval, dict):
+        raise ValueError("Checkpoint rights approval must be a JSON object")
+    if type(approval.get("schema_version")) is not int or approval["schema_version"] != 1:
+        raise ValueError("Unsupported checkpoint rights approval schema_version")
+    if approval.get("status") != "approved_for_training":
+        raise ValueError("Checkpoint rights review is not approved for training")
+    if approval.get("checkpoint_sha256") != checkpoint_sha256:
+        raise ValueError("Checkpoint rights approval SHA-256 does not match the local checkpoint")
+    if approval.get("source_url") != source_url:
+        raise ValueError("Checkpoint rights approval source URL does not match the supplied provenance URL")
+
+    license_expression = approval.get("spdx_license_expression")
+    if (
+        not isinstance(license_expression, str)
+        or not license_expression.strip()
+        or license_expression.strip().upper() in {"NOASSERTION", "NONE"}
+    ):
+        raise ValueError("Checkpoint rights approval requires a reviewed SPDX licence expression")
+    if approval.get("training_use_permitted") is not True:
+        raise ValueError("Checkpoint rights approval must explicitly permit training use")
+    if approval.get("derivative_model_creation_permitted") is not True:
+        raise ValueError("Checkpoint rights approval must explicitly permit derivative model creation")
+    if type(approval.get("derivative_model_redistribution_permitted")) is not bool:
+        raise ValueError("Checkpoint rights approval must explicitly state derivative-model redistribution permission")
+
+    reviewer_id = approval.get("reviewer_id")
+    if not isinstance(reviewer_id, str) or not re.fullmatch(r"reviewer:[A-Za-z0-9._-]{8,128}", reviewer_id):
+        raise ValueError("Checkpoint rights approval requires a pseudonymous reviewer:<opaque-id>")
+    reviewed_at = approval.get("reviewed_at")
+    if not isinstance(reviewed_at, str) or not re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", reviewed_at):
+        raise ValueError("Checkpoint rights approval reviewed_at must be an ISO date")
+    from datetime import date
+    try:
+        date.fromisoformat(reviewed_at)
+    except ValueError as exc:
+        raise ValueError("Checkpoint rights approval reviewed_at must be a valid ISO date") from exc
+
+    evidence_sha256 = approval.get("license_evidence_sha256")
+    if not isinstance(evidence_sha256, str) or not re.fullmatch(r"[a-f0-9]{64}", evidence_sha256):
+        raise ValueError("Checkpoint rights approval requires a SHA-256 for the reviewed licence evidence")
+    evidence_reference = approval.get("evidence_reference")
+    if (
+        not isinstance(evidence_reference, str)
+        or not evidence_reference.strip()
+        or len(evidence_reference) > 2048
+        or any(ord(char) < 32 for char in evidence_reference)
+    ):
+        raise ValueError("Checkpoint rights approval requires a bounded evidence reference")
+
+    result = dict(approval)
+    result["approval_file_sha256"] = hashlib.sha256(candidate.read_bytes()).hexdigest()
+    return result
 
 
 def validate(root):
@@ -147,10 +226,11 @@ def main():
     parser.add_argument('--imgsz',type=int,default=640)
     parser.add_argument('--device',default='cpu')
     parser.add_argument('--validate-only',action='store_true')
-    parser.add_argument('--accept-agpl',action='store_true', help='Explicitly accept AGPL-3.0 obligations for the current Ultralytics training path')
+    parser.add_argument('--accept-agpl',action='store_true', help='Acknowledge AGPL-3.0 obligations for the trainer only; this does not approve checkpoint or dataset rights')
     parser.add_argument('--pretrained-model',default='yolo11n.pt')
     parser.add_argument('--pretrained-model-source-url',default='https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt')
     parser.add_argument('--pretrained-model-sha256',required=False)
+    parser.add_argument('--checkpoint-rights-approval',required=False, help='Versioned human rights-review JSON bound to the exact local checkpoint SHA-256 and source URL')
     parser.add_argument('--confidence-threshold',type=float,default=0.5)
     parser.add_argument('--batch',type=int,default=16)
     parser.add_argument('--workers',type=int,default=4)
@@ -188,6 +268,14 @@ def main():
     source_url=urlparse(args.pretrained_model_source_url)
     if source_url.scheme != 'https' or not source_url.netloc:
         parser.error('--pretrained-model-source-url must be an HTTPS provenance URL')
+    if not args.checkpoint_rights_approval:
+        parser.error('--checkpoint-rights-approval is required; --accept-agpl alone does not approve pretrained checkpoint rights')
+    try:
+        checkpoint_rights = validate_checkpoint_rights_approval(
+            root, args.checkpoint_rights_approval, pretrained_digest, args.pretrained_model_source_url
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        parser.error(str(exc))
     import ultralytics
     if ultralytics.__version__ != '8.4.215':
         parser.error('This export path is tested against ultralytics==8.4.215; install the pinned training requirements first.')
@@ -220,14 +308,29 @@ def main():
                 'id': class_id, 'label': name, 'threshold': args.confidence_threshold,
                 'prey_detected': False,
             })
+        base_checkpoint_rights = {
+            'sha256': pretrained_digest,
+            'source_url': args.pretrained_model_source_url,
+            'spdx_license_expression': checkpoint_rights['spdx_license_expression'],
+            'rights_review_status': 'approved_for_training',
+            'rights_reviewed_at': checkpoint_rights['reviewed_at'],
+            'rights_reviewer_id': checkpoint_rights['reviewer_id'],
+            'license_evidence_sha256': checkpoint_rights['license_evidence_sha256'],
+            'evidence_reference': checkpoint_rights['evidence_reference'],
+            'approval_file_sha256': checkpoint_rights['approval_file_sha256'],
+            'training_use_permitted': True,
+            'derivative_model_creation_permitted': True,
+            'derivative_model_redistribution_permitted': checkpoint_rights['derivative_model_redistribution_permitted'],
+        }
         manifest={
             'manifest_version': 1,
             'model_file': 'detector.onnx',
             'model_sha256': digest,
             'model_version': f'{pretrained_path.name};base-{pretrained_digest[:12]};ultralytics-{ultralytics.__version__}',
             'model_source_url': args.pretrained_model_source_url,
+            'base_checkpoint_rights': base_checkpoint_rights,
             'model_license': 'NOASSERTION',
-            'license_review_status': 'not-reviewed',
+            'license_review_status': 'derived_model_rights_pending',
             'inference_status': 'experimental',
             'input': {
                 'name': 'images', 'width': args.imgsz, 'height': args.imgsz,
@@ -263,8 +366,9 @@ def main():
             'onnx_sha256':digest,
             'pretrained_checkpoint_sha256':pretrained_digest,
             'pretrained_checkpoint_source_url':args.pretrained_model_source_url,
+            'base_checkpoint_rights': base_checkpoint_rights,
             'model_license':'NOASSERTION',
-            'model_license_review':'not-reviewed; AGPL trainer acknowledgement does not approve checkpoint, dataset or output model rights',
+            'model_license_review':'derived model rights remain pending; base-checkpoint approval is limited to the exact reviewed training use',
             'confidence_thresholds':'experimental_not_calibrated',
         }
         (model_dir/'training-evidence.json').write_text(json.dumps(evidence,indent=2)+'\n',encoding='utf-8')
