@@ -15,15 +15,19 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
         self.assertNotIn("--images-manifest", self.workflow)
 
     def test_original_media_is_removed_from_the_runner_workspace(self):
+        cleanup = "name: Originalbildbytes nach temporaerer Pruefung entfernen"
+        upload = "name: Metadaten und Prueflisten bereitstellen"
+        self.assertIn(cleanup, self.workflow)
+        self.assertIn("if: always()", self.workflow)
         self.assertIn("run: rm -rf public-review-assets", self.workflow)
-        self.assertIn("name: Originalbildbytes nach temporaerer Pruefung entfernen", self.workflow)
+        self.assertLess(self.workflow.index(cleanup), self.workflow.index(upload))
 
     def test_remaining_artifact_contains_metadata_only_paths(self):
         marker = "name: ki-cc0-quellen-prueflisten"
         self.assertIn(marker, self.workflow)
         artifact_section = self.workflow.split(marker, 1)[1]
         self.assertNotIn("public-review-assets", artifact_section)
-        self.assertNotRegex(artifact_section, r"(?i)\\.(?:jpe?g|png|webp)\\b")
+        self.assertNotRegex(artifact_section, r"(?i)\.(?:jpe?g|png|webp)\b")
 
 
 if __name__ == "__main__":
