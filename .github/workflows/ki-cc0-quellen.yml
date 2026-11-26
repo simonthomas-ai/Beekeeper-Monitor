@@ -94,18 +94,13 @@ jobs:
             python3 -c 'import csv; p="training/velutina-photo-verification.csv"; r=list(csv.DictReader(open(p))); ok=sum(x["api_photo_found"]=="YES" and x["license_metadata_match"]=="YES" and x["api_taxon"]=="Vespa velutina" and x["api_quality_grade"]=="research" for x in r); print(f"API-Metadaten bestaetigt: {ok}/{len(r)}; visuelle Artenpruefung weiterhin offen")' >> "$GITHUB_STEP_SUMMARY"
           fi
           echo 'Bilddateien nur temporär im Arbeitsspeicher geprüft, keine Bildbytes gespeichert. Keine Artbestimmung fachlich verifiziert. Keine Annotationen erzeugt. 0 freigegebene Trainingsbilder; keine gemessene Modellgenauigkeit.' >> "$GITHUB_STEP_SUMMARY"
-      - name: Metadaten und Prueflisten bereitstellen
+      - name: Generierte Review-Metadaten nach Ergebnisbericht entfernen
         if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: ki-cc0-quellen-prueflisten
-          path: |
-            training/inaturalist-review-queue.csv
-            training/inaturalist-quality-screen.csv
-            training/inaturalist-metadata-audit.json
-            training/inaturalist-species-review.csv
-            training/inaturalist-species-review.json
-            training/velutina-photo-verification.csv
-            training/*-visual-review.html
-          if-no-files-found: ignore
-          retention-days: 14
+        run: |
+          rm -f training/inaturalist-review-queue.csv
+          rm -f training/inaturalist-quality-screen.csv
+          rm -f training/inaturalist-metadata-audit.json
+          rm -f training/inaturalist-species-review.csv
+          rm -f training/inaturalist-species-review.json
+          rm -f training/velutina-photo-verification.csv
+          rm -f training/*-visual-review.html

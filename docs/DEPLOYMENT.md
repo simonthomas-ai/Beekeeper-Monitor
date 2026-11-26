@@ -7,11 +7,14 @@ Die GitHub-Pages-URL ist die vorgesehene öffentliche Adresse, aber die Veröffe
 **Diese Sperre nicht umgehen und keine Betreiber- oder Rechtsdaten erfinden.** Erst nach Eintragung und Prüfung der echten Angaben darf ein Pages-Deployment erfolgreich sein. Ein früherer erfolgreicher Pages-Lauf belegt nicht, dass der aktuelle Stand veröffentlicht ist.
 
 ## Automatische Abläufe
-- **Aktueller Stand:** `.github/workflows/pages.yml` ist ausschließlich manuell auslösbar und der Job `deploy` hat `if: ${{ false }}`. Weder Push noch manueller Start veröffentlichen die Website. Der öffentliche Link darf nicht als aktuell funktionsfähig beworben werden.\n- Jeder Push auf `main` startet lediglich den privaten PWA-Artefakt-Build und den Gesamttest; diese veröffentlichen keine Website.
-- Der Pages-Build übernimmt die lokalen Originalbilder aus dem neuesten erfolgreichen Lauf von `.github/workflows/ki-cc0-quellen.yml`; bei einem `workflow_run` wird exakt das Artefakt des auslösenden erfolgreichen Laufs verwendet.
-- Das Artefakt enthält nur `velutina-original-images-manifest.csv` und `images/velutina/`. Fehlerberichte und temporäre Prüfdaten werden nicht veröffentlicht. Bei normalem Push oder manueller Ausführung wird die jüngste erfolgreiche CC0-Ausführung auf `main` ausgewählt.
-- Vor dem Pages-Upload prüft `scripts/audit_gallery_rights.py` sämtliche sechs Galerie-JSONs, Quellen-/Urhebermetadaten, Manifestbindung, Pfadgrenzen, Symlinks, Dateigrößen und SHA-256 der tatsächlichen Originalbytes. `velutina.html` und `all.html` müssen exakt dieselbe lokale Bildmenge wie das Manifest referenzieren; fehlende, veränderte oder zusätzliche Dateien brechen den Build ab.
-- Der Audit belegt die technische Byte-Integrität und Konsistenz der gespeicherten Metadaten, ist aber keine unabhängige rechtliche Lizenzprüfung und keine Trainingsfreigabe.
+
+- **Aktueller Stand:** `.github/workflows/pages.yml` ist ausschließlich manuell auslösbar und der Job `deploy` hat ausdrücklich `if: ${{ false }}`. Weder Push noch manueller Start veröffentlichen die Website.
+- Pushes auf `main` starten private PWA-Builds und Softwaretests; diese veröffentlichen keine Website.
+- Der CC0-Rechercheworkflow lädt Bildbytes nur vorübergehend in den isolierten GitHub-Runner, um Dateiformat und technische Lesbarkeit zu prüfen. Die Originalbild-Arbeitsdateien werden vor Ende des Jobs entfernt.
+- Der CC0-Rechercheworkflow veröffentlicht weder Originalbild-Artefakte noch Kandidaten-Metadaten-Artefakte. Er schreibt nur aggregierte Prüfergebnisse in die Actions-Zusammenfassung und entfernt danach die erzeugten CSV-, JSON- und HTML-Prüflisten.
+- `.github/workflows/gallery-original-artifact-audit.yml` prüft nach einem erfolgreichen CC0-Lauf anhand genau dieser Run-ID, dass keine Kandidaten-Artefakte veröffentlicht wurden.
+- GitHub Pages übernimmt ausschließlich `review/index.html` als Statusseite. Kandidatengalerien, Originalbilder, Bildmanifeste und Review-Identitäten werden nicht in die öffentliche Website gestagt.
+- Die lokalen Rechte-/SHA-256-Audits und ihre synthetischen Unit-Tests bleiben für eine spätere geschützte manuelle Prüfung verfügbar; sie sind keine öffentliche Veröffentlichung und keine Trainingsfreigabe.
 - `.github/workflows/browser.yml` prüft die Integration mit Chromium.
 - `.github/workflows/site-health.yml` prüft täglich die öffentliche Adresse und fünf Dateien.
 - `.github/workflows/sources.yml` prüft wöchentlich den Katalog der Forschungsquellen.
@@ -23,26 +26,22 @@ Die Browser- und Gesamttests verwenden `@playwright/test` 1.65.1 zusammen mit de
 
 Der verpflichtende Workflow-Audit `scripts/audit_workflow_action_pins.py` prüft sowohl externe `uses:`-Referenzen auf vollständige 40-stellige Commit-SHAs als auch Workflow-`image:`-Referenzen auf einen SHA-256-OCI-Digest. Lokale Actions sind zulässig; Docker-Actions müssen ebenfalls Digest-gepinnt sein. Neue Browser-/Build-Container und Dependabot-Änderungen müssen diesen Audit bestehen, bevor sie übernommen werden.
 
-## Originalbild-Deployment und Integritätsprüfung
+## Originalbild-Prüfung und Datenzugriff
 
-Die Originalbilddateien werden im CC0-Rechercheworkflow bytegenau geladen und in einem Manifest mit Photo-ID, Beobachtungs-ID, Quellen-URL, iNaturalist-Beobachtername und -Login, separatem CC0-Attributionssatz, rohem Lizenzhinweis, Lizenzmetadaten, Dateiformat, Abmessungen, Bytezahl und SHA-256 dokumentiert. Der Beobachter wird aus dem Beobachtungsdatensatz übernommen und beim CC0-Einzelabgleich erneut anhand des Logins gebunden; der Text `no rights reserved` wird nicht als Fotografenname verwendet. Die Galerie verweist für diese Bilder auf relative lokale Pfade unter `review/images/velutina/`; bei fehlgeschlagenem Download gibt es für diese Kandidaten keinen stillen Remote-Fallback.
+Der CC0-Workflow darf Originalbilder nur transient auf dem GitHub-Runner prüfen. Er speichert keine Originalbytes in Actions-Artefakten, im Repository oder auf Pages. Die erzeugten Kandidatenlisten und Galerien enthalten öffentliche Quellenmetadaten und werden nach der aggregierten Zusammenfassung ebenfalls aus dem Runner-Arbeitsverzeichnis entfernt.
 
-`creator` ist hier aus Kompatibilitätsgründen das von iNaturalist empfohlene CC0-Attributionssubjekt (Beobachtername oder Login), kein eigenständiger Beleg dafür, wer das Foto tatsächlich aufgenommen hat. Die Galerie bezeichnet diese Angabe deshalb ausdrücklich als iNaturalist-Beobachter/Attributionsbasis.
+Die technische Bildprüfung belegt ausschließlich, dass eine Datei lesbar war und bestimmte Format-/Größengrenzen erfüllte. Sie bestätigt weder die tatsächliche Urheberschaft noch die individuelle Medienlizenz, die Artbestimmung, eine Bounding-Box-Annotation oder eine Trainingsfreigabe.
 
-Der Pages-Workflow lädt die zugehörige erfolgreiche Actions-Artefaktversion und führt denselben Audit gegen das fertig gestagte `_site` aus. Damit reicht nicht nur ein gültiger Hash im CSV: die tatsächlich publizierte Datei muss dieselbe Bytezahl und denselben SHA-256 besitzen, und beide Galerien müssen die Manifestdaten exakt widerspiegeln. Ein fehlender oder abgelaufener Artefaktnachweis sperrt die Veröffentlichung bei lokalen Bildreferenzen, statt eine fehlerhafte oder uneinheitliche Galerie auszuliefern.
+Die früheren öffentlichen Artefakte `original-velutina-images` und `ki-cc0-quellen-prueflisten` sind Altbestände aus vorangegangenen Läufen. Sie dürfen nicht als freigegebener Datensatz verwendet werden. Ihre manuelle Löschung aus der Actions-Artefaktverwaltung ist gesondert nachzuweisen; das Ende neuer Uploads löscht bereits vorhandene Artefakte nicht rückwirkend.
 
-Die bestehenden Sperren für unvollständige Impressums- und Datenschutzhinweise bleiben davon unabhängig bestehen und werden nicht umgangen.
+Für eine spätere interne Prüfung müssen konkrete Originalmedien nach individueller Rechteprüfung in einem zugriffsgeschützten lokalen Verzeichnis bereitgestellt werden. Keine privaten Fotos, genauen Apiary-Koordinaten oder vertraulichen Rechtebelege in öffentliche Issues, Repositories oder Actions-Artefakte hochladen.
 
 ## Einmalige GitHub-Einstellung
 Unter **Settings > Pages > Build and deployment > Source** muss **GitHub Actions** ausgewählt sein. Der Workflow kann diese Einstellung nicht garantieren. Veröffentlichungsfehler unter **Actions** prüfen.
 
-## Nachgewiesener Originalbild-Artefaktpfad – 22.11.2026
+## Öffentliche Review-Daten
 
-Der nicht veröffentlichende Workflow `.github/workflows/gallery-original-artifact-audit.yml` lädt den letzten erfolgreichen CC0-Quellenlauf auf `main`, übernimmt dessen Actions-Artefakt `original-velutina-images` und prüft es gemeinsam mit den sechs eingecheckten Review-Galerien. Der erfolgreiche Hauptzweiglauf [44997072834](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/44997072834) verwendete den erfolgreichen Quellenlauf [44923213005](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/44923213005).
-
-Prüfergebnis: **94 Originaldateien**, **94 Manifestzeilen**, alle Bytezahlen und SHA-256-Werte stimmen; die sechs Galerien enthalten insgesamt **936 Datensätze**. `velutina.html` und `all.html` referenzieren die Manifestmenge exakt. Der Artefakt-Digest wurde beim Download zusätzlich von GitHub Actions geprüft.
-
-Dieser Nachweis bestätigt die technische Übereinstimmung des konkreten Artefakts mit dem geprüften Galerie-Quellstand. Er ist weder unabhängige Rechtsprüfung noch Trainingsdatenfreigabe. Der Pages-Deploy bleibt deaktiviert; die Prüfung veröffentlicht keine Dateien.
+Die früheren Originalbild- und Kandidatenlisten-Artefakte sind keine Trainingsfreigabe. Neue CC0-Läufe veröffentlichen keine solchen Artefakte. Die öffentliche Review-URL zeigt nur eine Statusseite; die Kandidatengalerien bleiben bis zur unabhängigen Rechte- und Fachprüfung privat.
 
 ## Öffentliche Adresse (derzeit NICHT als erreichbar bestätigt)\nhttps://simonthomas-ai.github.io/Beekeeper-Monitor/\n\nDie Unterseite `/varroa.html` ist im Repository und im privaten Build vorhanden, aber öffentlich erst nach einem erfolgreichen Pages-Deployment erreichbar. Ein HTTP-404 ist bis dahin erwartbar. Vor einem öffentlichen Testbetrieb müssen die tatsächlichen Betreiber-/Kontaktangaben und Datenschutzhinweise geprüft und ergänzt werden. Danach kann der Pages-Workflow kontrolliert wieder aktiviert werden.
 

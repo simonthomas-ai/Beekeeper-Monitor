@@ -38,11 +38,16 @@ class CC0WorkflowPublicationPolicyTests(unittest.TestCase):
         self.assertIn("if: " + "$" + "{{ false }}", pages_workflow)
         self.assertNotIn("pages: write", pages_workflow)
         self.assertNotIn("id-token: write", pages_workflow)
+        self.assertNotIn("actions/download-artifact", pages_workflow)
+        self.assertNotIn("public-review-assets", pages_workflow)
+        self.assertIn("cp review/index.html _site/review/index.html", pages_workflow)
 
-    def test_review_galleries_remain_limited_to_actions_artifacts(self):
-        self.assertIn("name: ki-cc0-quellen-prueflisten", self.content)
-        self.assertIn("training/*-visual-review.html", self.content)
-        self.assertIn("retention-days: 14", self.content)
+    def test_unreviewed_candidate_media_and_metadata_are_not_uploaded(self):
+        self.assertNotIn("actions/upload-artifact", self.content)
+        self.assertNotIn("name: original-velutina-images", self.content)
+        self.assertNotIn("name: ki-cc0-quellen-prueflisten", self.content)
+        self.assertIn("rm -rf public-review-assets", self.content)
+        self.assertIn("Generierte Review-Metadaten nach Ergebnisbericht entfernen", self.content)
 
 
 if __name__ == "__main__":
