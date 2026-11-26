@@ -1,3 +1,16 @@
+# Nachtrag – 26.11.2026, 23:45 CET
+
+## Nach PR #329 und aktuelle offene Sicherheitsänderungen
+
+- **Beekeeper-Monitor main:** `c2ad973231d734936df78bc1eeb4ff74b09037e8` (PR #329).
+- **BeeKeeper3000 main:** `b841d2adb1586ab88a82cef67e8be4e1523a2f21`.
+- Monitor [PR #329](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/329) wurde nach erfolgreicher PR-CI gemergt. Der Workflow-Audit prüft jetzt explizite Token-Berechtigungen auf Workflow- oder Job-Ebene und weist `write-all` auch bei Job-Level-Overrides zurück.
+- Im PR-Gesamttest [#45906870050](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45906870050) waren alle drei Jobs erfolgreich. Der Log bestätigt 17 Tests aus `scripts.test_audit_workflow_action_pins` mit `OK`; der Audit meldete explizite Berechtigungen in allen 42 Monitor-Workflowdateien. CodeQL und Bridge-/Feld-Dataset-Validator-Checks waren ebenfalls erfolgreich.
+- Die Post-Merge-Checks für `c2ad9732` wurden ausgelöst, waren beim letzten Abruf noch queued/in progress; noch kein Post-Merge-Erfolg behauptet.
+- Monitor [PR #328](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/328) bleibt ein Dokumentations-PR. CodeQL, Python-/JavaScript-CodeQL, Bridge und Feld-Dataset-Validator sind erfolgreich; der Gesamttest ist noch in Bearbeitung. Er wurde nicht gemergt.
+- BeeKeeper3000 [PR #130](https://github.com/simonthomas-ai/BeeKeeper3000/pull/130) ist offen: Der selbstgehostete LLM-Council-Job wird auf `refs/heads/main` beschränkt, damit ein manuell ausgewählter Feature-Branch nicht auf dem persistenten Windows-Runner ausgeführt wird. Python-, Kamera- und Bridge-Jobs waren erfolgreich; Windows-Kompatibilität und CodeQL waren noch in Bearbeitung. Noch kein Merge.
+- In `llm-council/config.json` bleiben lokales Ollama und alle externen Provider deaktiviert. Kein Provider wurde in dieser Prüfung aufgerufen und kein Repository-/Nutzerinhalt an einen externen Modellanbieter übertragen.
+
 # Aktuell verifizierter Stand – 26.11.2026, 23:40 CET
 
 Dieser Nachtrag ersetzt für die aktuelle Lage die darunter archivierten Snapshots. Die GitHub-API wurde erneut direkt abgefragt; Status, CI und KI-Freigabe bleiben getrennt.
