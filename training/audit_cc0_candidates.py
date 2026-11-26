@@ -21,7 +21,7 @@ except ModuleNotFoundError:
 FIELDS = tuple(DISCOVERY_FIELDS)
 LICENSE_URL = "https://creativecommons.org/publicdomain/zero/1.0/"
 OBSERVATION_BASE = "https://www.inaturalist.org/observations/"
-ORIGINAL_IMAGE_PATH = re.compile(r"^/photos/([0-9]+)/original\\.(?:jpe?g|png|webp)$", re.IGNORECASE)
+ORIGINAL_IMAGE_PATH = re.compile(r"^/photos/([0-9]+)/original\.(?:jpe?g|png|webp)$", re.IGNORECASE)
 SPECIES = set(SPECIES_TO_GROUP)
 
 
@@ -90,10 +90,10 @@ def audit(path):
             if row.get("review_status") != "UNREVIEWED":
                 errors.append(f"line {line}: invalid review status")
 
-            if not photo_id.isdecimal() or row.get("source_id") != "inat-photo-" + photo_id:
+            if not isinstance(photo_id, str) or not photo_id.isdecimal() or row.get("source_id") != "inat-photo-" + photo_id:
                 errors.append(f"line {line}: invalid photo ID")
             if (
-                not observation_id.isdecimal()
+                not isinstance(observation_id, str) or not observation_id.isdecimal()
                 or row.get("source_url") != OBSERVATION_BASE + observation_id
             ):
                 errors.append(f"line {line}: invalid observation URL")
@@ -148,7 +148,7 @@ def main():
     args = parser.parse_args()
     result = audit(args.input)
     Path(args.output).write_text(
-        json.dumps(result, indent=2, ensure_ascii=False) + "\\n",
+        json.dumps(result, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
     print(json.dumps(result, ensure_ascii=False))
