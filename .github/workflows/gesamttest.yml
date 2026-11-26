@@ -44,7 +44,8 @@ jobs:
           node --check field-image-privacy.js
           node --check field-dataset.js
           node --check sw.js
-          node --test tests/backup-contract.test.cjs
+      - name: Privacy-summary contract tests (blocking)
+        run: node --test tests/backup-contract.test.cjs
       - name: Warnregeln und Bridge-Kandidaten (Node Unit-Tests)
         id: alerttests
         continue-on-error: true
