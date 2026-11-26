@@ -11,6 +11,7 @@ sw=(root/"sw.js").read_text()
 manifest=json.loads((root/"manifest.webmanifest").read_text())
 catalog=json.loads((root/"sources/catalog.json").read_text())
 pages=(root/".github/workflows/pages.yml").read_text()
+review_status=(root/"review/index.html").read_text()
 private_build=(root/".github/workflows/private-pwa.yml").read_text()
 assert "<html lang=\"de\">" in html
 for path in ("backup-contract.js","app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","field-image-privacy.js","field-dataset.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
@@ -88,6 +89,14 @@ assert 'src="./integrations-ui.js"' in html
 assert "./live-media.js" in sw
 assert "SHELL.has(url.href)" in sw
 assert "path: _site" in pages
+assert 'href="./review/index.html"' in html
+assert "Öffentliche Fotoprüfung derzeit nicht verfügbar" in review_status
+assert "<img" not in review_status.lower()
+assert "original-velutina-images" not in pages
+assert "ki-cc0-quellen-prueflisten" not in pages
+assert "public-review-assets" not in pages
+assert "actions/download-artifact" not in pages
+assert "cp review/index.html _site/review/index.html" in pages
 assert r"grep -Eq '\[[^]]+\]'" in pages
 assert re.search(r"\[[^]]+\]", "[MISSING OPERATOR DETAILS]")
 assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js field-image-privacy.js field-dataset.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg _site/" in pages
