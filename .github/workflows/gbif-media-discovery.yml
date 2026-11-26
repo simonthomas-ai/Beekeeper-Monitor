@@ -1,3 +1,47 @@
+name: GBIF open media candidate discovery
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'training/discover_gbif_media_candidates.py'
+      - 'training/test_discover_gbif_media_candidates.py'
+      - 'training/OPEN-DATA-SOURCES.md'
+      - 'training/prepare_gbif_review_gallery.py'
+      - 'training/test_prepare_gbif_review_gallery.py'
+      - 'training/import_gbif_visual_reviews.py'
+      - 'training/test_import_gbif_visual_reviews.py'
+      - 'training/GBIF-MOBILE-REVIEW.md'
+      - 'sources/catalog.json'
+      - '.github/workflows/gbif-media-discovery.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'training/discover_gbif_media_candidates.py'
+      - 'training/test_discover_gbif_media_candidates.py'
+      - 'training/OPEN-DATA-SOURCES.md'
+      - 'training/prepare_gbif_review_gallery.py'
+      - 'training/test_prepare_gbif_review_gallery.py'
+      - 'training/import_gbif_visual_reviews.py'
+      - 'training/test_import_gbif_visual_reviews.py'
+      - 'training/GBIF-MOBILE-REVIEW.md'
+      - 'sources/catalog.json'
+      - '.github/workflows/gbif-media-discovery.yml'
+  schedule:
+    - cron: '37 4 * * 2'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gbif-open-media-discovery
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
