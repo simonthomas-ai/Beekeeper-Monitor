@@ -1,6 +1,6 @@
 # Lokale Klassifikationsdaten erfassen und exportieren
 
-**Status: lokaler, manueller Erfassungs- und Exportpfad; nicht trainiert oder feldvalidiert.** Die PWA erzeugt keine Vorhersagen, führt keine Inferenz aus und lädt keine Bilder oder Annotationen hoch. Der Export ist ein ZIP mit `images/` und `annotations.jsonl`; er ist kein Bounding-Box-Datensatz und keine automatische Rechte- oder Fachfreigabe.
+**Status: lokaler, manueller Erfassungs- und Exportpfad; nicht trainiert oder feldvalidiert.** Die PWA erzeugt keine Vorhersagen, führt keine Inferenz aus und lädt keine Bilder oder Annotationen hoch. Der Export ist ein ZIP mit metadatenbereinigten PNG-Kopien unter `images/` und `annotations.jsonl`; er ist kein Bounding-Box-Datensatz und keine automatische Rechte- oder Fachfreigabe.
 
 ## Browser- und iPhone-Ablauf
 
@@ -13,9 +13,9 @@
    - **CC-BY-4.0:** Der kanonische Nachweis `https://creativecommons.org/licenses/by/4.0/` wird automatisch ergänzt; eine Attribution bis 500 Zeichen ist Pflicht.
    - **LicenseRef-ExplicitPermission:** Eine opake Referenz bis 200 Zeichen ist Pflicht. Keine Namen, E-Mail-Adressen, privaten Dokumente oder vertraulichen URLs eintragen.
 6. Jedes Bild wird zunächst ungeprüft lokal gespeichert. Vor dem Export müssen Bildinhalt/Labels manuell geprüft und die Berechtigung zur Trainingsnutzung ausdrücklich attestiert werden. Diese Attestierung hält nur eine Nutzeraussage fest; sie ist keine unabhängige Rechtsprüfung.
-7. **Attestierten Bestand als ZIP exportieren** startet den Download erst nach ausdrücklichem Klick. Die lokalen Originale bleiben im Browser, bis sie dort gelöscht werden.
+7. **Attestierten Bestand als ZIP exportieren** startet nach ausdrücklichem Klick die lokale Bildbereinigung und den Download. Die Originalbytes bleiben unverändert in IndexedDB; exportiert werden neu kodierte PNG-Kopien ohne EXIF/GPS-, XMP- und eingebettete Text-/Zeit-Metadaten.
 
-Der Zeitstempel bezeichnet das Hinzufügen in der PWA und wird nicht aus EXIF abgeleitet. Die PWA liest für diesen Workflow keinen GPS-Standort und überträgt weder Bilder noch Labels an eine API, BeeKeeper3000 oder einen Modellanbieter. Browser- und Betriebssystem-Speicher sind durch die PWA nicht verschlüsselt. Schütze das Gerät und heruntergeladene ZIP-Dateien entsprechend. Bereits exportierte Kopien werden durch das Löschen lokaler Datensätze nicht entfernt.
+Der Zeitstempel bezeichnet das Hinzufügen in der PWA und wird nicht aus EXIF abgeleitet. Die PWA liest für diesen Workflow keinen GPS-Standort und überträgt weder Bilder noch Labels an eine API, BeeKeeper3000 oder einen Modellanbieter. Die lokale Exportbereinigung dekodiert und re-encodiert Bilder ohne Original-Metadaten; Browser können Orientierung und Pixeldarstellung normalisieren. Animierte Bilder, Dateien über 16 Megapixel, fehlerhafte Bilder sowie Ausgaben über 40 MB pro Bild oder 96 MB je ZIP werden abgewiesen. Es gibt keinen Rückfall auf Originalbytes. Browser- und Betriebssystem-Speicher sind durch die PWA nicht verschlüsselt. Schütze das Gerät und heruntergeladene ZIP-Dateien entsprechend. Bereits exportierte Kopien werden durch das Löschen lokaler Datensätze nicht entfernt.
 
 ## Exportvertrag
 
@@ -25,7 +25,7 @@ Beispiel für eine eigene Aufnahme mit dokumentierter individueller Erlaubnis:
 
 ```json
 {
-  "image": "images/<id>.jpg",
+  "image": "images/<id>.png",
   "labels": ["vespa_velutina", "apis_mellifera"],
   "captured_at": "2026-11-26T08:00:00Z",
   "capture_session_id": "<zufällige Sitzungs-ID>",
@@ -45,7 +45,7 @@ Beispiel für eine externe CC-BY-4.0-Quelle:
 
 ```json
 {
-  "image": "images/<id>.jpg",
+  "image": "images/<id>.png",
   "labels": [],
   "captured_at": "2026-11-26T08:05:00Z",
   "capture_session_id": "<zufällige Sitzungs-ID>",
@@ -62,7 +62,7 @@ Beispiel für eine externe CC-BY-4.0-Quelle:
 }
 ```
 
-Der Export setzt bewusst **kein** `publication_allowed`. Eine Attestierung zur Trainingsnutzung erteilt nicht automatisch eine Erlaubnis zur öffentlichen Weitergabe. Die drei Rechtebasen sind eine begrenzte technische Eingabe-Allowlist, keine rechtliche Aussage über das konkrete Bild. Die Referenz für eine individuelle Erlaubnis muss auf einen lokal verwahrten Nachweis verweisen; der Nachweis selbst gehört nicht in das Manifest oder CI.
+Die exportierten Bilddateien sind PNG-Kopien; die ursprünglichen Bildbytes bleiben ausschließlich lokal im Browser. Der Export setzt bewusst **kein** `publication_allowed`. Eine Attestierung zur Trainingsnutzung erteilt nicht automatisch eine Erlaubnis zur öffentlichen Weitergabe. Die drei Rechtebasen sind eine begrenzte technische Eingabe-Allowlist, keine rechtliche Aussage über das konkrete Bild. Die Referenz für eine individuelle Erlaubnis muss auf einen lokal verwahrten Nachweis verweisen; der Nachweis selbst gehört nicht in das Manifest oder CI.
 
 Zulässige Klassen-Slugs: `vespa_velutina`, `vespa_crabro`, `other_vespidae`, `apis_mellifera`, `bombus_spp`, `syrphidae`, `other_insect`. Mehrere Slugs pro Bild sind möglich. Ein Negativbild verwendet ein leeres Array. Der Vertrag enthält keine Bounding-Boxes, GPS- oder Stations-ID-Felder.
 

@@ -4,6 +4,58 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
+const zlib = require('node:zlib');
+const PNG_SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+
+function pngCrc32(bytes) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function pngChunk(type, data) {
+  const typeBytes = Buffer.from(type, 'ascii');
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length, 0);
+  const checksum = Buffer.alloc(4);
+  checksum.writeUInt32BE(pngCrc32(Buffer.concat([typeBytes, data])), 0);
+  return Buffer.concat([length, typeBytes, data, checksum]);
+}
+
+function makePngFixture(seed, width = 1, height = 1, animated = false) {
+  const values = Buffer.from(seed);
+  const marker = values.reduce((total, value, index) => (total + value + index) & 0xff, 0);
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8;
+  header[9] = 6;
+  const tiff = Buffer.from([0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+  const chunks = [
+    pngChunk('IHDR', header),
+    pngChunk('eXIf', tiff),
+    pngChunk('tEXt', Buffer.from('Location\0GPS=51.5,7.9'))
+  ];
+  if (animated) chunks.push(pngChunk('acTL', Buffer.from([0, 0, 0, 1, 0, 0, 0, 0])));
+  chunks.push(pngChunk('IDAT', zlib.deflateSync(Buffer.from([0, marker, (marker + 31) & 0xff, (marker + 67) & 0xff, 255]))));
+  chunks.push(pngChunk('IEND', Buffer.alloc(0)));
+  return Buffer.concat([PNG_SIGNATURE, ...chunks]);
+}
+
+function pngChunkTypes(buffer) {
+  const types = [];
+  let offset = 8;
+  while (offset + 12 <= buffer.length) {
+    const size = buffer.readUInt32BE(offset);
+    types.push(buffer.toString('ascii', offset + 4, offset + 8));
+    offset += size + 12;
+  }
+  return types;
+}
+
 const CLASS_SLUGS = [
   'vespa_velutina', 'vespa_crabro', 'other_vespidae',
   'apis_mellifera', 'bombus_spp', 'syrphidae', 'other_insect'
@@ -36,9 +88,9 @@ function extractStoredZip(buffer) {
 
 async function addImage(page, name, bytes) {
   await page.locator('#field-dataset-photo').setInputFiles({
-    name,
-    mimeType: 'image/jpeg',
-    buffer: Buffer.from(bytes)
+    name: name.replace(/\.(?:jpe?g|webp)$/i, '.png'),
+    mimeType: 'image/png',
+    buffer: makePngFixture(bytes)
   });
 }
 
@@ -110,7 +162,7 @@ test('stores multi-label and negative images locally and exports the reviewed co
   await attestEveryRecord(page);
   await expect(page.locator('#field-dataset-export')).toBeEnabled();
   page.once('dialog', dialog => {
-    expect(dialog.message()).toContain('EXIF-Metadaten');
+    expect(dialog.message()).toContain('EXIF/GPS');
     dialog.accept();
   });
 
@@ -239,8 +291,18 @@ test('stores multi-label and negative images locally and exports the reviewed co
     expect(line).not.toHaveProperty('station_id');
     expect(files.has(line.image)).toBeTruthy();
   }
-  expect(files.get(positive.image)).toEqual(Buffer.from(positiveBytes));
-  expect(files.get(negative.image)).toEqual(Buffer.from(negativeBytes));
+  for (const row of lines) {
+    const exported = files.get(row.image);
+    expect(row.image).toMatch(/\.png$/);
+    expect(exported.subarray(0, 8)).toEqual(PNG_SIGNATURE);
+    const chunks = pngChunkTypes(exported);
+    expect(chunks).not.toContain('eXIf');
+    expect(chunks).not.toContain('tEXt');
+    expect(chunks).not.toContain('iTXt');
+    expect(chunks).not.toContain('zTXt');
+    expect(chunks).not.toContain('tIME');
+    expect(exported.includes(Buffer.from('GPS=51.5,7.9'))).toBeFalsy();
+  }
   expect(requests.some(request => request.method !== 'GET' && request.method !== 'HEAD')).toBeFalsy();
 });
 
@@ -262,7 +324,7 @@ test('requires opaque pseudonymous labeler IDs and exports only the accepted for
   await attestEveryRecord(page);
   await expect(page.locator('#field-dataset-export')).toBeEnabled();
   page.once('dialog', dialog => {
-    expect(dialog.message()).toContain('EXIF-Metadaten');
+    expect(dialog.message()).toContain('EXIF/GPS');
     dialog.accept();
   });
   const downloadPromise = page.waitForEvent('download');
@@ -299,7 +361,7 @@ test('requires a separate pseudonymous reviewer identity before approval', async
   await expect(page.locator('#field-dataset-export')).toBeEnabled();
 });
 
-test('requires explicit EXIF metadata confirmation before ZIP export', async ({page}) => {
+test('requires explicit confirmation before metadata-sanitized ZIP export', async ({page}) => {
   await page.goto('/');
   await addImage(page, 'privacy-check.jpg', [0xff, 0xd8, 0xff, 0x21, 0xff, 0xd9]);
   await page.locator('input[name="image-kind"][value="negative"]').check();
@@ -310,11 +372,60 @@ test('requires explicit EXIF metadata confirmation before ZIP export', async ({p
   await expect(page.locator('#field-dataset-summary')).toContainText('0 ohne abgeschlossene Nutzerprüfung');
   await expect(page.locator('#field-dataset-export')).toBeEnabled();
   page.once('dialog', dialog => {
-    expect(dialog.message()).toContain('EXIF-Metadaten');
+    expect(dialog.message()).toContain('EXIF/GPS');
     dialog.dismiss();
   });
   await page.locator('#field-dataset-export').click();
   await expect(page.locator('#field-dataset-status')).toContainText('Export abgebrochen');
+});
+
+
+test('fails closed for malformed PNG input instead of exporting original bytes', async ({page}) => {
+  await page.goto('/');
+  await page.locator('#field-dataset-photo').setInputFiles({
+    name:'broken.png',
+    mimeType:'image/png',
+    buffer:PNG_SIGNATURE
+  });
+  await page.locator('input[name="image-kind"][value="negative"]').check();
+  await fillRights(page);
+  await page.locator('#field-dataset-form button[type="submit"]').click();
+  await attestEveryRecord(page);
+  page.once('dialog', dialog => dialog.accept());
+  await page.locator('#field-dataset-export').click();
+  await expect(page.locator('#field-dataset-status')).toContainText('PNG-Bild ist ungültig oder unvollständig');
+});
+
+test('rejects images above the pixel limit before browser decoding', async ({page}) => {
+  await page.goto('/');
+  await page.locator('#field-dataset-photo').setInputFiles({
+    name:'oversized.png',
+    mimeType:'image/png',
+    buffer:makePngFixture([0x77], 5000, 5000)
+  });
+  await page.locator('input[name="image-kind"][value="negative"]').check();
+  await fillRights(page);
+  await page.locator('#field-dataset-form button[type="submit"]').click();
+  await attestEveryRecord(page);
+  page.once('dialog', dialog => dialog.accept());
+  await page.locator('#field-dataset-export').click();
+  await expect(page.locator('#field-dataset-status')).toContainText('16 Megapixel');
+});
+
+test('rejects animated PNG before export', async ({page}) => {
+  await page.goto('/');
+  await page.locator('#field-dataset-photo').setInputFiles({
+    name:'animated.png',
+    mimeType:'image/png',
+    buffer:makePngFixture([0x55], 1, 1, true)
+  });
+  await page.locator('input[name="image-kind"][value="negative"]').check();
+  await fillRights(page);
+  await page.locator('#field-dataset-form button[type="submit"]').click();
+  await attestEveryRecord(page);
+  page.once('dialog', dialog => dialog.accept());
+  await page.locator('#field-dataset-export').click();
+  await expect(page.locator('#field-dataset-status')).toContainText('Animierte PNG-Bilder');
 });
 
 test('requires an explicit image kind and at least one class for positive images', async ({page}) => {
@@ -437,5 +548,5 @@ test('blocks export when the same image bytes were captured twice', async ({page
   await expect(page.locator('#field-dataset-export')).toBeEnabled();
   page.once('dialog', dialog => dialog.accept());
   await page.locator('#field-dataset-export').click();
-  await expect(page.locator('#field-dataset-status')).toContainText('derselbe Bildinhalt wurde mehrfach erfasst');
+  await expect(page.locator('#field-dataset-status')).toContainText('derselbe bereinigte Bildinhalt wurde mehrfach erfasst');
 });

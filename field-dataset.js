@@ -127,12 +127,6 @@
     return labels;
   }
 
-  function extensionFor(type) {
-    const extension = MIME_EXTENSIONS[type.toLowerCase()];
-    if (!extension) throw Error('Nicht unterstütztes Bildformat.');
-    return extension;
-  }
-
   function normalizeSource(value) {
     const source = typeof value === 'string' ? value.trim() : '';
     if (!source || source.length > 200) {
@@ -475,7 +469,10 @@
   }
 
   async function exportDataset() {
-    if (!window.confirm('Der ZIP-Export enthält unveränderte Originalbilder. Diese können EXIF-Metadaten wie GPS-Koordinaten, Aufnahmezeit und Kamera-/Geräteinformationen enthalten. Die App lädt die Datei nicht hoch und entfernt diese Metadaten nicht. Vor jeder Weitergabe bitte lokal prüfen. Fortfahren?')) {
+    if (!window.BeeKeeperImagePrivacy?.sanitizeImageForExport) {
+      throw Error('Datenschutz-Bildbereinigung ist nicht geladen; Export wird sicherheitshalber abgebrochen.');
+    }
+    if (!window.confirm('Der ZIP-Export erzeugt für jede Aufnahme lokal eine neue PNG-Kopie. Der Browser dekodiert und re-encodiert das Bild; EXIF/GPS-, XMP- und eingebettete Text-/Zeit-Metadaten werden aus der Exportkopie entfernt. Die lokalen Originale bleiben unverändert. Die dekodierte Pixeldarstellung kann browserabhängig normalisiert werden. Animierte Bilder, Bilder über 16 Megapixel oder zu große Exportdateien werden abgewiesen. Es erfolgt kein Upload. Fortfahren?')) {
       setText(status, 'Export abgebrochen. Es wurde keine Datei heruntergeladen.');
       return;
     }
@@ -490,19 +487,28 @@
     const files = [];
     const annotations = [];
     const imageDigests = new Set();
+    const maxTotalBytes = window.BeeKeeperImagePrivacy.limits.maxTotalExportBytes;
+    let totalImageBytes = 0;
     let omittedLegacyReviewerIds = 0;
     if (!crypto.subtle?.digest) throw Error('Sichere lokale Bildprüfung ist in diesem Browser nicht verfügbar; Export abgebrochen.');
     for (const record of records) {
       if (!Array.isArray(record.labels) || record.labels.some(label => !CLASSES.includes(label))) {
         throw Error('Export abgebrochen: unbekannte oder ungültige Bildklassen.');
       }
-      const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', record.image_bytes));
+      const sanitizedBytes = await window.BeeKeeperImagePrivacy.sanitizeImageForExport(
+        record.image_bytes, record.image_type
+      );
+      if (sanitizedBytes.byteLength > maxTotalBytes - totalImageBytes) {
+        throw Error('Der bereinigte ZIP-Export überschreitet 96 MB. Entferne einige lokale Aufnahmen und exportiere kleinere Teilmengen.');
+      }
+      totalImageBytes += sanitizedBytes.byteLength;
+      const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', sanitizedBytes));
       const digestHex = [...digest].map(byte => byte.toString(16).padStart(2, '0')).join('');
       if (imageDigests.has(digestHex)) {
-        throw Error('Export gesperrt: derselbe Bildinhalt wurde mehrfach erfasst. Entferne das Duplikat vor dem Export.');
+        throw Error('Export gesperrt: derselbe bereinigte Bildinhalt wurde mehrfach erfasst. Entferne das Duplikat vor dem Export.');
       }
       imageDigests.add(digestHex);
-      const path = `images/${record.id}.${extensionFor(record.image_type)}`;
+      const path = `images/${record.id}.png`;
       const annotation = {
         image: path,
         labels: record.labels,
@@ -519,7 +525,7 @@
         else omittedLegacyReviewerIds += 1;
       }
       annotations.push(JSON.stringify(annotation));
-      files.push({name:path, bytes:new Uint8Array(record.image_bytes)});
+      files.push({name:path, bytes:sanitizedBytes});
     }
     files.push({name:'annotations.jsonl', bytes:new TextEncoder().encode(annotations.join('\n') + '\n')});
     const blob = zip(files);
@@ -532,7 +538,7 @@
     const legacyNote = omittedLegacyReviewerIds
       ? ` ${omittedLegacyReviewerIds} ältere nicht-pseudonyme Labeler-Kennung(en) wurden aus Datenschutzgründen nicht exportiert.`
       : '';
-    setText(status, `${records.length} attestierte Aufnahme(n) exportiert. Bildinhalte und Rechte wurden nicht unabhängig verifiziert; die lokale Sammlung bleibt erhalten.${legacyNote}`);
+    setText(status, `${records.length} attestierte Aufnahme(n) als metadatenbereinigte PNG-Kopien exportiert. Lokale Originale bleiben unverändert; Bildinhalte und Rechte wurden nicht unabhängig verifiziert.${legacyNote}`);
   }
 
   for (const radio of kindRadios) radio.addEventListener('change', updateKind);
