@@ -16,6 +16,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Offline Lizenz- und Sicherheitspruefungen
         run: python -m unittest discover -s tests -p test_commons_importer.py -v
       - name: Echten Commons API Metadatenabruf testen (kein Bilddownload)
