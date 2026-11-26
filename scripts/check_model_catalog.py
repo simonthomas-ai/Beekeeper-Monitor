@@ -6,8 +6,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "models" / "candidates.json"
-HEX40 = re.compile(r"[0-9a-f]{40}\\Z")
-REPO = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\\Z")
+REPO_PATTERN = r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+"
+HEX40_PATTERN = r"[0-9a-f]{40}"
 ALLOWED_TASKS = {"hornet_detection", "varroa_sticky_board", "varroa_on_bee"}
 PENDING_STATUS = "rights_and_runtime_pending"
 EXECUTION_FIELDS = {"enabled", "active", "inference_enabled", "deployable"}
@@ -36,7 +36,7 @@ def validate(data):
         ids.add(mid)
 
         upstream = model.get("upstream")
-        if not isinstance(upstream, str) or not REPO.fullmatch(upstream):
+        if not isinstance(upstream, str) or not re.fullmatch(REPO_PATTERN, upstream):
             raise ValueError("Invalid upstream repository")
 
         path = model.get("path")
@@ -44,8 +44,8 @@ def validate(data):
             not isinstance(path, str)
             or not path
             or path.startswith("/")
-            or "\\\\" in path
-            or "\\x00" in path
+            or chr(92) in path
+            or chr(0) in path
             or any(part in ("", ".", "..") for part in path.split("/"))
         ):
             raise ValueError("Unsafe model path")
@@ -55,11 +55,11 @@ def validate(data):
             raise ValueError("Unrecognized model format")
         if type(model.get("bytes")) is not int or not 0 < model["bytes"] < 500_000_000:
             raise ValueError("Invalid model size")
-        if not isinstance(model.get("git_blob"), str) or not HEX40.fullmatch(model["git_blob"]):
+        if not isinstance(model.get("git_blob"), str) or not re.fullmatch(HEX40_PATTERN, model["git_blob"]):
             raise ValueError("Missing Git blob fingerprint")
 
         commit = model.get("commit")
-        if not isinstance(commit, str) or not HEX40.fullmatch(commit):
+        if not isinstance(commit, str) or not re.fullmatch(HEX40_PATTERN, commit):
             raise ValueError("Every model candidate requires an immutable 40-character commit pin")
         if model.get("review_status") != PENDING_STATUS:
             raise ValueError("Every candidate must remain explicitly rights/runtime pending")
@@ -70,7 +70,7 @@ def validate(data):
         if not isinstance(task, str) or task not in ALLOWED_TASKS:
             raise ValueError("Unknown model task")
         tasks.add(task)
-        rows.append((mid, task, fmt, upstream, path, commit, model["git_blob"]))
+        rows.append((mid, task, fmt, upstream, path, commit))
 
     if tasks != ALLOWED_TASKS:
         raise ValueError("Required distinct model tasks missing")
@@ -85,7 +85,7 @@ def main():
         "| Modell | Aufgabe | Format | Herkunft | Commit (unveränderlich) | Status |",
         "|---|---|---|---|---|---|",
     ]
-    for mid, task, fmt, upstream, path, commit, _git_blob in rows:
+    for mid, task, fmt, upstream, path, commit in rows:
         lines.append(
             f"| {mid} | {task} | {fmt} | {upstream}: `{path}` | "
             f"`{commit[:12]}` | {PENDING_STATUS} |"
@@ -98,7 +98,7 @@ def main():
         "Ein erfolgreicher Katalogtest beweist ausschließlich die konsistente, revisionsgebundene Kandidatenregistrierung.",
         "",
     ]
-    output = "\\n".join(lines)
+    output = "\n".join(lines) + "\n"
     print(output)
     import os
     if os.environ.get("GITHUB_STEP_SUMMARY"):
