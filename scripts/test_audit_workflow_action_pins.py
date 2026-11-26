@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from scripts.audit_workflow_action_pins import (
-    find_permission_policy_violations, find_unpinned_actions, find_unpinned_images,
+    find_checkout_steps_without_persist_credentials, find_permission_policy_violations, find_unpinned_actions, find_unpinned_images,
 )
 
 
@@ -152,6 +152,48 @@ jobs:
             with self.subTest(workflow=path.name):
                 self.assertEqual(
                     find_permission_policy_violations(path.read_text(encoding="utf-8"), str(path)),
+                    [],
+                )
+
+
+
+
+class CheckoutCredentialPolicyTests(unittest.TestCase):
+    def test_accepts_checkout_with_persist_credentials_false(self):
+        text = """jobs:
+  build:
+    steps:
+      - name: Checkout
+        uses: actions/checkout@0000000000000000000000000000000000000000
+        with:
+          persist-credentials: false
+"""
+        self.assertEqual(find_checkout_steps_without_persist_credentials(text), [])
+
+    def test_rejects_checkout_without_explicit_false(self):
+        text = """jobs:
+  build:
+    steps:
+      - uses: actions/checkout@0000000000000000000000000000000000000000
+"""
+        self.assertTrue(find_checkout_steps_without_persist_credentials(text))
+
+    def test_rejects_checkout_with_persist_credentials_true(self):
+        text = """jobs:
+  build:
+    steps:
+      - uses: actions/checkout@0000000000000000000000000000000000000000
+        with:
+          persist-credentials: true
+"""
+        self.assertTrue(find_checkout_steps_without_persist_credentials(text))
+
+    def test_every_repository_workflow_disables_persisted_checkout_credentials(self):
+        root = Path(__file__).resolve().parents[1]
+        for path in sorted((root / ".github" / "workflows").glob("*.y*ml")):
+            with self.subTest(workflow=path.name):
+                self.assertEqual(
+                    find_checkout_steps_without_persist_credentials(path.read_text(encoding="utf-8"), str(path)),
                     [],
                 )
 
