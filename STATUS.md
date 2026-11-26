@@ -1,12 +1,23 @@
 # Abnahmestand
 
+## Aktualisierung – 26.11.2026
+
+- [x] Monitor-main: Commit `122811dd322aeb1b955a8e7179c01634e50db317`. Der Push-Gesamttest #946, der private PWA-Build #195 und CodeQL #2 liefen erfolgreich: [Gesamttest](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45746689512), [PWA](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45746689475), [CodeQL](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45746689485).
+- [x] BeeKeeper3000-main: Commit `2d32e037bcbfec7e60e9f952cc3309001edf12f5`. Quality Gates #192, Network Tests #422, CodeQL #384 und Supply-Chain/SBOM #165 liefen erfolgreich.
+- [x] Der Cross-Repository-Feldexport-Job im Monitor-Gesamttest #946 bestand: 18 Validator-Unit-Tests, der tatsächliche PWA-ZIP-Export gegen den gepinnten BeeKeeper3000-Validator und den Python-Fixture-Roundtrip. Dieser Lauf verwendete noch den älteren Pin `1f484025600951c359a573a410bb3b239cfbe6ae`; ein separater PR aktualisiert die Integration auf den aktuellen Bee-main-Commit.
+- [x] Manueller Gerätetest: Kamera- und Mikrofonzugriff auf einem echten iPhone wurden am 20.11.2026 bestätigt. Das ist **kein** KI-Inferenz-, Artenbestimmungs- oder Genauigkeitstest.
+- [ ] Kein freigegebenes Modellgewicht, kein vollständiger freigegebener Trainingsbestand und keine unabhängig geprüften KI-Ergebnisse. Training und KI-Feldfreigabe bleiben gesperrt.
+- [ ] Öffentliche Pages-Veröffentlichung bleibt deaktiviert. Impressum und Datenschutzhinweise enthalten noch nicht bestätigte Betreiber-/Kontaktangaben.
+- [ ] Die Hauptbranches beider Repositories sind weiterhin ungeschützt; Branch-Protection- und Ruleset-Schreibrechte sind über die verbundene GitHub-Integration nicht verfügbar.
+
+
 ## Aktualisierung – 23.11.2026
 
 - [x] Lokaler Feldaufnahme-Workflow in der PWA: manuelle Mehrfachklassifikation nach den sieben unveränderten Taxonomie-Slugs oder explizites Negativbild (`labels: []`); JPEG/JPG, PNG, WebP bis 8 MB.
 - [x] Bilder bleiben lokal in IndexedDB. Jede Aufnahme startet ungeprüft; ZIP-Export (`images/` + `annotations.jsonl`) erfordert getrennte manuelle Bild-/Labelprüfung und ausdrückliche Nutzerattestierung. Freitextquelle und Rechte-/Nutzungsangabe sind Nutzereingaben, keine Belege oder unabhängige Rechteprüfung.
-- [x] ZIP-Format-Roundtrip mit Mehrfachlabel- und Negativbildfixtures gegen `training/multilabel_dataset.py` im BeeKeeper3000-Feldtest-Sessionbranch `simonthomas-ai-feldtest-vorbereitung` getestet. Der geprüfte Validator-Worktree war uncommitted; derselbe Validator ist noch nicht Teil von BeeKeeper3000 `main`. Dessen öffentlicher `scripts/import_mobile_export.py` verarbeitet ein separates Metadatenereignis-Format.
+- [x] ZIP-Format-Roundtrip mit Mehrfachlabel- und Negativbildfixtures gegen `training/multilabel_dataset.py` im BeeKeeper3000-Hauptzweig geprüft. Der aktuelle Monitor-Cross-Repo-Lauf #946 verwendete den damals gepinnten Commit `1f484025600951c359a573a410bb3b239cfbe6ae`; ein PR aktualisiert die Pins auf den aktuellen BeeKeeper3000-main-Commit `2d32e037bcbfec7e60e9f952cc3309001edf12f5`. Dessen öffentlicher `scripts/import_mobile_export.py` verarbeitet weiterhin ein separates Metadatenereignis-Format.
 - [x] Browser-Tests: vollständiger Chromium-Lauf 34/34; Feldexport gegen den Branch-Validator 4/4 in Chromium und 4/4 in WebKit/iPhone-Emulation; lokale/Partner-Fixtures 7/7. PWA-Static-/Offline-Deployment-Verträge erfolgreich.
-- [ ] Kein Test auf echtem iPhone; HEIC wird abgelehnt. Anleitung für iPhone-Aufnahmen als JPEG bzw. lokale HEIC-zu-JPEG-Konvertierung ergänzt.
+- [x] Grundlegender Kamera- und Mikrofonzugriff auf einem echten iPhone am 20.11.2026 bestätigt; dies prüft keine KI-Erkennung. [ ] Vollständiger iPhone-Feldaufnahme-/ZIP-Export-Roundtrip und Langzeittest sind noch nicht belegt; HEIC wird abgelehnt.
 - [ ] Kein realer freigegebener annotierter Bildbestand, kein Training, keine Modellgewichte und keine eigene KI-Inferenz. Erkennungsqualität und Feldfreigabe bleiben offen.
 - [ ] Öffentlicher Pages-Deploy bleibt deaktiviert; keine Veröffentlichung oder Live-Feldaufnahme aus diesem Statusbericht abgeleitet.
 
