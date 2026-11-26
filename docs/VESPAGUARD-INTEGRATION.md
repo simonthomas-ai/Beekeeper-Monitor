@@ -1,6 +1,6 @@
 # VespaGuard: zwei Repositories, ein System
 
-Stand: 22.11.2026. Geprüfter BeeKeeper3000-Partnerstand für den Cross-Repository-Workflow: `3b4f8953c7e82ce96010f5095577830ce90e8361` (Hauptzweig-Quality-Gates, Windows-Kamera-/Medien-/NMEA-Tests sowie CodeQL erfolgreich). Änderungen am Partnerstand werden bewusst per Workflow-Änderung übernommen. Dies ist eine **Integrationslandkarte**, keine Behauptung einer vollständig betriebsbereiten Hornissenerkennung.
+Stand: 26.11.2026. Geprüfter BeeKeeper3000-Partnerstand für die Cross-Repository-Workflows: `77bd1c012af502afa42b9a79bf9eff0deda37032`. Der bisherige Pin `63bef0204c063c8b4b17af7b3b26a8021b259c2b` liegt drei Commits dahinter. Der Commitvergleich ergab ausschließlich Änderungen an Supply-Chain-/Trainingsabhängigkeitsprüfung, Lizenz-/Provenienzdokumentation und Regressionstests; die vom Monitor verwendeten Bridge- und Datensatzvalidator-Schnittstellen blieben unverändert. Beide Integrationsworkflows und ihr Pin-Regressionstest werden gemeinsam auf den neuen unveränderlichen Commit aktualisiert. Dies ist eine **Integrationslandkarte**, keine Behauptung einer vollständig betriebsbereiten Hornissenerkennung.
 
 ## Kanonische Rollen
 
