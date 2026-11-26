@@ -53,6 +53,8 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
         self.assertNotIn("<img", REVIEW_STATUS.lower())
         self.assertNotIn("data:image", REVIEW_STATUS.lower())
         self.assertNotIn("images/velutina/", REVIEW_STATUS)
+        for gallery in ("all", "velutina", "crabro", "apis", "bombus", "vespula"):
+            self.assertFalse((ROOT / "review" / f"{gallery}.html").exists())
 
 if __name__ == "__main__":
     unittest.main()
