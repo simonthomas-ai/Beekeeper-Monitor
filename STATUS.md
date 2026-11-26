@@ -1,3 +1,39 @@
+# Aktueller Nachtrag – 26.11.2026 (nach PR #317)
+
+## Verifizierter Stand beider Hauptzweige
+- **Beekeeper-Monitor `main`:** `32b200002c193ae8f2c833f3bb0340346819f3c4`. PR [#317](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/317) ist gemergt. Die PWA-Vorschau heißt jetzt `vespaguard-pwa-preview`, weist ausdrücklich auf öffentliche Lesbarkeit hin und hat 7 Tage Aufbewahrung.
+- **BeeKeeper3000 `main`:** `77bd1c012af502afa42b9a79bf9eff0deda37032`.
+- Beide Repositories sind öffentlich; die GitHub-API meldet für beide `license=null`. Eine Root-`LICENSE` fehlt jeweils.
+- Beide `main`-Branches melden `protected=false`; Rulesets sind leer. Administrativer Status ist in [BeeKeeper3000 #84](https://github.com/simonthomas-ai/BeeKeeper3000/issues/84) dokumentiert. Die verbundene GitHub-Schnittstelle bietet hier keine sichere Mutationsaktion; keine Umgehung.
+
+## Nachweise auf aktuellem Monitor-main
+- Ein-Klick-Gesamttest [#45836454835](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45836454835): Workflow erfolgreich; alle drei Jobs (Gesamttest, ZIP-/Validator-Export, BeeKeeper-Bridge) abgeschlossen.
+- CodeQL [#45836454992](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45836454992): erfolgreich.
+- PWA-Buildvorschau [#45836454799](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45836454799): erfolgreich, Artefakt `vespaguard-pwa-preview`, ID `15125422107`, 65.783 Bytes, Ablauf 2026-12-03 14:11:22 UTC. Das Artefakt ist öffentlich lesbar und enthält laut Workflow/Buildlog nur statische App-Dateien; es ist kein Pages-Deployment.
+- Trainingsdaten-Inventur [#45836454860](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45836454860): Validator-Job erfolgreich abgeschlossen, meldet aber ausdrücklich fehlendes Dataset und blockiertes Training.
+- CC0-Discovery [#45836454885](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45836454885) war bei der letzten Abfrage noch in Bearbeitung; keine Abschlussaussage dazu vorwegnehmen. Die beim Abfragen sichtbare Artefaktliste war leer.
+
+## Öffentliche Actions-Artefakte – manuelle Bereinigung bleibt offen
+- Der historische, irreführend `vespaguard-private-pwa` genannte Build ist noch vorhanden: Run [#45803405754](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45803405754), Artefakt-ID `15108012720`, 65.655 Bytes, Ablauf 2026-12-03 10:39:53 UTC. Der geprüfte Workflow beschreibt statische App-Dateien, keine Feldaufnahmen. Löschprüfung separat in [Issue #318](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/318).
+- Vier historische Kandidaten-/Review-Artefakte bleiben ebenfalls vorhanden und öffentlich zugänglich: `original-velutina-images` (ID `15058597151`), `ki-cc0-quellen-prueflisten` (ID `15058522636`), `inaturalist-balanced-review-queue` (ID `15108851881`) und `insect-photo-review-queue` (ID `15107897872`). Details und manuelle Löschanforderung: [#308](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/308) und [#312](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/312).
+- Die vier Kandidatenartefakte wurden nicht heruntergeladen oder geprüft; sie sind keine Trainingsfreigabe. Die verbundene Schnittstelle kann Artefakte auflisten, bietet aber keine Löschaktion. Kein Download, keine Löschung und keine History-Umschreibung versucht.
+
+## BeeKeeper3000 – aktueller CI- und Integrationsstand
+- Quality Gates [#45795479713](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479713), CodeQL [#45795479682](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479682), Supply Chain/SBOM [#45795479697](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479697) und Windows-Station [#45795479670](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479670) waren auf `77bd1c012` erfolgreich.
+- Die Quality-Gates-Logs zeigen 22 lokale Medienimporttests und 36 MeshCore-/NMEA-Protokoll-, Empfangs-, Speicher- und Transporttests erfolgreich. Die Supply-Chain-Prüfung erzeugt getrennte SBOMs für MeshCore, NMEA und deklarierte Trainingsabhängigkeiten; sie ist keine vollständige Produkt-SBOM.
+- [PR #110](https://github.com/simonthomas-ai/BeeKeeper3000/pull/110) bleibt offen und ist nicht mergebereit: 2 Commits voraus / 15 hinter `main`; der PR-Head-Commit hat keine Statuschecks. Sein Capability-Katalog enthält acht deaktivierte Fähigkeiten und zwei Kandidaten mit `rights_and_runtime_pending`. Keine Inferenzaktivierung.
+- Der Trainer exportiert einen Multilabel-Klassifikator mit `[1,7]`-Logits; der vorhandene Kameraadapter erwartet Objektdetektionen mit Bounding-Boxes. Die Verträge sind nicht austauschbar und benötigen einen getrennten, getesteten Adapter.
+
+## KI-, Daten-, Lizenz- und Einsatzfreigabe
+- Rekursive Git-Tree-Abfragen beider aktuellen Hauptzweige fanden keine Modellgewichte (ONNX/PyTorch/TensorFlow/TFLite/vergleichbar) und weder `datasets/beekeeper/` noch `training/reviewed-annotations.json`.
+- Der aktuelle Monitor-Gesamttest protokolliert in den Logs `STATIC: success`, `BROWSER: success`, `MODEL: success`, aber `ANNOTATIONS: failure`; die fehlende Datensatzprüfung wird als `BLOCKIERT` ausgewiesen. Der grüne Software-Workflow ist keine KI-Freigabe.
+- BeeKeeper3000-`LICENSES.md` ist ein vorläufiges Inventar. Die geerbte Hornet3000-Quelle ist dort auf eine begrenzte GPL-3.0-or-later-Teilmenge bezogen; daraus folgt keine Gesamtlizenz für das Repository. PyTorch 2.15.0 hat einen ungeklärten Provenienznachweis und einen zusammengesetzten Lizenz-Ausdruck. Gewichte, Bilder und Datensätze benötigen separate Rechteprüfung.
+- Browser-IndexedDB ist nicht zusätzlich anwendungsseitig verschlüsselt. Der Feld-ZIP-Export erzeugt bereinigte PNG-Kopien; allgemeine JSON-Sicherungen können weiterhin Originalbilder und genaue GPS-Daten enthalten.
+- GitHub Pages bleibt mit `if: false` deaktiviert; kein öffentliches Deployment ausgelöst. Betreiber-/Impressums-/Datenschutzfreigabe, unabhängige Holdout-Validierung, Precision/Recall/Fehlalarmmessung und reale Kamera-/Hardware-Dauerläufe fehlen.
+- Keine 99-%-Erkennungsrate nachgewiesen. Keine Modellgewichte, Trainingsdaten oder privaten Feldaufnahmen aktiviert bzw. übertragen.
+
+---
+
 # Aktueller Nachtrag – 26.11.2026, 14:48 UTC
 
 ## Verifizierte Repository-Stände
