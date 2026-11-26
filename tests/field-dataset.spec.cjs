@@ -105,10 +105,11 @@ test('stores multi-label and negative images locally and exports the reviewed co
   await expect(page.locator('#field-dataset-status')).toContainText('Noch ungeprüft');
   await expect(page.locator('#field-dataset-export')).toBeDisabled();
   await attestEveryRecord(page);
-  await expect(page.locator('#field-dataset-export')).toBeDisabled();
-  await expect(page.locator('#field-dataset-export-consent')).not.toBeChecked();
-  await page.locator('#field-dataset-export-consent').check();
   await expect(page.locator('#field-dataset-export')).toBeEnabled();
+  page.once('dialog', dialog => {
+    expect(dialog.message()).toContain('EXIF-Metadaten');
+    dialog.accept();
+  });
 
   const downloadPromise = page.waitForEvent('download');
   await page.locator('#field-dataset-export').click();
@@ -157,26 +158,24 @@ test('stores multi-label and negative images locally and exports the reviewed co
   expect(files.get(positive.image)).toEqual(Buffer.from(positiveBytes));
   expect(files.get(negative.image)).toEqual(Buffer.from(negativeBytes));
   expect(requests.some(request => request.method !== 'GET' && request.method !== 'HEAD')).toBeFalsy();
-  await expect(page.locator('#field-dataset-export-consent')).not.toBeChecked();
-  await expect(page.locator('#field-dataset-export')).toBeDisabled();
 });
 
-test('requires a separate EXIF metadata acknowledgement for every ZIP export', async ({page}) => {
+test('requires explicit EXIF metadata confirmation before ZIP export', async ({page}) => {
   await page.goto('/');
   await addImage(page, 'privacy-check.jpg', [0xff, 0xd8, 0xff, 0x21, 0xff, 0xd9]);
   await page.locator('input[name="image-kind"][value="negative"]').check();
   await fillRights(page);
   await page.locator('#field-dataset-form button[type="submit"]').click();
+  await expect(page.locator('#field-dataset-summary')).toContainText('1 lokale Aufnahme');
   await attestEveryRecord(page);
   await expect(page.locator('#field-dataset-summary')).toContainText('0 ohne abgeschlossene Nutzerprüfung');
-  const consent = page.locator('#field-dataset-export-consent');
-  await expect(consent).not.toBeChecked();
-  await expect(page.locator('#field-dataset-export')).toBeDisabled();
-  await expect(page.locator('label').filter({has:consent})).toContainText('EXIF-Metadaten');
-  await consent.check();
   await expect(page.locator('#field-dataset-export')).toBeEnabled();
-  await consent.uncheck();
-  await expect(page.locator('#field-dataset-export')).toBeDisabled();
+  page.once('dialog', dialog => {
+    expect(dialog.message()).toContain('EXIF-Metadaten');
+    dialog.dismiss();
+  });
+  await page.locator('#field-dataset-export').click();
+  await expect(page.locator('#field-dataset-status')).toContainText('Export abgebrochen');
 });
 
 test('requires an explicit image kind and at least one class for positive images', async ({page}) => {
@@ -220,8 +219,8 @@ test('exports canonical CC-BY evidence and required attribution', async ({page})
   await page.locator('#field-dataset-form button[type="submit"]').click();
   await expect(page.locator('#field-dataset-summary')).toContainText('1 lokale Aufnahme');
   await attestEveryRecord(page);
-  await expect(page.locator('#field-dataset-export')).toBeDisabled();
-  await page.locator('#field-dataset-export-consent').check();
+  await expect(page.locator('#field-dataset-export')).toBeEnabled();
+  page.once('dialog', dialog => dialog.accept());
   const downloadPromise = page.waitForEvent('download');
   await page.locator('#field-dataset-export').click();
   const download = await downloadPromise;
@@ -249,9 +248,8 @@ test('exports the canonical CC0 evidence URL without adding publication permissi
   await expect(page.locator('#field-dataset-status')).toContainText('lokal gespeichert');
   await expect(page.locator('#field-dataset-summary')).toContainText('1 lokale Aufnahme');
   await attestEveryRecord(page);
-  await expect(page.locator('#field-dataset-export')).toBeDisabled();
-  await page.locator('#field-dataset-export-consent').check();
   await expect(page.locator('#field-dataset-export')).toBeEnabled();
+  page.once('dialog', dialog => dialog.accept());
   const downloadPromise = page.waitForEvent('download');
   await page.locator('#field-dataset-export').click();
   const download = await downloadPromise;
@@ -297,9 +295,8 @@ test('blocks export when the same image bytes were captured twice', async ({page
     await expect(page.locator('#field-dataset-summary')).toContainText(name === 'copy-one.jpg' ? '1 lokale Aufnahme' : '2 lokale Aufnahmen');
   }
   await attestEveryRecord(page);
-  await expect(page.locator('#field-dataset-export')).toBeDisabled();
-  await page.locator('#field-dataset-export-consent').check();
   await expect(page.locator('#field-dataset-export')).toBeEnabled();
+  page.once('dialog', dialog => dialog.accept());
   await page.locator('#field-dataset-export').click();
   await expect(page.locator('#field-dataset-status')).toContainText('derselbe Bildinhalt wurde mehrfach erfasst');
 });
