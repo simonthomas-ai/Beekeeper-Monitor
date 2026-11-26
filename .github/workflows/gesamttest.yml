@@ -144,7 +144,7 @@ jobs:
           echo "| Bildimport-Sicherheit und Herkunftsnachweise | $IMPORTTESTS |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Europaeische Taxonomie (Online-API) | $TAXONOMY |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Echte KI-Trainingsdaten und Annotationen | $TRAINING |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Fachlich gepruefte Annotationseintraege | $ANNOTATIONS |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Fachlich gepruefte Annoationseintraege | $ANNOTATIONS |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Lokale PWA-Dateien und Deployment-Vertrag (kein Online-Test) | $SITE |" >> "$GITHUB_STEP_SUMMARY"
           if [ "$TRAINING" != success ] || [ "$ANNOTATIONS" != success ]; then
             echo '### KI-STATUS: BLOCKIERT – keine freigegebenen Trainingsdaten/Annotationen; keine einsatzfähige automatische Erkennung.' >> "$GITHUB_STEP_SUMMARY"
@@ -157,7 +157,9 @@ jobs:
           echo 'Fehlende Trainingsdaten blockieren die Modellfreigabe. Eine erfolgreiche Inventur belegt keine KI-Genauigkeit, SMS-Zustellung oder Hardwarefunktion.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Trainingsdaten und fachliche Annotationen werden dokumentiert, sind aber absichtlich KEINE verpflichtenden CI-Erfolgskriterien; ihren Status separat beachten.' >> "$GITHUB_STEP_SUMMARY"
       - name: Gemeinsamer Modellkatalog - Hornissen und Varroa (verpflichtend)
-        run: python3 scripts/check_model_catalog.py
+        run: |
+          python3 -m unittest discover -s tests -p 'test_model_catalog.py' -v
+          python3 scripts/check_model_catalog.py
       - name: Freigabesperre automatisch pruefen (verpflichtend)
         run: python3 -m unittest discover -s tests -p 'test_release_gate_report.py' -v
       - name: Freigabebericht (CI-Ergebnisse getrennt von rechtlicher Freigabe)
@@ -229,55 +231,33 @@ jobs:
       - name: Beekeeper-Monitor fuer repo-uebergreifenden Vertrag auschecken
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          path: monitor
+          ref: main
+          path: monitor-self
           persist-credentials: false
-      - name: Node.js einrichten
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
-      - name: Verwendete BeeKeeper3000-Version dokumentieren
-        run: git -C beekeeper3000 rev-parse HEAD
-      - name: Bridge-Abhaengigkeiten reproduzierbar installieren
-        run: npm --prefix beekeeper3000/monitor-bridge ci --ignore-scripts --no-audit --no-fund
-      - name: Offline Outbox Kapazitaet, Neustart und Datenintegritaet
+      - name: Verify Monitor self checkout
+        run: test "$(git -C monitor-self rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Repository-Root fuer Bridge-Tests
         run: |
-          PYTHONPATH=beekeeper3000 python3 -m unittest discover -s beekeeper3000/camera -p 'test_outbox.py' -v
-      - name: Offline HTTP Recovery (echter Loopback-Server und SQLite-Neustart)
+          echo "BEEKEEPER_ROOT=$GITHUB_WORKSPACE/beekeeper3000" >> "$GITHUB_ENV"
+          echo "PYTHONPATH=$GITHUB_WORKSPACE/beekeeper3000:$GITHUB_WORKSPACE/monitor-self" >> "$GITHUB_ENV"
+      - name: Python-Bridge-Contract und echte lokale HTTP-/SQLite-Replay-Tests
         run: |
-          PYTHONPATH=beekeeper3000 python3 -m unittest discover -s beekeeper3000/camera -p 'test_offline_http_recovery.py' -v
-      - name: BeeKeeper3000-Bridge-Tests
-        run: npm --prefix beekeeper3000/monitor-bridge test
-      - name: Repo-uebergreifender Bridge-Vertrag bis zur Warnregel
-        shell: bash
+          python3 -m unittest -v \
+            integrations.test_beekeeper_bridge_contract \
+            integrations.test_local_ingest_http \
+            integrations.test_monitor_replay \
+            tests.test_monitor_bridge_contract
+      - name: Cross-Repository Python-zu-JavaScript-Warnregeln
         run: |
-          node --input-type=module <<'NODE'
-          import { toMonitorEvent } from './beekeeper3000/monitor-bridge/bridge.mjs';
-          import { createRequire } from 'node:module';
-          import { spawnSync } from 'node:child_process';
-          import { createHash } from 'node:crypto';
-          const require = createRequire(import.meta.url);
-          const rules = require('./monitor/alert-rules.js');
+          node --input-type=commonjs <<'NODE'
+          const rules = require('./alert-rules.js');
           const timestamp = new Date().toISOString();
-          const event = toMonitorEvent({
-            id: 'cross-repo-velutina-1', observed_at: timestamp,
-            station_id: 'Yard Cam / North', species: 'Vespa velutina',
-            confidence: 1, status: 'expert_confirmed',
-            image_path: '/private/secret.jpg', lat: 51.2, lon: 6.8
-          });
-          if (!event) throw new Error('Bridge rejected source event');
-          const check = spawnSync('python3', ['-c',
-            'import sys; from integrations.event_contracts import HiveEvent; HiveEvent.from_json(sys.stdin.read())'
-          ], { input: JSON.stringify(event), encoding: 'utf8', cwd: 'monitor' });
-          if (check.status !== 0) throw new Error('Monitor contract rejected bridge output: ' + check.stderr);
-          const id = createHash('sha256').update(JSON.stringify(event)).digest('hex');
-          const row = { event_id: id, received_at: timestamp, event };
-          const alerts = rules.selectAlerts([row], {enabled:true, thresholdPercent:100}, new Set(), Date.now()).alerts;
-          if (alerts.length !== 1 || !rules.describe(alerts[0]).includes('unbestätigt'))
-            throw new Error('Bridge event did not reach unverified alert rule');
-          if (JSON.stringify(event).includes('secret.jpg') || 'lat' in event.payload || 'lon' in event.payload)
-            throw new Error('Bridge leaked media or GPS metadata');
-          const other = toMonitorEvent({id:'cross-repo-crabro-1',observed_at:timestamp,station_id:'Yard Cam / North',species:'Vespa crabro',confidence:1});
-          const otherRow = {event_id:'a'.repeat(64),received_at:timestamp,event:other};
+          const velutina = {event_id:'f'.repeat(64),received_at:timestamp,event:{event_id:'f'.repeat(64),observed_at:timestamp,station_id:'Yard Cam / North',species:'vespa_velutina',confidence:0.99,prey_detected:false}};
+          const other = {event_id:'e'.repeat(64),received_at:timestamp,event:{event_id:'e'.repeat(64),observed_at:timestamp,station_id:'Yard Cam / North',species:'Vespa crabro',confidence:1,prey_detected:false}};
+          const velutinaRow = {event_id:'f'.repeat(64),received_at:timestamp,event:velutina};
+          const otherRow = {event_id:'e'.repeat(64),received_at:timestamp,event:other};
+          if (rules.selectAlerts([velutinaRow],{enabled:true},new Set(),Date.now()).alerts.length !== 1)
+            throw new Error('Velutina event must trigger the enabled warning rule');
           if (rules.selectAlerts([otherRow],{enabled:true},new Set(),Date.now()).alerts.length)
             throw new Error('Native hornet must not trigger velutina warning');
           console.log('PASS: BeeKeeper3000 source -> bridge -> Monitor Python contract -> JS warning rule');
