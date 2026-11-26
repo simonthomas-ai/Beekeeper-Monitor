@@ -19,10 +19,22 @@ test('real observation persists after reload and can be exported',async({page})=
  await expect(page.locator('#entries')).toContainText('Echte Testeingabe durch Browserautomation');
  await page.reload();
  await expect(page.locator('#entries')).toContainText('Echte Testeingabe durch Browserautomation');
+ page.once('dialog',dialog=>dialog.accept());
  const downloadPromise=page.waitForEvent('download');
  await page.getByRole('button',{name:'Als JSON exportieren'}).click();
  const download=await downloadPromise;
  expect(download.suggestedFilename()).toBe('beekeeper-beobachtungen.json');
+});
+test('cancelling a sensitive observation export downloads nothing',async({page})=>{
+ await page.goto('/');
+ await page.getByLabel('Eigene Beobachtung').fill('Lokaler Export mit möglichem Standortbezug');
+ await page.getByRole('button',{name:'Auf diesem Gerät speichern'}).click();
+ await page.once('dialog',async dialog=>{
+  expect(dialog.message()).toContain('GPS-Koordinaten');
+  await dialog.dismiss();
+ });
+ await page.getByRole('button',{name:'Als JSON exportieren'}).click();
+ await expect(page.locator('#status')).toContainText('Export abgebrochen');
 });
 test('offline shell works after first visit',async({page,context,browserName})=>{
  await page.goto('/');
@@ -144,6 +156,7 @@ test('offline saved observation survives reconnect and export still works',async
  await page.getByLabel('Eigene Beobachtung').fill('Unabhängiger Offline-Exporttest');
  await page.getByRole('button',{name:'Auf diesem Gerät speichern'}).click();
  await expect(page.locator('#entries')).toContainText('Unabhängiger Offline-Exporttest');
+ page.once('dialog',dialog=>dialog.accept());
  const downloadPromise=page.waitForEvent('download');
  await page.getByRole('button',{name:'Als JSON exportieren'}).click();
  const download=await downloadPromise;

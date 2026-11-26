@@ -53,7 +53,10 @@ image labels, an app-addition timestamp, a random tab-session ID, optional pseud
 labeler ID, and the entered source/rights review. It does not read GPS or transmit
 images or labels. Records remain on-device until the user explicitly exports a ZIP.
 The ZIP is available only after the user separately attests to image/label review
-and training-use permission for every record; this status records the operator's
+and training-use permission for every record and confirms awareness that original
+images may contain EXIF metadata such as GPS, capture time and camera/device
+identifiers. The application does not inspect or strip EXIF metadata; image bytes
+remain unchanged for provenance checks. This status records the operator's
 attestation and is not an independent verification or proof of image rights. The export contains image bytes and
 `annotations.jsonl`; it is sensitive data and is outside the PWA's storage controls
 after download. Deleting a record removes it from this field-capture database, but

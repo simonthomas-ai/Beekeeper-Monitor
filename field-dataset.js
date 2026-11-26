@@ -22,6 +22,7 @@
   const status = document.getElementById('field-dataset-status');
   const rows = document.getElementById('field-dataset-entries');
   const exportButton = document.getElementById('field-dataset-export');
+  if (!exportButton) return;
   const kindRadios = [...form.querySelectorAll('input[name="image-kind"]')];
   const classInputs = [...form.querySelectorAll('input[name="class-label"]')];
   const classGroup = document.getElementById('field-dataset-classes');
@@ -433,6 +434,10 @@
   }
 
   async function exportDataset() {
+    if (!window.confirm('Der ZIP-Export enthält unveränderte Originalbilder. Diese können EXIF-Metadaten wie GPS-Koordinaten, Aufnahmezeit und Kamera-/Geräteinformationen enthalten. Die App lädt die Datei nicht hoch und entfernt diese Metadaten nicht. Vor jeder Weitergabe bitte lokal prüfen. Fortfahren?')) {
+      setText(status, 'Export abgebrochen. Es wurde keine Datei heruntergeladen.');
+      return;
+    }
     const records = await all();
     if (!records.length) throw Error('Es gibt keine lokalen Aufnahmen zum Exportieren.');
     if (records.length >= 0xffff) throw Error('ZIP-Export abgebrochen: zu viele Aufnahmen für das Archivformat.');
