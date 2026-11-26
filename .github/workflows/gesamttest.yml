@@ -26,7 +26,6 @@ jobs:
         run: |
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-venv
-          python3 -c 'import yaml; from PIL import Image; print("PyYAML:", yaml.__version__, "Pillow:", Image.__version__)'
           python3 -m venv /tmp/vespaguard-python-validation
           echo "/tmp/vespaguard-python-validation/bin" >> "$GITHUB_PATH"
           /tmp/vespaguard-python-validation/bin/python -m pip install --disable-pip-version-check -r training/requirements-ci-validation.txt
