@@ -17,6 +17,7 @@
     'CC0-1.0': 'https://creativecommons.org/publicdomain/zero/1.0/',
     'CC-BY-4.0': 'https://creativecommons.org/licenses/by/4.0/'
   });
+  const REVIEWER_ID = /^reviewer:[A-Za-z0-9][A-Za-z0-9._:-]{7,79}$/;
   const form = document.getElementById('field-dataset-form');
   if (!form) return;
   const status = document.getElementById('field-dataset-status');
@@ -150,6 +151,15 @@
       throw Error('Die Bildquelle muss eine HTTPS-Adresse ohne Zugangsdaten, Query oder Fragment sein.');
     }
     return source;
+  }
+
+  function normalizeReviewerId(value) {
+    const reviewerId = typeof value === 'string' ? value.trim() : '';
+    if (!reviewerId) return '';
+    if (!REVIEWER_ID.test(reviewerId)) {
+      throw Error('Die pseudonyme Labeler-ID muss das Format reviewer:<opaque-id> verwenden. Keine Namen, E-Mail-Adressen oder URLs eintragen.');
+    }
+    return reviewerId;
   }
 
   function normalizeRights(rights, requiredStatus) {
@@ -448,6 +458,7 @@
     const files = [];
     const annotations = [];
     const imageDigests = new Set();
+    let omittedLegacyReviewerIds = 0;
     if (!crypto.subtle?.digest) throw Error('Sichere lokale Bildprüfung ist in diesem Browser nicht verfügbar; Export abgebrochen.');
     for (const record of records) {
       if (!Array.isArray(record.labels) || record.labels.some(label => !CLASSES.includes(label))) {
@@ -468,7 +479,11 @@
         review_status: record.review_status,
         rights: normalizeRights(record.rights, 'training_approved')
       };
-      if (record.labeler_id) annotation.labeler_id = record.labeler_id;
+      if (record.labeler_id) {
+        const labelerId = typeof record.labeler_id === 'string' ? record.labeler_id.trim() : '';
+        if (REVIEWER_ID.test(labelerId)) annotation.labeler_id = labelerId;
+        else omittedLegacyReviewerIds += 1;
+      }
       annotations.push(JSON.stringify(annotation));
       files.push({name:path, bytes:new Uint8Array(record.image_bytes)});
     }
@@ -480,7 +495,10 @@
     anchor.download = 'beekeeper-field-dataset.zip';
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 30000);
-    setText(status, `${records.length} attestierte Aufnahme(n) exportiert. Bildinhalte und Rechte wurden nicht unabhängig verifiziert; die lokale Sammlung bleibt erhalten.`);
+    const legacyNote = omittedLegacyReviewerIds
+      ? ` ${omittedLegacyReviewerIds} ältere nicht-pseudonyme Labeler-Kennung(en) wurden aus Datenschutzgründen nicht exportiert.`
+      : '';
+    setText(status, `${records.length} attestierte Aufnahme(n) exportiert. Bildinhalte und Rechte wurden nicht unabhängig verifiziert; die lokale Sammlung bleibt erhalten.${legacyNote}`);
   }
 
   for (const radio of kindRadios) radio.addEventListener('change', updateKind);
@@ -498,6 +516,7 @@
       }
       const labels = labelsForForm();
       const rights = rightsFromForm();
+      const labelerId = normalizeReviewerId(document.getElementById('field-labeler-id').value);
       const record = {
         id: id(),
         image_bytes: await file.arrayBuffer(),
@@ -508,8 +527,7 @@
         review_status: 'pending_review',
         rights
       };
-      const labeler = document.getElementById('field-labeler-id').value.trim();
-      if (labeler) record.labeler_id = labeler;
+      if (labelerId) record.labeler_id = labelerId;
       await put(record);
       form.reset();
       classInputs.forEach(input => { input.checked = false; });
