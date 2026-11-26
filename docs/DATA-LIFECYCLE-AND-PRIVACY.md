@@ -24,7 +24,12 @@ Manual observations are stored in the browser's IndexedDB database
 
 The application code does not send these records to a BeeKeeper server. The
 JSON export contains all stored observations, including image data and location
-when present. Browser storage is not encrypted by this application. Deleting a
+when present. A separate privacy-minimized CSV summary groups records by UTC
+calendar month and the fixed observation type and exports counts only. It omits
+record IDs, free-text notes, images and GPS coordinates. Monthly patterns may
+still reveal activity and the CSV is not anonymized. The summary is downloaded
+locally and is not uploaded by the application. Browser storage is not encrypted
+by this application. Deleting a
 record in the UI removes it from this browser database; clearing site data or
 losing the browser profile can also remove it. Users should protect the device
 account and exported backup files with operating-system encryption and access
