@@ -68,7 +68,8 @@ Die aktuellen Review-/Discovery-Workflows verhindern neue Kandidaten-/Review-Art
 ## Sicherheit, Datenschutz und Feldfreigabe
 
 - Die experimentelle `camera-onnx-runtime.js` ist ein deaktivierter Research-Stub; `loadRuntime()` bricht fail-closed ab. Es wird keine externe ONNX-/WASM-Runtime nachgeladen und keine Kamera-Inferenz freigegeben.
-- Browser-IndexedDB ist nicht zusätzlich anwendungsseitig verschlüsselt. Der spezielle Feld-ZIP-Export erzeugt neu kodierte PNG-Kopien ohne EXIF; der allgemeine JSON-Export kann Originalbilder und GPS enthalten.
+- Browser-IndexedDB ist nicht anwendungsseitig verschlüsselt; der normale JSON-Backup-Export enthält alle gespeicherten Beobachtungen einschließlich optionaler Bilddaten und GPS-Standort. Der spezielle Feld-ZIP-Export erzeugt neu kodierte PNG-Kopien ohne EXIF; die Originalbytes bleiben lokal im Browser.
+- Auch der lokale SQLite-Ereignisspeicher bietet keine Verschlüsselung im Ruhezustand. Das dokumentierte Backup-Werkzeug verschlüsselt Backups nicht und plant/rotiert sie nicht automatisch. Betriebssystem-/Datenträgerverschlüsselung, restriktive Dateirechte sowie eigene Aufbewahrungs- und Löschregeln sind vor realem Betrieb erforderlich. Die Loopback-API akzeptiert dagegen nur begrenzte Ereignismetadaten und weist Bilder, Audio und GPS zurück.
 - Betreiber-/Impressums-/Datenschutzfreigabe, Lösch-/Aufbewahrungstests auf realer Hardware, unabhängige Holdout-Validierung, Precision-/Recall-/Fehlalarmmessung und Kamera-/Dauerlauftests fehlen.
 - Keine 99-%-Erkennungsrate nachgewiesen; keine KI- oder Feldfreigabe.
 
