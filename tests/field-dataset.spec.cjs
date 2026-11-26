@@ -137,6 +137,85 @@ test('stores multi-label and negative images locally and exports the reviewed co
   const files = extractStoredZip(zipBuffer);
   expect([...files.keys()].filter(name => name.startsWith('images/'))).toHaveLength(2);
   const lines = files.get('annotations.jsonl').toString('utf8').trim().split('\n').map(line => JSON.parse(line));
+  if (process.env.BEEKEEPER_MULTILABEL_VALIDATOR) {
+    const suffix = String(process.pid) + '-' + String(Date.now());
+    const converterZipPath = path.join(os.tmpdir(), 'beekeeper-monitor-provenance-' + suffix + '.zip');
+    const sourceReviewPath = path.join(os.tmpdir(), 'beekeeper-monitor-source-review-' + suffix + '.json');
+    const outputDir = path.join(os.tmpdir(), 'beekeeper-monitor-provenance-output-' + suffix);
+    const sessions = [...new Set(lines.map(line => line.capture_session_id))];
+    const sourceReview = {
+      format_version: 1,
+      sources: sessions.map(session => ({
+        source_url: 'local-capture://' + session,
+        license: 'LicenseRef-ExplicitPermission',
+        license_review_status: 'approved',
+        license_evidence_url: null,
+        training_use_allowed: true,
+        redistribution_allowed: false,
+        reviewed_by: 'reviewer:source-reviewer-0001',
+        reviewed_at: new Date().toISOString(),
+        review_kind: 'source_rights'
+      }))
+    };
+    fs.writeFileSync(converterZipPath, zipBuffer);
+    fs.writeFileSync(sourceReviewPath, JSON.stringify(sourceReview));
+    const python = process.platform === 'win32' ? 'python' : 'python3';
+    const provenanceRoundTrip = [
+      'import hashlib, json, sys',
+      'from pathlib import Path',
+      'from training.build_provenance import build_provenance, write_outputs',
+      'from camera.model_manifest import load_manifest',
+      'archive_path, review_path, output_dir = map(Path, sys.argv[1:4])',
+      'result = build_provenance(archive_path, review_path)',
+      'write_outputs(result, output_dir)',
+      'provenance_path = output_dir / "provenance.jsonl"',
+      'sources_path = output_dir / "training_data_sources.json"',
+      'sources = json.loads(sources_path.read_text(encoding="utf-8"))["training_data_sources"]',
+      'model_path = output_dir / "synthetic.onnx"',
+      'model_bytes = b"synthetic model bytes; never executed"',
+      'model_path.write_bytes(model_bytes)',
+      'manifest = {',
+      '  "manifest_version": 2,',
+      '  "model_file": "synthetic.onnx",',
+      '  "model_sha256": hashlib.sha256(model_bytes).hexdigest(),',
+      '  "dataset_manifest_file": "provenance.jsonl",',
+      '  "dataset_manifest_sha256": hashlib.sha256(provenance_path.read_bytes()).hexdigest(),',
+      '  "training_data_sources": sources,',
+      '  "model_version": "synthetic-e2e-only",',
+      '  "model_source_url": "https://example.org/synthetic-model",',
+      '  "model_license": "MIT",',
+      '  "license_review_status": "approved",',
+      '  "license_evidence_url": "https://example.org/model-license",',
+      '  "license_reviewed_by": "reviewer:model-reviewer-0001",',
+      '  "license_reviewed_at": "2026-11-26T05:30:00Z",',
+      '  "inference_use_allowed": True,',
+      '  "redistribution_allowed": False,',
+      '  "inference_status": "experimental",',
+      '  "input": {"name":"images","width":640,"height":640,"color":"RGB","layout":"NCHW","scale":"0..1"},',
+      '  "outputs": {"boxes":"boxes","scores":"scores","class_ids":"classes","box_format":"xyxy_normalized_post_nms"},',
+      '  "classes": [{"id":0,"label":"synthetic_candidate","threshold":0.5,"prey_detected":False}]',
+      '}',
+      'manifest_path = output_dir / "manifest.json"',
+      'manifest_path.write_text(json.dumps(manifest), encoding="utf-8")',
+      'loaded = load_manifest(manifest_path, verify_model=True)',
+      'assert len(loaded.training_data_sources) == len(sources)',
+      'assert len(result["provenance_bytes"].splitlines()) == 2',
+      'assert loaded.inference_status == "experimental"',
+      'print("PASS: Monitor PWA ZIP -> BeeKeeper validator -> provenance converter -> model-manifest v2")'
+    ].join('\n');
+    const beeRoot = path.resolve(path.dirname(process.env.BEEKEEPER_MULTILABEL_VALIDATOR), '..');
+    try {
+      execFileSync(python, ['-c', provenanceRoundTrip, converterZipPath, sourceReviewPath, outputDir], {
+        stdio: 'pipe',
+        cwd: beeRoot,
+        env: {...process.env, PYTHONDONTWRITEBYTECODE:'1'}
+      });
+    } finally {
+      fs.rmSync(outputDir, {recursive:true, force:true});
+      fs.rmSync(converterZipPath, {force:true});
+      fs.rmSync(sourceReviewPath, {force:true});
+    }
+  }
   expect(lines).toHaveLength(2);
   const positive = lines.find(line => line.labels.length);
   const negative = lines.find(line => line.labels.length === 0);
