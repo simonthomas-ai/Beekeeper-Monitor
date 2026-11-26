@@ -60,6 +60,7 @@ async function fillRights(page, {
 
 async function attestEveryRecord(page) {
   const approval = page.getByRole('button', {name:'Manuelle Prüfung und Nutzungsattestierung speichern'});
+  await expect(approval.first()).toBeVisible();
   while (await approval.count()) {
     const remaining = await approval.count();
     const row = approval.first().locator('xpath=../..');

@@ -28,6 +28,7 @@ CLASSES = frozenset({
     "other_insect",
 })
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
+PSEUDONYMOUS_LABELER_ID = re.compile(r"^reviewer:[A-Za-z0-9][A-Za-z0-9._:-]{7,79}$")
 ALLOWED_ANNOTATION_FIELDS = {
     "image", "labels", "captured_at", "capture_session_id",
     "labeler_id", "review_status", "rights",
@@ -188,6 +189,13 @@ def validate(zip_path: Path) -> list[str]:
                 required = ALLOWED_ANNOTATION_FIELDS - {"labeler_id"}
                 if not required.issubset(record):
                     errors.append(f"Zeile {line_number}: Annotation enthält nicht alle Pflichtfelder")
+                labeler_id = record.get("labeler_id")
+                if labeler_id is not None and (
+                    not isinstance(labeler_id, str) or not PSEUDONYMOUS_LABELER_ID.fullmatch(labeler_id)
+                ):
+                    errors.append(
+                        f"Zeile {line_number}: labeler_id muss reviewer:<opaque-id> verwenden"
+                    )
 
                 forbidden = {"bbox", "boxes", "location", "gps", "station_id"}
                 present_forbidden = sorted(forbidden.intersection(record))
@@ -224,12 +232,6 @@ def validate(zip_path: Path) -> list[str]:
                     errors.append(f"Zeile {line_number}: review_status ist nicht approved")
 
                 validate_rights(record.get("rights"), line_number, errors)
-
-                labeler = record.get("labeler_id")
-                if "labeler_id" in record and (
-                    not isinstance(labeler, str) or not labeler.strip() or len(labeler) > 160
-                ):
-                    errors.append(f"Zeile {line_number}: labeler_id muss ein Pseudonym-String sein")
 
             if line_count == 0:
                 errors.append("annotations.jsonl ist leer")

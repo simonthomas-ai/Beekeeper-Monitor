@@ -19,7 +19,7 @@ Der Zeitstempel bezeichnet das Hinzufügen in der PWA und wird nicht aus EXIF ab
 
 ## Exportvertrag
 
-Jede Zeile von `annotations.jsonl` enthält die Bildreferenz, Klassen, einen zeitzonenbewussten Zeitstempel, eine zufällige Sitzungs-ID, den manuellen Prüfstatus und strukturierte Rechteangaben. `labeler_id` ist optional und darf nur ein Pseudonym sein.
+Jede Zeile von `annotations.jsonl` enthält die Bildreferenz, Klassen, einen zeitzonenbewussten Zeitstempel, eine zufällige Sitzungs-ID, den manuellen Prüfstatus und strukturierte Rechteangaben. `labeler_id` ist optional und muss das Format `reviewer:<opaque-id>` verwenden; Namen, E-Mail-Adressen und URLs sind unzulässig.
 
 Beispiel für eine eigene Aufnahme mit dokumentierter individueller Erlaubnis:
 
@@ -68,7 +68,7 @@ Vor dem strukturierten Rechtevertrag gespeicherte Freitextangaben wie `Nutzerang
 
 ## Repository-übergreifende Prüfung
 
-Der Monitor prüft den Browser-ZIP-Export in `tests/field-dataset.spec.cjs`. Im Ein-Klick-Gesamttest wird derselbe Browser-Export gegen den unveränderlich gepinnten BeeKeeper3000-Validator aus Commit `2d32e037bcbfec7e60e9f952cc3309001edf12f5` geprüft. Der Job führt zusätzlich die Validator-Unit-Tests und den Python-Fixture-Roundtrip aus. Die Testbilder sind künstliche Byte-Fixtures; es werden keine privaten Fotos, realen Rechteunterlagen oder Trainingsdaten in CI hochgeladen.
+Der Monitor prüft den Browser-ZIP-Export in `tests/field-dataset.spec.cjs`. Im Ein-Klick-Gesamttest wird derselbe Browser-Export gegen den unveränderlich gepinnten BeeKeeper3000-Validator aus Commit `3d6ba57ee0ab937cbce7b254d33496819c7a0868` geprüft. Dieser Stand erzwingt zusätzlich pseudonyme `labeler_id`-Kennungen im Format `reviewer:<opaque-id>` und enthält den fail-closed Modellmanifest-v2-Rechtevalidator. Der Monitor-ZIP-Export enthält weiterhin `images/` und `annotations.jsonl`; der getrennte `provenance.jsonl`-Konverter aus BeeKeeper3000 Issue #120 fehlt noch. Der Job führt zusätzlich Validator-Unit-Tests und den Python-Fixture-Roundtrip aus. Die Testbilder sind künstliche Byte-Fixtures; es werden keine privaten Fotos, realen Rechteunterlagen oder Trainingsdaten in CI hochgeladen.
 
 Lokaler Cross-Repo-Fixturetest:
 

@@ -56,7 +56,7 @@ class FieldDatasetZipTests(unittest.TestCase):
             "labels": labels,
             "captured_at": "2026-11-23T08:00:00+01:00",
             "capture_session_id": "session-pseudonym-1",
-            "labeler_id": "reviewer-1",
+            "labeler_id": "reviewer:field-0001",
             "review_status": "approved",
             "rights": rights_data or rights(),
         }
@@ -78,6 +78,15 @@ class FieldDatasetZipTests(unittest.TestCase):
         ]
         path = self.make_zip(rows)
         self.assertEqual(validate(path), [])
+
+    def test_rejects_non_pseudonymous_labeler_ids(self):
+        for labeler_id in ("Simon Thomas", "simon@example.org", "https://example.org/reviewer", "reviewer:short"):
+            with self.subTest(labeler_id=labeler_id):
+                positive = self.record("images/positive.jpg", [CLASS_SLUGS[0]])
+                positive["labeler_id"] = labeler_id
+                path = self.make_zip([positive, self.record("images/negative.jpg", [])])
+                errors = validate(path)
+                self.assertTrue(any("labeler_id" in error for error in errors))
 
     def test_rejects_unapproved_and_unknown_labels(self):
         positive = self.record("images/positive.jpg", ["not_a_project_class"])
