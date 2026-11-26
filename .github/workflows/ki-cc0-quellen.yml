@@ -19,6 +19,7 @@ on:
       - 'scripts/audit_gallery_rights.py'
       - 'training/test_audit_gallery_rights.py'
       - 'training/test_public_review_artifact_policy.py'
+      - 'training/requirements-ci-validation.txt'
       - '.github/workflows/ki-cc0-quellen.yml'
   schedule:
     - cron: '17 6 * * 1'
@@ -35,9 +36,9 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
-      - name: Install Pillow for transient in-memory image inspection
+      - name: Install pinned validation dependencies
         run: |
-          python3 -m pip install --only-binary=:all: 'Pillow>=10,<13'
+          python3 -m pip install --only-binary=:all: --disable-pip-version-check -r training/requirements-ci-validation.txt
       - name: Offline-Test der Bildqualitaetspruefung
         run: python3 -m unittest training.test_screen_inaturalist_image_quality -v
       - name: Offline-Test der paginierten Bildrecherche und Bildquellen-Normalisierung
