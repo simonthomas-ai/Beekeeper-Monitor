@@ -22,6 +22,20 @@ CANDIDATE_REVIEW_WORKFLOWS = (
     "cc0-insect-3d.yml",
     "verify-grab3d-bee.yml",
 )
+CHECKOUT_CREDENTIALS_HARDENED_WORKFLOWS = (
+    "cc0-review-queue.yml",
+    "inaturalist-balanced-discovery.yml",
+    "hornet-photo-discovery.yml",
+    "gbif-media-discovery.yml",
+    "open-3d-metadata.yml",
+    "commons-importer.yml",
+    "cc0-insect-3d.yml",
+    "verify-grab3d-bee.yml",
+    "upstream-integration-intake.yml",
+    "autonomous-control.yml",
+)
+
+
 FORBIDDEN_PUBLIC_ARTIFACT_NAMES = (
     "cc0-metadata-integrity-audit",
     "cc0-human-review-pending",
@@ -52,6 +66,24 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
             with self.subTest(workflow=workflow_name):
                 content = (WORKFLOWS / workflow_name).read_text(encoding="utf-8")
                 self.assertNotIn("actions/upload-artifact@", content)
+
+    def test_external_review_workflows_disable_checkout_credential_persistence(self):
+        for workflow_name in CHECKOUT_CREDENTIALS_HARDENED_WORKFLOWS:
+            with self.subTest(workflow=workflow_name):
+                lines = (WORKFLOWS / workflow_name).read_text(encoding="utf-8").splitlines()
+                checkout_indices = [
+                    index for index, line in enumerate(lines)
+                    if "uses: actions/checkout@" in line
+                ]
+                self.assertTrue(checkout_indices, "workflow must contain a pinned checkout")
+                for index in checkout_indices:
+                    end = next(
+                        (j for j in range(index + 1, len(lines))
+                         if lines[j].startswith("      - ")),
+                        len(lines),
+                    )
+                    step = "\\n".join(lines[index:end])
+                    self.assertIn("persist-credentials: false", step)
 
     def test_forbidden_candidate_artifact_names_are_absent_from_upload_steps(self):
         # A candidate filename may still be used locally to build a review page.
