@@ -105,7 +105,7 @@ def validate_checkpoint_rights_approval(root, approval_path, checkpoint_sha256, 
         or not license_expression.strip()
         or license_expression.strip().upper() in {"NOASSERTION", "NONE"}
     ):
-        raise ValueError("Checkpoint rights approval requires a reviewed SPDX licence expression")
+        raise ValueError("Checkpoint rights approval requires a non-NOASSERTION licence expression")
     if approval.get("training_use_permitted") is not True:
         raise ValueError("Checkpoint rights approval must explicitly permit training use")
     if approval.get("derivative_model_creation_permitted") is not True:
@@ -134,10 +134,9 @@ def validate_checkpoint_rights_approval(root, approval_path, checkpoint_sha256, 
         or not evidence_reference.strip()
         or len(evidence_reference) > 2048
         or "?" in evidence_reference
-        or "#" in evidence_reference
         or any(ord(char) < 32 for char in evidence_reference)
     ):
-        raise ValueError("Checkpoint rights approval requires a bounded evidence reference without query strings or fragments")
+        raise ValueError("Checkpoint rights approval requires a bounded evidence reference without query strings")
 
     result = dict(approval)
     result["approval_file_sha256"] = hashlib.sha256(approval_bytes).hexdigest()
