@@ -13,7 +13,7 @@ catalog=json.loads((root/"sources/catalog.json").read_text())
 pages=(root/".github/workflows/pages.yml").read_text()
 private_build=(root/".github/workflows/private-pwa.yml").read_text()
 assert "<html lang=\"de\">" in html
-for path in ("backup-contract.js","app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","field-dataset.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
+for path in ("backup-contract.js","app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","field-image-privacy.js","field-dataset.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
     assert (root/path).is_file(),path
 assert "capture=\"environment\"" in html
 assert 'id="field-dataset"' in html
