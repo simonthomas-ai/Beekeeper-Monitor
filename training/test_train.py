@@ -134,7 +134,7 @@ class CheckpointRightsApprovalTests(unittest.TestCase):
 
     def test_rejects_missing_approval(self):
         with tempfile.TemporaryDirectory() as tmp:
-            with self.assertRaisesRegex(FileNotFoundError, "versioned checkpoint rights approval"):
+            with self.assertRaisesRegex(FileNotFoundError, "local checkpoint rights approval"):
                 validate_checkpoint_rights_approval(
                     tmp, "training/checkpoint-rights-approvals/missing.json",
                     self.CHECKPOINT_SHA256, self.SOURCE_URL
@@ -186,6 +186,7 @@ class CheckpointRightsApprovalTests(unittest.TestCase):
         invalid_updates = (
             {"reviewer_id": "Simon"},
             {"reviewed_at": "27.11.2026"},
+            {"reviewed_at": "2026-02-31"},
             {"license_evidence_sha256": "not-a-sha256"},
             {"evidence_reference": ""},
         )
