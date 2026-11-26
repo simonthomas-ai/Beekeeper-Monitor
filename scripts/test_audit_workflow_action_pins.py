@@ -3,7 +3,7 @@ import re
 import unittest
 from pathlib import Path
 
-from scripts.audit_workflow_action_pins import find_unpinned_actions, find_unpinned_images
+from scripts.audit_workflow_action_pins import (\n    find_permission_policy_violations, find_unpinned_actions, find_unpinned_images,\n)
 
 
 def checkout_step_blocks(text):
@@ -86,6 +86,60 @@ class CheckoutCredentialTests(unittest.TestCase):
                         r"(?m)^\s+persist-credentials:\s*false\s*(?:#.*)?$",
                         f"{workflow} checkout must disable persisted credentials",
                     )
+
+
+
+
+class WorkflowPermissionTests(unittest.TestCase):
+    def test_accepts_workflow_level_read_only_permissions(self):
+        text = """name: test
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps: []
+"""
+        self.assertEqual(find_permission_policy_violations(text), [])
+
+    def test_accepts_job_level_permissions_when_workflow_level_is_absent(self):
+        text = """name: test
+jobs:
+  build:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps: []
+"""
+        self.assertEqual(find_permission_policy_violations(text), [])
+
+    def test_rejects_workflow_without_explicit_permissions(self):
+        text = """name: test
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps: []
+"""
+        self.assertTrue(find_permission_policy_violations(text))
+
+    def test_rejects_write_all_permissions(self):
+        text = """name: test
+permissions: write-all
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps: []
+"""
+        self.assertTrue(find_permission_policy_violations(text))
+
+    def test_every_repository_workflow_declares_explicit_permissions(self):
+        root = Path(__file__).resolve().parents[1]
+        for path in sorted((root / ".github" / "workflows").glob("*.y*ml")):
+            with self.subTest(workflow=path.name):
+                self.assertEqual(
+                    find_permission_policy_violations(path.read_text(encoding="utf-8"), str(path)),
+                    [],
+                )
 
 
 if __name__ == "__main__":
