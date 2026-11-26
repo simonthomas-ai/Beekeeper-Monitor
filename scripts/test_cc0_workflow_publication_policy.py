@@ -43,6 +43,10 @@ class CC0WorkflowPublicationPolicyTests(unittest.TestCase):
                 self.assertNotIn("Pillow>=10,<13", content)
         e2e = (root / ".github" / "workflows" / "gesamttest.yml").read_text(encoding="utf-8")
         self.assertIn("pip-audit==2.10.1", e2e)
+        self.assertIn("python3-venv", e2e)
+        self.assertIn("GITHUB_PATH", e2e)
+        self.assertNotIn("python3-yaml", e2e)
+        self.assertNotIn("python3-pil", e2e)
         self.assertIn("--requirement training/requirements-ci-validation.txt --strict", e2e)
 
     @classmethod
