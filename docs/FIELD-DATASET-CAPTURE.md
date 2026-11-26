@@ -72,7 +72,7 @@ Vor dem strukturierten Rechtevertrag gespeicherte Freitextangaben wie `Nutzerang
 
 ## Repository-übergreifende Prüfung
 
-Der Monitor prüft den Browser-ZIP-Export in `tests/field-dataset.spec.cjs`. Im Ein-Klick-Gesamttest wird derselbe Browser-Export gegen den unveränderlich gepinnten BeeKeeper3000-Validator aus Commit `031c91370da85c6fa42dd8992b6adfc20ddf06c7` geprüft. Dieser Stand erzwingt zusätzlich pseudonyme `labeler_id`-Kennungen im Format `reviewer:<opaque-id>` und enthält den fail-closed Modellmanifest-v2-Rechtevalidator. Er lehnt außerdem Modellquellen-, Lizenznachweis- und Validierungsbericht-URLs mit Query oder Fragment ab, damit keine signierten URLs oder privaten Referenzen in Provenienzmetadaten gelangen. Der Monitor-ZIP-Export enthält weiterhin `images/` und `annotations.jsonl`; der getrennte `provenance.jsonl`-Konverter aus BeeKeeper3000 Issue #120 fehlt noch. Der Job führt zusätzlich Validator-Unit-Tests und den Python-Fixture-Roundtrip aus. Die Testbilder sind künstliche Byte-Fixtures; es werden keine privaten Fotos, realen Rechteunterlagen oder Trainingsdaten in CI hochgeladen.
+Der Monitor prüft den tatsächlichen Browser-ZIP-Export in `tests/field-dataset.spec.cjs`. Der Ein-Klick-Gesamttest pinnt BeeKeeper3000 unveränderlich auf Commit `63bef0204c063c8b4b17af7b3b26a8021b259c2b`. Dieser Stand enthält den fail-closed ZIP-Validator und den lokalen model-manifest-v2-Provenienzkonverter. Der Cross-Repository-Test führt jetzt die vollständige synthetische Kette aus: PWA-ZIP-Export → BeeKeeper-ZIP-Validator → separate source-rights-Reviewdatei → `provenance.jsonl` und `training_data_sources.json` → `camera.model_manifest.load_manifest`. Ein synthetisches Modellfile wird nur gehasht und vom Manifestvalidator geprüft; es wird nicht als ONNX geladen, trainiert oder aktiviert. Der Test verwendet ausschließlich künstliche Bildbytes und eine künstliche Rechteprüfungsdatei. Reale Bilder, private Einwilligungsnachweise, GPS-Daten und Produktions-Trainingsdaten werden nicht in CI verwendet. Die source-rights-Reviewdatei bleibt eine Betreiberangabe und ist kein unabhängiger Rechtsnachweis.
 
 Lokaler Cross-Repo-Fixturetest:
 
@@ -81,7 +81,7 @@ $env:BEEKEEPER_MULTILABEL_VALIDATOR = 'C:\Pfad\zum\BeeKeeper3000\training\multil
 python -m unittest tests.test_beekeeper_importer_roundtrip -v
 ```
 
-Die Tests prüfen das Dateiformat und die technische Rechtefeld-Validierung. Sie beweisen weder die Echtheit einer Erlaubnis noch die korrekte Artbestimmung, Trainingsqualität oder Modellleistung. Ein grüner CI-Lauf ist keine KI- oder Feldfreigabe.
+Die Tests prüfen das Dateiformat, die technische Rechtefeld-Validierung und die vollständige synthetische Provenienz-Roundtrip-Kette. Sie beweisen weder die Echtheit einer Erlaubnis noch die korrekte Artbestimmung, Trainingsqualität oder Modellleistung. Ein grüner CI-Lauf ist keine KI- oder Feldfreigabe.
 
 ## Grenzen und Freigaben
 
