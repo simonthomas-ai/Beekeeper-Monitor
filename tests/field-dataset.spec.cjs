@@ -160,6 +160,39 @@ test('stores multi-label and negative images locally and exports the reviewed co
   expect(requests.some(request => request.method !== 'GET' && request.method !== 'HEAD')).toBeFalsy();
 });
 
+test('requires opaque pseudonymous labeler IDs and exports only the accepted format', async ({page}) => {
+  await page.goto('/');
+  await addImage(page, 'labeler-check.jpg', [0xff, 0xd8, 0xff, 0x31, 0xff, 0xd9]);
+  await page.locator('input[name="image-kind"][value="negative"]').check();
+  await fillRights(page);
+  const labeler = page.locator('#field-labeler-id');
+  for (const invalid of ['Simon Thomas', 'simon@example.org', 'https://example.org/reviewer']) {
+    await labeler.fill(invalid);
+    await page.locator('#field-dataset-form button[type="submit"]').click();
+    await expect(page.locator('#field-dataset-status')).toContainText('reviewer:<opaque-id>');
+    await expect(page.locator('#field-dataset-summary')).toContainText('0 lokale Aufnahmen');
+  }
+  await labeler.fill('reviewer:field-0001');
+  await page.locator('#field-dataset-form button[type="submit"]').click();
+  await expect(page.locator('#field-dataset-status')).toContainText('lokal gespeichert');
+  await attestEveryRecord(page);
+  await expect(page.locator('#field-dataset-export')).toBeEnabled();
+  page.once('dialog', dialog => {
+    expect(dialog.message()).toContain('EXIF-Metadaten');
+    dialog.accept();
+  });
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('#field-dataset-export').click();
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  const files = extractStoredZip(Buffer.concat(chunks));
+  const lines = files.get('annotations.jsonl').toString('utf8').trim().split('\\n').map(line => JSON.parse(line));
+  expect(lines).toHaveLength(1);
+  expect(lines[0].labeler_id).toBe('reviewer:field-0001');
+});
+
 test('requires explicit EXIF metadata confirmation before ZIP export', async ({page}) => {
   await page.goto('/');
   await addImage(page, 'privacy-check.jpg', [0xff, 0xd8, 0xff, 0x21, 0xff, 0xd9]);
