@@ -1,14 +1,10 @@
-"""Regression tests for iNaturalist image quality selection."""
+"""Regression tests for safe iNaturalist original-image URL normalization."""
 import unittest
-import json
-import re
-from pathlib import Path
-from urllib.parse import urlsplit
 
 try:
-    from training.inaturalist_media import ALLOWED_HOSTS, original_image_url, is_original_image_url, normalize_if_inaturalist
+    from training.inaturalist_media import original_image_url, is_original_image_url, normalize_if_inaturalist
 except ModuleNotFoundError:
-    from inaturalist_media import ALLOWED_HOSTS, original_image_url, is_original_image_url, normalize_if_inaturalist
+    from inaturalist_media import original_image_url, is_original_image_url, normalize_if_inaturalist
 
 
 class INaturalistMediaTests(unittest.TestCase):
@@ -48,48 +44,6 @@ class INaturalistMediaTests(unittest.TestCase):
     def test_non_inaturalist_https_source_is_not_rewritten(self):
         url = "https://media.example.org/insect/photo.jpg"
         self.assertEqual(normalize_if_inaturalist(url, 2), url)
-
-    def test_published_review_galleries_use_original_or_hash_bound_local_images(self):
-        root = Path(__file__).resolve().parents[1]
-        gallery_names = ("all.html", "velutina.html", "crabro.html", "apis.html", "bombus.html", "vespula.html")
-        for filename in gallery_names:
-            with self.subTest(gallery=filename):
-                page = (root / "review" / filename).read_text(encoding="utf-8")
-                match = re.search(r"\bconst\s+items\s*=\s*(\[.*?\])\s*;", page, re.S)
-                self.assertIsNotNone(match, "embedded candidate array missing")
-                items = json.loads(match.group(1))
-                self.assertTrue(items, "published gallery must contain reviewed candidates")
-
-                local_originals = 0
-                for item in items:
-                    image_url = item.get("image_url")
-                    self.assertIsInstance(image_url, str)
-                    photo_id = str(item.get("photo_id", ""))
-                    delivery = item.get("image_delivery")
-
-                    if delivery == "LOCAL_UNMODIFIED_ORIGINAL":
-                        local_originals += 1
-                        self.assertIn(filename, ("all.html", "velutina.html"))
-                        self.assertRegex(
-                            image_url,
-                            rf"^images/velutina/{re.escape(photo_id)}\.(?:jpe?g|png|webp)$",
-                        )
-                        self.assertRegex(item.get("original_sha256", ""), r"^[0-9a-f]{64}$")
-                    else:
-                        self.assertIn(delivery, (None, "REMOTE_INATURALIST_ORIGINAL"))
-                        parsed = urlsplit(image_url)
-                        self.assertEqual(parsed.scheme, "https")
-                        if (parsed.hostname or "").lower() in ALLOWED_HOSTS:
-                            self.assertTrue(
-                                is_original_image_url(image_url, photo_id),
-                                f"{filename}: non-original iNaturalist URL for photo {photo_id}",
-                            )
-
-                if filename in ("all.html", "velutina.html"):
-                    self.assertGreater(local_originals, 0, "Velutina galleries must expose local original files")
-                else:
-                    self.assertEqual(local_originals, 0, "non-Velutina galleries must not contain Velutina files")
-
 
 
 if __name__ == "__main__":

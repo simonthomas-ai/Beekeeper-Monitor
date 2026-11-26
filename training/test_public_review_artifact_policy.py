@@ -40,7 +40,7 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
         self.assertIn("actions/runs/${SOURCE_RUN_ID}/artifacts", AUDIT)
         self.assertIn("contents/.github/workflows/ki-cc0-quellen.yml?ref=${SOURCE_SHA}", AUDIT)
         self.assertIn("predates the no-artifact policy", AUDIT)
-        self.assertIn("if [[ -n \"$artifact_names\" ]]", AUDIT)
+        self.assertIn('if [[ -n "$artifact_names" ]]', AUDIT)
         self.assertNotIn("actions/download-artifact", AUDIT)
         self.assertNotIn("original-velutina-images", AUDIT)
         self.assertNotIn("ki-cc0-quellen-prueflisten", AUDIT)
@@ -53,6 +53,13 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
         self.assertNotIn("<img", REVIEW_STATUS.lower())
         self.assertNotIn("data:image", REVIEW_STATUS.lower())
         self.assertNotIn("images/velutina/", REVIEW_STATUS)
+        for gallery in ("all", "velutina", "crabro", "apis", "bombus", "vespula"):
+            self.assertFalse((ROOT / "review" / f"{gallery}.html").exists())
+
+    def test_retired_public_gallery_license_audit_is_removed(self):
+        self.assertFalse((ROOT / ".github" / "workflows" / "photo-license-audit.yml").exists())
+        self.assertFalse((ROOT / "scripts" / "check_live_photo_licenses.py").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

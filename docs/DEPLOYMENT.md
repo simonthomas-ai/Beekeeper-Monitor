@@ -41,7 +41,7 @@ Unter **Settings > Pages > Build and deployment > Source** muss **GitHub Actions
 
 ## Öffentliche Review-Daten
 
-Die früheren Originalbild- und Kandidatenlisten-Artefakte sind keine Trainingsfreigabe. Neue CC0-Läufe veröffentlichen keine solchen Artefakte. Die öffentliche Review-URL zeigt nur eine Statusseite; die Kandidatengalerien bleiben bis zur unabhängigen Rechte- und Fachprüfung privat.
+Die früheren Originalbild- und Kandidatenlisten-Artefakte sind keine Trainingsfreigabe. Neue CC0-Läufe veröffentlichen keine solchen Artefakte. Die öffentliche Review-URL zeigt nur eine Statusseite; die Kandidatengalerien bleiben bis zur unabhängigen Rechte- und Fachprüfung privat. Die sechs früher eingecheckten Kandidatengalerien sind aus dem aktuellen Quellbaum entfernt; ältere öffentliche Commits enthalten sie weiterhin. Eine History-Umschreibung erfordert eine gesonderte Eigentümerentscheidung (Issue #310).
 
 ## Öffentliche Adresse (derzeit NICHT als erreichbar bestätigt)\nhttps://simonthomas-ai.github.io/Beekeeper-Monitor/\n\nDie Unterseite `/varroa.html` ist im Repository und im privaten Build vorhanden, aber öffentlich erst nach einem erfolgreichen Pages-Deployment erreichbar. Ein HTTP-404 ist bis dahin erwartbar. Vor einem öffentlichen Testbetrieb müssen die tatsächlichen Betreiber-/Kontaktangaben und Datenschutzhinweise geprüft und ergänzt werden. Danach kann der Pages-Workflow kontrolliert wieder aktiviert werden.
 
