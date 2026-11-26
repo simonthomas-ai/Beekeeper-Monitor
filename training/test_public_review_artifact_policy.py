@@ -9,6 +9,7 @@ CC0 = (WORKFLOWS / "ki-cc0-quellen.yml").read_text(encoding="utf-8")
 PAGES = (WORKFLOWS / "pages.yml").read_text(encoding="utf-8")
 AUDIT = (WORKFLOWS / "gallery-original-artifact-audit.yml").read_text(encoding="utf-8")
 PWA_BUILD = (WORKFLOWS / "private-pwa.yml").read_text(encoding="utf-8")
+GESAMTTEST = (WORKFLOWS / "gesamttest.yml").read_text(encoding="utf-8")
 INDEX = (ROOT / "index.html").read_text(encoding="utf-8")
 REVIEW_STATUS = (ROOT / "review" / "index.html").read_text(encoding="utf-8")
 
@@ -41,6 +42,12 @@ FORBIDDEN_PUBLIC_ARTIFACT_NAMES = (
 
 
 class PublicReviewArtifactPolicyTests(unittest.TestCase):
+    def test_full_test_report_artifact_is_public_and_short_lived(self):
+        self.assertIn("Actions artifacts are readable by repository readers.", GESAMTTEST)
+        self.assertIn("Browser-Testartefakte (öffentlich, 1 Tag)", GESAMTTEST)
+        self.assertIn("name: gesamttest-berichte", GESAMTTEST)
+        self.assertIn("retention-days: 1", GESAMTTEST)
+
     def test_pwa_build_artifact_is_explicitly_public_and_short_lived(self):
         self.assertIn("öffentliches Actions-Artefakt, kein Deployment", PWA_BUILD)
         self.assertIn("name: vespaguard-pwa-preview", PWA_BUILD)
