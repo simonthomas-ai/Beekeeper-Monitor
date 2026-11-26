@@ -43,6 +43,8 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
@@ -128,15 +130,3 @@ jobs:
           with open(__import__("os").environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as stream:
               stream.write("\n".join(lines) + "\n")
           PY
-      - name: Preserve metadata review queue
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: gbif-media-review-queue
-          path: |
-            training/gbif-media-review-queue.csv
-            training/gbif-media-discovery-status.json
-            training/gbif-media-review-gallery.html
-            training/gbif-media-review-gallery-summary.json
-          if-no-files-found: ignore
-          retention-days: 14
