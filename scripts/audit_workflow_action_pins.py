@@ -140,7 +140,7 @@ def main() -> int:
     workflow_root = repository_root / ".github" / "workflows"
     problems = audit_workflows(workflow_root)
     if problems:
-        print("Mutable GitHub Actions or container image references detected:", file=sys.stderr)
+        print("Workflow supply-chain or token-permission policy violations detected:", file=sys.stderr)
         for problem in problems:
             print(f"- {problem}", file=sys.stderr)
         return 1
@@ -150,7 +150,7 @@ def main() -> int:
         if path.is_file() and path.suffix.lower() in {".yml", ".yaml"}
     )
     print(
-        f"PASS: external Actions and container images in {count} workflow files are SHA/digest pinned."
+        f"PASS: external Actions and container images are SHA/digest pinned; explicit least-privilege token permissions are declared in {count} workflow files."
     )
     return 0
 
