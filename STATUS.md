@@ -1,3 +1,14 @@
+# Deployment-Klarstellung – 26.11.2026, 15:42 UTC (nach PR #321)
+
+- **Beekeeper-Monitor main vor dieser Dokumentationskorrektur:** `af7afd96b6c64bf61580dd5666fc205e16181fa6`; **BeeKeeper3000 main:** `77bd1c012af502afa42b9a79bf9eff0deda37032`.
+- Die aktuelle GitHub-Repository-Metadatenabfrage meldet für Beekeeper-Monitor `has_pages=true`, für BeeKeeper3000 `has_pages=false`.
+- Im Monitor-`.github/workflows/pages.yml` ist der Deployment-Job weiterhin mit `if: ${{ false }}` gesperrt. In dieser Prüfung wurde kein Pages-Deployment ausgelöst.
+- **Wichtige Unterscheidung:** Die Workflow-Sperre deaktiviert nicht automatisch die repositoryweite Pages-Einstellung und entfernt keine ältere Veröffentlichung. Ob ein früherer Pages-Stand noch öffentlich ausgeliefert wird, konnte nicht unabhängig bestätigt werden. Bis zur manuellen Prüfung unter Repository Settings → Pages ist ein älterer öffentlicher Stand als möglich zu behandeln.
+- Der aktuelle Build [#45852434471](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45852434471) erzeugte nur das öffentlich lesbare Actions-Artefakt `vespaguard-pwa-preview` (ID `15134318088`, 65.783 Bytes, Ablauf 2026-12-03 15:46:48 UTC). Das ist kein Pages-Deployment. Die Workflow-Stagingliste enthält statische App-Dateien, keine Feldbilder, GPS-Exporte oder Modellgewichte.
+- Vor einer Freigabe müssen Pages-Einstellung und gegebenenfalls vorhandene alte Veröffentlichung separat geprüft und ausdrücklich deaktiviert/entfernt werden. Diese Änderung selbst veröffentlicht nichts.
+
+---
+
 # Aktueller Nachtrag – 26.11.2026 (nach PR #320)
 
 ## Hauptzweige und integrierte Änderungen
