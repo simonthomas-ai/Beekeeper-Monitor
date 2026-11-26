@@ -1,5 +1,5 @@
 'use strict';
-// Opt-in local experimental ONNX inference. Never emits alarms or uploads camera frames.
+// Disabled research stub. No model/runtime is approved; no remote code is loaded.
 (() => {
  const select=document.getElementById('camera-model'),file=document.getElementById('hornet-model-file');
  const start=document.getElementById('start-ai'),stop=document.getElementById('stop-ai');
@@ -24,17 +24,9 @@
  document.getElementById('stop-media').addEventListener('click',()=>{deactivate();say('KI und Kamera gestoppt.')});
  window.addEventListener('pagehide',deactivate);
  async function loadRuntime(){
-   if(window.ort)return window.ort;
-   await new Promise((resolve,reject)=>{
-     const script=document.createElement('script');
-     script.src='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.2/dist/ort.min.js';
-     script.onload=resolve;script.onerror=()=>reject(Error('ONNX-Laufzeit konnte nicht geladen werden'));
-     document.head.appendChild(script);
-   });
-   if(!window.ort)throw Error('ONNX-Laufzeit fehlt');
-   window.ort.env.wasm.wasmPaths='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.2/dist/';
-   window.ort.env.wasm.numThreads=1;
-   return window.ort;
+   // Fail closed until a locally bundled, hash-pinned and license-reviewed runtime is approved.
+   // Never execute JavaScript or fetch WASM from a third-party CDN at camera activation time.
+   throw Error('KI-Laufzeit nicht freigegeben: Es wird keine externe ONNX-Laufzeit nachgeladen.');
  }
  function frameTensor(ort){
    if(!ctx||video.readyState<2||video.videoWidth===0)throw Error('Kamera noch nicht bereit');
@@ -63,7 +55,7 @@
      const bytes=await chosen.arrayBuffer();
      const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)))
        .map(b=>b.toString(16).padStart(2,'0')).join('');
-     if(hash!==EXPECTED_SHA)throw Error('SHA-256 stimmt nicht mit dem geprüften Hornet3000-Modell überein');
+     if(hash!==EXPECTED_SHA)throw Error('SHA-256 stimmt nicht mit dem dokumentierten Hornet3000-Kandidaten überein');
      if(!running||token!==generation)return;
      say('Lade ONNX-Laufzeit und Modell …');
      const ort=await loadRuntime();
@@ -73,8 +65,8 @@
      if(session.inputNames.length!==1||session.inputNames[0]!=='images'||
         session.outputNames.length!==1||session.outputNames[0]!=='output0')
        throw Error('Unerwartete Modell-Ein-/Ausgaben');
-     modelStatus.textContent='Hornet3000: EXPERIMENTELLE KI AKTIV – unbestätigte Kandidaten, keine Alarme.';
-     say('Kamera-KI aktiv: erste lokale Auswertung läuft …');
+     modelStatus.textContent='Hornet3000: NICHT FREIGEGEBEN – keine produktive Inferenz.';
+     say('Kamera-KI nicht freigegeben; es wird keine Inferenz gestartet.');
      while(running&&token===generation){
        const tensor=frameTensor(ort);
        const output=await session.run({images:tensor});
