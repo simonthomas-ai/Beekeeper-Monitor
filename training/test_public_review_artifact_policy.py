@@ -87,9 +87,9 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
                         indent = len(item) - len(item.lstrip())
                         if indent <= with_indent:
                             break
-                    match = re.match(r"^\\s+name:\\s*([^\\s#]+)", item)
+                    match = re.match(r"^\s+name:\s*([^\s#]+)", item)
                     if match:
-                        uploaded_names.add(match.group(1).strip("\\"'"))
+                        uploaded_names.add(match.group(1))
 
         for artifact_name in FORBIDDEN_PUBLIC_ARTIFACT_NAMES:
             with self.subTest(artifact=artifact_name):
