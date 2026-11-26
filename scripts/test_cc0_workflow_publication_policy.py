@@ -30,7 +30,7 @@ class CC0WorkflowPublicationPolicyTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         lock = root / "training" / "requirements-ci-validation.txt"
         lock_text = lock.read_text(encoding="utf-8")
-        self.assertIn("Pillow==12.3.0", lock_text)
+        self.assertIn("Pillow==13.0.0", lock_text)
         self.assertIn("PyYAML==6.0.3", lock_text)
         for workflow_name in (
             "ki-cc0-quellen.yml",
