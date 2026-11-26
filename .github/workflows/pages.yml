@@ -107,7 +107,7 @@ jobs:
         run: |
           set -euo pipefail
           # Keep this fail-closed gate after the image audit but before any upload.
-          if grep -Eq '\\[[^]]+\\]' _site/impressum.html _site/datenschutz.html || \\
+          if grep -Eq '\[[^]]+\]' _site/impressum.html _site/datenschutz.html || \
              grep -Eiq 'MUSTER[[:space:]]*/[[:space:]]*PLATZHALTER|Angaben noch unvollständig|Angaben sind derzeit unvollständig' _site/impressum.html _site/datenschutz.html; then
             echo "::error::Rechtstexte enthalten noch Platzhalter; Deployment gesperrt."
             exit 1
@@ -147,7 +147,7 @@ jobs:
 
           base = "https://simonthomas-ai.github.io/Beekeeper-Monitor/"
           checks = {
-              "": "id=\\"projektleistung\\"",
+              "": "id=\"projektleistung\"",
               "wissen/wissenschaft-hornissen-bienen.html": "Forschung und Fachquellen aus Asien",
               "wissen/weltlage-vespa-velutina.html": "Weltweite Verbreitung und Forschungsstand",
           }
@@ -160,7 +160,7 @@ jobs:
                       with urlopen(Request(url, headers={"User-Agent": "VespaGuard-Deployment-Check/1.0", "Cache-Control": "no-cache"}), timeout=20) as response:
                           body = response.read().decode("utf-8")
                           legal = path in ("impressum.html", "datenschutz.html")
-                          placeholders = bool(re.search(r"\\[[^]]+\\]|MUSTER\\s*/\\s*PLATZHALTER|Angaben (?:noch|sind derzeit) unvollständig", body, re.IGNORECASE))
+                          placeholders = bool(re.search(r"\[[^]]+\]|MUSTER\s*/\s*PLATZHALTER|Angaben (?:noch|sind derzeit) unvollständig", body, re.IGNORECASE))
                           if response.status == 200 and ((not placeholders and bool(body.strip())) if legal else marker in body):
                               print(f"OK HTTP 200 and expected content: {url}", flush=True)
                               break
