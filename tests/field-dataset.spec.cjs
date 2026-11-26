@@ -127,7 +127,7 @@ test('stores multi-label and negative images locally and exports the reviewed co
     const python = process.platform === 'win32' ? 'python' : 'python3';
     try {
       execFileSync(python, ['-c',
-        'import importlib.util,sys; p=sys.argv[1]; s=importlib.util.spec_from_file_location("beekeeper_multilabel_dataset",p); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); rows=m.validate_dataset_archive(sys.argv[2]); assert len(rows)==2; assert rows[0]["labels"] or rows[1]["labels"]',
+        'import importlib.util,sys; p=sys.argv[1]; s=importlib.util.spec_from_file_location("beekeeper_multilabel_dataset",p); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); rows=m.validate_dataset_archive(sys.argv[2]); assert len(rows)==2; assert rows[0]["labels"] or rows[1]["labels"]; assert all(row["reviewed_by"] == "reviewer:field-reviewer-0001" and row["reviewed_at"].endswith("Z") and len(row["image_sha256"]) == 64 for row in rows)',
         process.env.BEEKEEPER_MULTILABEL_VALIDATOR, zipPath
       ], {stdio:'pipe', env:{...process.env, PYTHONDONTWRITEBYTECODE:'1'}});
     } finally {
