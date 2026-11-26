@@ -22,6 +22,8 @@
   const status = document.getElementById('field-dataset-status');
   const rows = document.getElementById('field-dataset-entries');
   const exportButton = document.getElementById('field-dataset-export');
+  const exportConsent = document.getElementById('field-dataset-export-consent');
+  if (!exportButton || !exportConsent) return;
   const kindRadios = [...form.querySelectorAll('input[name="image-kind"]')];
   const classInputs = [...form.querySelectorAll('input[name="class-label"]')];
   const classGroup = document.getElementById('field-dataset-classes');
@@ -359,7 +361,7 @@
       for (const record of records) rows.append(renderRecord(record));
       const pending = records.filter(record => !rightsContractComplete(record.rights) ||
         record.review_status !== 'approved' || record.rights.status !== 'training_approved');
-      exportButton.disabled = records.length === 0 || pending.length > 0;
+      exportButton.disabled = records.length === 0 || pending.length > 0 || !exportConsent.checked;
       setText(document.getElementById('field-dataset-summary'),
         `${records.length} lokal${records.length === 1 ? 'e Aufnahme' : 'e Aufnahmen'} · ${pending.length} ohne abgeschlossene Nutzerprüfung`);
     } catch (error) {
@@ -433,6 +435,9 @@
   }
 
   async function exportDataset() {
+    if (!exportConsent.checked) {
+      throw Error('Export gesperrt: Bitte bestätige zuerst, dass Originalbilder EXIF-Metadaten wie GPS- und Geräteinformationen enthalten können.');
+    }
     const records = await all();
     if (!records.length) throw Error('Es gibt keine lokalen Aufnahmen zum Exportieren.');
     if (records.length >= 0xffff) throw Error('ZIP-Export abgebrochen: zu viele Aufnahmen für das Archivformat.');
@@ -476,6 +481,7 @@
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 30000);
     setText(status, `${records.length} attestierte Aufnahme(n) exportiert. Bildinhalte und Rechte wurden nicht unabhängig verifiziert; die lokale Sammlung bleibt erhalten.`);
+    exportConsent.checked = false;
   }
 
   for (const radio of kindRadios) radio.addEventListener('change', updateKind);
@@ -518,6 +524,7 @@
       button.disabled = false;
     }
   });
+  exportConsent.addEventListener('change', () => { void render(); });
   exportButton.addEventListener('click', async () => {
     exportButton.disabled = true;
     try {
