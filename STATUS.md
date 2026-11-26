@@ -1,40 +1,38 @@
-# Aktualisierung – 26.11.2026, 06:45 UTC
+# Aktualisierung – 26.11.2026, 10:45 UTC
 
-## Geprüfte Hauptzweigstände (Codebasis)
-- **Beekeeper-Monitor:** `69a0e8bc9cbdacc85bec1be03d74eeadede64ac8` – PR [#303](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/303) ist gemergt.
-- **BeeKeeper3000:** `63bef0204c063c8b4b17af7b3b26a8021b259c2b` – PR [#124](https://github.com/simonthomas-ai/BeeKeeper3000/pull/124) ist gemergt.
-- Die SHAs bezeichnen die geprüfte Codebasis vor dieser reinen Statuskorrektur; sie sind nicht der Commit dieser Dokumentänderung.
+## Geprüfte Hauptzweigstände
+- **Beekeeper-Monitor:** `00af387cac734fb591990d752b19036237ee8148`. PR [#311](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/311) ist gemergt. Die sechs öffentlichen Kandidatengalerien sowie der davon abhängige veraltete iNaturalist-Lizenzscraper und sein täglicher Workflow sind aus dem aktuellen Quellbaum entfernt.
+- **BeeKeeper3000:** `77bd1c012af502afa42b9a79bf9eff0deda37032`. PR [#127](https://github.com/simonthomas-ai/BeeKeeper3000/pull/127) ist gemergt; Supply-Chain-Inventar und Tests wurden ergänzt.
 
-## Nach Merge bestätigte Hauptzweig-CI
-- Monitor Ein-Klick-Gesamttest [#45762328909](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45762328909): **success**.
-- Monitor Repository-Integration [#45762328966](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45762328966): **success**.
-- Monitor CodeQL [#45762328894](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45762328894): **success**.
-- Privater PWA-Build [#45762328874](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45762328874): **success**; nur GitHub-Artefakt, keine Pages-Veröffentlichung.
-- BeeKeeper3000 Quality Gates [#45761425319](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45761425319) und CodeQL [#45761425277](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45761425277): **success**.
-- Der Monitor-Feldexportjob prüfte den echten Browser-ZIP-Export gegen 20 Validator-Unit-Tests, 15 synthetische Provenienzkonverter-Tests, den model-manifest-v2-Validator und den Python-Roundtrip. Alle Schritte erfolgreich. Es wurden ausschließlich künstliche Testbildbytes und synthetische Rechte-Reviews verwendet.
+## Nach Merge bestätigte CI
+- Monitor PR-Gesamttest [#45802805309](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45802805309): **success**; CodeQL [#45802805467](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45802805467): **success**; CC0-Publication-Policy [#45802805347](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45802805347): **success**.
+- Monitor nach Merge: Ein-Klick-Gesamttest [#45803405659](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45803405659), CodeQL [#45803405776](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45803405776), privater Nicht-Deployment-PWA-Build [#45803405754](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45803405754) und CC0-Publication-Policy [#45803405749](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45803405749): **success**. Bridge-Integration und Browser-ZIP-Export gegen BeeKeeper3000 waren erfolgreich.
+- BeeKeeper3000 auf `77bd1c012`: Quality Gates [#45795479713](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479713), CodeQL [#45795479682](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479682), Supply Chain/SBOM [#45795479697](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479697) und Windows-Station [#45795479670](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479670): **success**.
+- Im Monitor-Gesamttest bleiben die fachlichen Gates ausdrücklich getrennt: `IMPORTTESTS: success`, aber `TRAINING: failure` und `ANNOTATIONS: failure`. Der Ergebnisbericht setzt `KI-STATUS: BLOCKIERT`. Die Software-CI-Gesamtampel ist keine Trainings- oder KI-Freigabe.
 
-## KI- und Datenfreigabe bleibt BLOCKIERT
-- Der Hauptzweig-Gesamttest meldet weiterhin `TRAINING: failure` und `ANNOTATIONS: failure`.
-- Konkreter Fehler: `FileNotFoundError: Real training dataset directory is missing: datasets/beekeeper`.
-- `training/reviewed-annotations.json` fehlt ebenfalls.
-- Diese Prüfungen sind absichtlich separat/fehlertolerant, damit Software-CI grün bleiben kann; der Ergebnisbericht setzt ausdrücklich `KI-STATUS: BLOCKIERT`.
-- Sechs Modellkandidaten sind nur revisionsgebundene Metadaten mit `rights_and_runtime_pending`; keine Gewichte wurden heruntergeladen oder aktiviert.
-- Keine unabhängige Precision-/Recall-, Fehlalarm- oder Feldvalidierung; keine belegte 99-%-Erkennung.
+## Öffentliche Review-Artefakte
+- Aktueller Monitor-Quellbaum enthält keine der sechs Kandidatengalerien mehr; `scripts/check_live_photo_licenses.py` und `.github/workflows/photo-license-audit.yml` wurden ebenfalls entfernt. Die veralteten Gallery-Regressionen wurden korrigiert; Import-/Static-Tests bestanden.
+- Das historische Actions-Artefakt aus Run [#45689841927](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45689841927) besteht weiterhin aus zwei nicht abgelaufenen Artefakten: `original-velutina-images` (161.230.685 Bytes) und `ki-cc0-quellen-prueflisten` (169.351 Bytes), Ablauf 09.12.2026. Es wurde nicht heruntergeladen oder gelöscht. Die verbundene GitHub-Schnittstelle bietet keine Artifact-Delete-Aktion; manuelle Löschung ist in [Issue #308](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/308) nachzuverfolgen. Keine Git-Historie umgeschrieben; Entscheidung dazu siehe [Issue #310](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/310).
+- Andere Discovery-Workflows erzeugen weiterhin kurzlebige **Drittquellen-Metadaten**: Main-Läufe [#45803405634](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45803405634) und [#45803405656](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45803405656) haben die Artefakte `inaturalist-balanced-review-queue` (89.737 Bytes) und `insect-photo-review-queue` (163.198 Bytes) erzeugt. Die Workflow-Dateien weisen CSV/JSON-Review-Metadaten und generierte Galerien aus, keine privaten Beekeeper-Feldbilder, präzisen Bienenstand-GPS-Daten oder Modellgewichte. Da das Repository öffentlich ist, sind diese Artefakte für Repository-Leser zugänglich. Folgeprüfung: [Issue #312](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/312).
 
-## Sicherheit, Datenschutz, Rechte und Deployment
-- Provenienzkonverter verlangt separate source-rights-Reviewdatei und stuft Nutzerattestierung nicht automatisch zu Rechtsfreigabe hoch.
-- Lokale Fotos bleiben in IndexedDB; diese Browserdaten sind nicht zusätzlich durch die Anwendung verschlüsselt. Der Feld-ZIP-Export erzeugt lokal metadatenbereinigte PNG-Kopien; die Originalbytes bleiben in IndexedDB. Allgemeine JSON-Exporte können weiterhin Fotos und genaue GPS-Daten enthalten.
-- Root-`LICENSE` fehlt in beiden Repositories (GitHub-Contents-Abfrage 404). BeeKeeper3000-`LICENSES.md` ist ein vorläufiges Inventar, keine vollständige Projektlizenz oder Release-Freigabe.
-- Betreiber-/Kontaktplatzhalter in `impressum.html` und `datenschutz.html` sind weiterhin vorhanden.
-- Pages-Workflow bleibt mit `if: false` deaktiviert; der private PWA-Build ist keine öffentliche Veröffentlichung.
-- Ruleset-Abfrage liefert für beide Repositories `[]`. Die klassische Branch-Protection-Abfrage liefert HTTP 403; ihr genauer Zustand kann über diese Integration nicht verifiziert oder geändert werden. Keine Umgehung vorgenommen.
+## KI, Modelle und Rechte
+- Sechs Modellkandidaten besitzen unveränderliche Quellrevisionen, stehen aber alle auf `rights_and_runtime_pending`. Die Git-Trees beider Hauptzweige enthalten keine ONNX-, PyTorch-, TensorFlow- oder vergleichbaren Modellgewichte.
+- Der BeeKeeper-Kameraadapter erwartet Objektdetektionen mit Bounding-Boxes; der neue Trainingsklassifikator exportiert `[1,7]`-Logits. Die Verträge sind nicht kompatibel. [PR #110](https://github.com/simonthomas-ai/BeeKeeper3000/pull/110) ist weiterhin Draft, 2 Commits voraus und 15 hinter `main`.
+- `datasets/beekeeper` und `training/reviewed-annotations.json` fehlen. Keine unabhängige Precision-/Recall-, Fehlalarm-, Standort-Holdout- oder Feldvalidierung; keine belegte 99-%-Erkennung.
+- Beide Repository-Wurzeln haben keine `LICENSE`. BeeKeeper3000-`LICENSES.md` ist ein vorläufiges Inventar, keine Projektlizenz. Upstream-Repository-Lizenzen belegen nicht automatisch Rechte an konkreten Modellgewichten oder Bildern.
+
+## Datenschutz, Sicherheit und Deployment
+- Browserdaten in IndexedDB sind nicht zusätzlich anwendungsseitig verschlüsselt. Der Feld-ZIP-Export erzeugt lokal neu codierte PNG-Kopien und entfernt EXIF/GPS-, XMP- und eingebettete Text-/Zeit-Metadaten; allgemeine JSON-Sicherungen können weiterhin Originalbilder und genaue GPS-Daten enthalten. Kein automatischer Upload der lokalen Feldaufnahme.
+- Impressum und Datenschutzhinweise enthalten weiterhin nicht bestätigte Betreiber-/Kontaktangaben.
+- Monitor-Repository meldet `has_pages=true`; der Pages-Workflow ist manuell auslösbar, aber der Deployment-Job bleibt `if: false`. Die Deployment-Abfrage lieferte keine Einträge; der Live-Stand konnte nicht unabhängig verifiziert werden. Kein öffentliches Deployment ausgelöst.
+- Beide `main`-Branches melden `protected=false`, die Ruleset-Abfragen liefern `[]`. Die verbundene GitHub-Schnittstelle bietet keine administrative Schreibaktion für Branch Protection; keine Umgehung vorgenommen.
 
 ## Nächste Prioritäten
-1. Branch Protection administrativ aktivieren und anschließend unabhängig rücklesen.
-2. Pseudonyme Review-Metadaten und Rechteprovenienz nur mit echten, getrennten Freigabeprozessen nutzen; keine Testattestierungen als reale Nachweise übernehmen.
-3. Rechtlich freigegebene, fachlich annotierte Bilder bereitstellen und die unabhängige KI-Validierung durchführen.
-4. Datenschutz-/Betreiberangaben, Prüfung anderer Exportwege und vollständige Lizenz-/SBOM-Kette vor öffentlichem Pilot abschließen.
-
+1. Historische Bild-/Prüflisten-Artefakte aus Run #45689841927 manuell löschen lassen und die Entscheidung zur alten Git-Historie treffen.
+2. Die übrigen öffentlichen Review-Metadaten-Artefakte gemäß Issue #312 klassifizieren und ihren Zugriff bewusst festlegen.
+3. Beide Hauptbranches administrativ schützen.
+4. PR #110 auf aktuellen Stand bringen, ohne Inferenz zu aktivieren; Klassifikations- und Detektionsvertrag sauber trennen.
+5. Rechtlich freigegebene, fachlich annotierte Daten und unabhängige Feldvalidierung bereitstellen.
 
 ---
 
