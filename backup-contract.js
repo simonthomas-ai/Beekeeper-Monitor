@@ -77,12 +77,49 @@
     return backup.observations;
   }
 
+  function buildPrivacySummaryCsv(observations) {
+    if (!Array.isArray(observations) || observations.length > MAX_OBSERVATIONS) {
+      throw new Error('Die datensparsame Übersicht enthält ungültige oder zu viele Beobachtungen.');
+    }
+    const counts = new Map();
+    for (const item of observations) {
+      if (!validObservation(item)) {
+        throw new Error('Die datensparsame Übersicht enthält eine ungültige Beobachtung.');
+      }
+      const month = new Date(Date.parse(item.at)).toISOString().slice(0, 7);
+      let monthCounts = counts.get(month);
+      if (!monthCounts) {
+        monthCounts = new Map();
+        counts.set(month, monthCounts);
+      }
+      monthCounts.set(item.type, (monthCounts.get(item.type) || 0) + 1);
+    }
+    const rows = [];
+    for (const [month, monthCounts] of counts) {
+      for (const [type, count] of monthCounts) rows.push({month, type, count});
+    }
+    rows.sort((left, right) => {
+      if (left.month !== right.month) return left.month < right.month ? -1 : 1;
+      if (left.type === right.type) return 0;
+      return left.type < right.type ? -1 : 1;
+    });
+    const cell = value => '"' + String(value).replace(/"/g, '""') + '"';
+    const output = [
+      ['Monat (UTC)', 'Beobachtungstyp', 'Anzahl'],
+      ...rows.map(row => [row.month, row.type, row.count])
+    ];
+    return String.fromCharCode(0xfeff) +
+      output.map(row => row.map(cell).join(';')).join(String.fromCharCode(13, 10)) +
+      String.fromCharCode(13, 10);
+  }
+
   return Object.freeze({
     MAX_BACKUP_BYTES,
     MAX_OBSERVATIONS,
     MAX_PHOTO_BYTES,
     isSupportedImageType,
     validObservation,
-    parseBackupText
+    parseBackupText,
+    buildPrivacySummaryCsv
   });
 });
