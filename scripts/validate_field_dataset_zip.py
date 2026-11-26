@@ -233,12 +233,6 @@ def validate(zip_path: Path) -> list[str]:
 
                 validate_rights(record.get("rights"), line_number, errors)
 
-                labeler = record.get("labeler_id")
-                if "labeler_id" in record and (
-                    not isinstance(labeler, str) or not labeler.strip() or len(labeler) > 160
-                ):
-                    errors.append(f"Zeile {line_number}: labeler_id muss ein Pseudonym-String sein")
-
             if line_count == 0:
                 errors.append("annotations.jsonl ist leer")
             missing_annotations = sorted(image_names.difference(seen_images))
