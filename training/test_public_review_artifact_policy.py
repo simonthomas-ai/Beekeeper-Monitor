@@ -61,7 +61,7 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
             with self.subTest(workflow=workflow_name):
                 content = (WORKFLOWS / workflow_name).read_text(encoding="utf-8")
                 self.assertIn("Pillow==12.3.0", content)
-                self.assertNotRegex(content, r"Pillow\\s*(?:>=|<=|>|<|~=)")
+                self.assertNotRegex(content, r"Pillow\s*(?:>=|<=|>|<|~=)")
 
     def test_cc0_discovery_uploads_no_candidate_artifacts(self):
         self.assertNotIn("actions/upload-artifact@", CC0)
