@@ -157,7 +157,9 @@ jobs:
           echo 'Fehlende Trainingsdaten blockieren die Modellfreigabe. Eine erfolgreiche Inventur belegt keine KI-Genauigkeit, SMS-Zustellung oder Hardwarefunktion.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Trainingsdaten und fachliche Annotationen werden dokumentiert, sind aber absichtlich KEINE verpflichtenden CI-Erfolgskriterien; ihren Status separat beachten.' >> "$GITHUB_STEP_SUMMARY"
       - name: Gemeinsamer Modellkatalog - Hornissen und Varroa (verpflichtend)
-        run: python3 scripts/check_model_catalog.py
+        run: |
+          python3 -m unittest discover -s tests -p 'test_model_catalog.py' -v
+          python3 scripts/check_model_catalog.py
       - name: Freigabesperre automatisch pruefen (verpflichtend)
         run: python3 -m unittest discover -s tests -p 'test_release_gate_report.py' -v
       - name: Freigabebericht (CI-Ergebnisse getrennt von rechtlicher Freigabe)
