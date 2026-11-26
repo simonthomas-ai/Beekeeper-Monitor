@@ -1,5 +1,6 @@
 """Regression tests for keeping unreviewed candidate metadata out of public Actions artifacts."""
 from pathlib import Path
+import re
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -79,7 +80,7 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
                 start = index
                 if not lines[index].lstrip().startswith("- uses:"):
                     for candidate in range(index - 1, -1, -1):
-                        match = __import__("re").match(r"^(\s*)-\s+", lines[candidate])
+                        match = re.match(r"^(\s*)-\s+", lines[candidate])
                         if match and len(match.group(1)) < use_indent:
                             start = candidate
                             break
@@ -87,7 +88,7 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
                 end = next(
                     (
                         candidate for candidate in range(index + 1, len(lines))
-                        if (match := __import__("re").match(r"^(\s*)-\s+", lines[candidate]))
+                        if (match := re.match(r"^(\s*)-\s+", lines[candidate]))
                         and len(match.group(1)) <= start_indent
                     ),
                     len(lines),
