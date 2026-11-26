@@ -1,19 +1,3 @@
-name: CC0 image candidates for human review
-on:
-  workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/cc0-review-queue.yml'
-  schedule:
-    - cron: '17 6 * * 1'
-permissions:
-  contents: read
-jobs:
-  discover:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
@@ -22,24 +6,8 @@ jobs:
         run: python training/discover_cc0_candidates.py --per-species 50 --max-pages 10 --output training/inaturalist-review-queue.csv
       - name: Audit candidate metadata integrity (fail closed)
         run: python training/audit_cc0_candidates.py --input training/inaturalist-review-queue.csv --output training/cc0-audit.json
-      - name: Preserve audit report
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: cc0-metadata-integrity-audit
-          path: training/cc0-audit.json
-          if-no-files-found: warn
-          retention-days: 30
       - name: Generate iPhone-friendly pending human review CSV
         run: python training/prepare_human_review.py --input training/inaturalist-review-queue.csv --output training/human-review-pending.csv
-      - name: Preserve pending human review sheet
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: cc0-human-review-pending
-          path: training/human-review-pending.csv
-          if-no-files-found: warn
-          retention-days: 30
       - name: Review queue summary
         if: always()
         shell: bash
@@ -59,11 +27,3 @@ jobs:
           else
             echo 'No candidate metadata file produced; discovery may have failed.' >> "$GITHUB_STEP_SUMMARY"
           fi
-      - name: Preserve candidate metadata for review
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: cc0-unreviewed-candidates
-          path: training/inaturalist-review-queue.csv
-          if-no-files-found: warn
-          retention-days: 30
