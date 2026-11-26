@@ -35,6 +35,7 @@
   const permissionField = document.getElementById('field-rights-permission-field');
   const permissionInput = document.getElementById('field-rights-permission-ref');
   let objectUrls = [];
+  let recordsReadyForExport = false;
 
   function id() {
     if (crypto.randomUUID) return crypto.randomUUID();
@@ -361,10 +362,12 @@
       for (const record of records) rows.append(renderRecord(record));
       const pending = records.filter(record => !rightsContractComplete(record.rights) ||
         record.review_status !== 'approved' || record.rights.status !== 'training_approved');
-      exportButton.disabled = records.length === 0 || pending.length > 0 || !exportConsent.checked;
+      recordsReadyForExport = records.length > 0 && pending.length === 0;
+      exportButton.disabled = !recordsReadyForExport || !exportConsent.checked;
       setText(document.getElementById('field-dataset-summary'),
         `${records.length} lokal${records.length === 1 ? 'e Aufnahme' : 'e Aufnahmen'} · ${pending.length} ohne abgeschlossene Nutzerprüfung`);
     } catch (error) {
+      recordsReadyForExport = false;
       exportButton.disabled = true;
       setText(status, 'Lokaler Aufnahmespeicher nicht verfügbar: ' + error.message);
     }
@@ -524,7 +527,9 @@
       button.disabled = false;
     }
   });
-  exportConsent.addEventListener('change', () => { void render(); });
+  exportConsent.addEventListener('change', () => {
+    exportButton.disabled = !recordsReadyForExport || !exportConsent.checked;
+  });
   exportButton.addEventListener('click', async () => {
     exportButton.disabled = true;
     try {
