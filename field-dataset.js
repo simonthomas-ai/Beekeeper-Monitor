@@ -169,7 +169,7 @@
     const capturedAt = Date.parse(record.captured_at || '');
     const reviewedAt = Date.parse(record.reviewed_at || '');
     const hasTimezone = typeof record.reviewed_at === 'string' &&
-      /(?:Z|[+-]\\d{2}:\\d{2})$/.test(record.reviewed_at);
+      /(?:Z|[+-]\d{2}:\d{2})$/.test(record.reviewed_at);
     return REVIEWER_ID.test(reviewerId) && hasTimezone &&
       Number.isFinite(capturedAt) && Number.isFinite(reviewedAt) &&
       reviewedAt >= capturedAt;
