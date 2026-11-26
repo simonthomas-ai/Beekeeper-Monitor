@@ -25,8 +25,13 @@ jobs:
       - name: Python-Abhaengigkeiten fuer KI-Pruefung
         run: |
           apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-yaml python3-pil
-          python3 -c 'import yaml; from PIL import Image; print("PyYAML:", yaml.__version__, "Pillow:", Image.__version__)'
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-venv
+          python3 -m venv /tmp/vespaguard-python-validation
+          echo "/tmp/vespaguard-python-validation/bin" >> "$GITHUB_PATH"
+          /tmp/vespaguard-python-validation/bin/python -m pip install --disable-pip-version-check -r training/requirements-ci-validation.txt
+          /tmp/vespaguard-python-validation/bin/python -m pip install --disable-pip-version-check 'pip-audit==2.10.1'
+          /tmp/vespaguard-python-validation/bin/pip-audit --requirement training/requirements-ci-validation.txt --strict
+          /tmp/vespaguard-python-validation/bin/python -c 'import yaml; from PIL import Image; print("PyYAML:", yaml.__version__, "Pillow:", Image.__version__)'
       - name: PWA, Quellcode und Datenquellen
         id: static
         continue-on-error: true

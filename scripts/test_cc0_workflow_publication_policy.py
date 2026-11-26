@@ -2,6 +2,8 @@
 from pathlib import Path
 import unittest
 
+import yaml
+
 WORKFLOW = (
     Path(__file__).resolve().parents[1]
     / ".github"
@@ -11,6 +13,43 @@ WORKFLOW = (
 
 
 class CC0WorkflowPublicationPolicyTests(unittest.TestCase):
+    def test_validation_workflows_are_valid_yaml(self):
+        root = Path(__file__).resolve().parents[1]
+        for workflow_name in (
+            "ki-cc0-quellen.yml",
+            "model-training-readiness.yml",
+            "training-data.yml",
+            "gesamttest.yml",
+        ):
+            with self.subTest(workflow=workflow_name):
+                content = (root / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
+                parsed = yaml.safe_load(content)
+                self.assertIn("jobs", parsed)
+
+    def test_validation_workflows_use_exact_audited_dependency_pins(self):
+        root = Path(__file__).resolve().parents[1]
+        lock = root / "training" / "requirements-ci-validation.txt"
+        lock_text = lock.read_text(encoding="utf-8")
+        self.assertIn("Pillow==13.0.0", lock_text)
+        self.assertIn("PyYAML==6.0.3", lock_text)
+        for workflow_name in (
+            "ki-cc0-quellen.yml",
+            "model-training-readiness.yml",
+            "training-data.yml",
+        ):
+            with self.subTest(workflow=workflow_name):
+                content = (root / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
+                self.assertIn("-r training/requirements-ci-validation.txt", content)
+                self.assertNotIn("Pillow>=10,<13", content)
+        e2e = (root / ".github" / "workflows" / "gesamttest.yml").read_text(encoding="utf-8")
+        self.assertIn("pip-audit==2.10.1", e2e)
+        self.assertIn("python3-venv", e2e)
+        self.assertIn("GITHUB_PATH", e2e)
+        self.assertNotIn("python3-yaml", e2e)
+        self.assertNotIn("python3-pil", e2e)
+        self.assertNotIn("python3 -c 'import yaml", e2e)
+        self.assertIn("--requirement training/requirements-ci-validation.txt --strict", e2e)
+
     @classmethod
     def setUpClass(cls):
         cls.content = WORKFLOW.read_text(encoding="utf-8")

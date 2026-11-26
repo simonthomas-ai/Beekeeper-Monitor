@@ -1,0 +1,4 @@
+# Exact direct dependencies for image-quality and dataset-readiness validation.
+# Keep synchronized with the CI pip-audit gate.
+Pillow==13.0.0
+PyYAML==6.0.3
