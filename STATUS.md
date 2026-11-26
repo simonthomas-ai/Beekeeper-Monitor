@@ -1,3 +1,40 @@
+# Aktueller Nachtrag – 26.11.2026 (nach PR #320)
+
+## Hauptzweige und integrierte Änderungen
+- **Beekeeper-Monitor `main`:** `9115ebb2706c7e335aaee7da144af73933732883`.
+- **BeeKeeper3000 `main`:** `77bd1c012af502afa42b9a79bf9eff0deda37032`.
+- Monitor PR [#319](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/319) und PR [#320](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/320) sind gemergt.
+- PR #320 ergänzt `training/requirements-ci-validation.txt` mit `Pillow==13.0.0` und `PyYAML==6.0.3`, verwendet diese Pins in CC0-/Readiness-/Trainingsdaten-Workflows und führt `pip-audit==2.10.1` verpflichtend im Gesamttest aus. Der Gesamttest nutzt dafür eine isolierte, gepinnte Python-Umgebung statt unversionierter System-Pillow-/PyYAML-Pakete.
+- Der erste Auditlauf meldete 42 Advisories für Pillow 12.3.0; der gemeldete Fix war 13.0.0. Die aktualisierte Abhängigkeit wurde im PR-Gesamttest und im nachfolgenden Hauptzweiglauf erfolgreich auditiert.
+
+## CI-Nachweise nach PR #320
+- PR-Gesamttest [#45840609187](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45840609187): erfolgreich, einschließlich Python-Abhängigkeitsaudit, Browser-, Safari-WebKit- und iPhone-WebKit-Emulation.
+- PR-CodeQL [#45840609351](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45840609351): erfolgreich.
+- PR-Artefakt-Policy [#45840609144](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45840609144): erfolgreich.
+- Nach-Merge-CodeQL [#45841088202](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45841088202): erfolgreich.
+- Nach-Merge-Gesamttest [#45841088098](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45841088098): erfolgreich; alle drei Jobs (Gesamttest, ZIP-/Validator-Export und BeeKeeper-Bridge) sowie alle Browser-, Safari- und iPhone-WebKit-Prüfungen abgeschlossen.
+- Nach-Merge-PWA-Build [#45841088048](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45841088048): erfolgreich; öffentlich lesbares statisches Vorschauartefakt `vespaguard-pwa-preview`, ID `15127464985`, 65.783 Bytes, Ablauf 2026-12-03 14:38:47 UTC. Kein Pages-Deployment.
+- Nach-Merge-CC0-Discovery [#45841088036](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45841088036): bei Erstellung dieses Nachtrags in Bearbeitung. Install der gepinnten Abhängigkeiten sowie alle Offline-, Rechte-, Hash- und Artefakt-Policy-Tests waren erfolgreich. Noch keine Trainingsfreigabe.
+- Readiness [#45841088078](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45841088078) und Trainingsdaten-Inventur [#45841088075](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45841088075): Validator-Jobs erfolgreich; Log meldet weiterhin fehlendes `datasets/beekeeper` und blockiertes Training.
+
+## Öffentliche Actions-Artefakte – manuelle Bereinigung offen
+- Fünf historische `vespaguard-private-pwa`-Artefakte sind noch nicht abgelaufen: IDs `15124542124`, `15118529028`, `15115678841`, `15115577897`, `15108012720`. Sie stammen aus fünf erfolgreichen Läufen des alten `private-pwa.yml`. Die geprüfte Staging-Liste enthält nur statische App-Dateien, Manifest/Icon und zwei Wissensseiten; kein Feldbild, GPS-Export oder Modellgewicht. Das Artefakt war dennoch öffentlich lesbar, der Name „private“ war falsch. Manuelle Löschung und API-Rücklese: [Issue #318](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/318).
+- Vier historische Review-/CC0-Artefakte bleiben zusätzlich öffentlich zugänglich: `original-velutina-images` (ID `15058597151`), `ki-cc0-quellen-prueflisten` (ID `15058522636`), `inaturalist-balanced-review-queue` (ID `15108851881`) und `insect-photo-review-queue` (ID `15107897872`). Details: [#308](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/308) und [#312](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/312).
+- Neue PWA-Vorschauen heißen korrekt `vespaguard-pwa-preview`, weisen auf öffentliche Lesbarkeit hin und laufen nach sieben Tagen ab. Artefakte sind keine Website-Veröffentlichung.
+- Die verbundene GitHub-Schnittstelle bietet keine Artefakt-Löschaktion; nichts wurde heruntergeladen oder gelöscht.
+
+## Weiterhin offene Freigaben
+- Beide Repositories sind öffentlich; GitHub meldet `license=null` und beide Root-`LICENSE`-Dateien fehlen.
+- Beide `main`-Branches melden `protected=false`; Rulesets sind leer. Administrativer Branch-Schutz bleibt offen.
+- [BeeKeeper3000 PR #110](https://github.com/simonthomas-ai/BeeKeeper3000/pull/110) bleibt Draft: 2 Commits voraus / 15 zurück; acht Modellfähigkeiten deaktiviert, Kandidaten `rights_and_runtime_pending`.
+- Rekursive Tree-Abfragen fanden keine Modellgewichte und keinen freigegebenen Trainingsdatensatz. `datasets/beekeeper/`, `provenance.jsonl` und `training/reviewed-annotations.json` fehlen.
+- Der BeeKeeper-Trainer liefert einen Siebenklassen-Klassifikator (`[1,7]`-Logits); der Monitor-Kameraadapter erwartet Detektionen mit Bounding-Boxes. Ein getesteter Adapter fehlt.
+- IndexedDB ist nicht zusätzlich anwendungsseitig verschlüsselt. Der Feld-ZIP-Export bereinigt EXIF; allgemeine JSON-Sicherungen können Originalbilder und GPS enthalten.
+- GitHub Pages bleibt deaktiviert; keine öffentliche Website wurde durch diese Änderungen veröffentlicht. Betreiber-/Impressums-/Datenschutzfreigabe, unabhängige Holdout-Validierung, Precision/Recall-/Fehlalarmmessung und reale Hardware-Dauerläufe fehlen.
+- Keine 99-%-Erkennungsrate nachgewiesen. Keine Fremdgewichte oder Trainingsdaten aktiviert.
+
+---
+
 # Aktueller Nachtrag – 26.11.2026 (nach PR #317)
 
 ## Verifizierter Stand beider Hauptzweige
