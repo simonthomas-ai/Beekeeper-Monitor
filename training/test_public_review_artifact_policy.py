@@ -44,10 +44,14 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
     def test_pwa_build_artifact_is_explicitly_public_and_short_lived(self):
         self.assertIn("öffentliches Actions-Artefakt, kein Deployment", PWA_BUILD)
         self.assertIn("name: vespaguard-pwa-preview", PWA_BUILD)
-        self.assertIn("retention-days: 7", PWA_BUILD)
+        self.assertIn("retention-days: 1", PWA_BUILD)
+        self.assertIn("Aufbewahrung: 1 Tag.", PWA_BUILD)
         self.assertIn("Jeder Repository-Leser kann dieses Artefakt herunterladen; es ist nicht privat.", PWA_BUILD)
         self.assertIn("Keine gehostete Website.", PWA_BUILD)
         self.assertNotIn("vespaguard-private-pwa", PWA_BUILD)
+        trigger_block = PWA_BUILD.split("permissions:", 1)[0]
+        events = re.findall(r"(?m)^  ([A-Za-z0-9_-]+):", trigger_block)
+        self.assertEqual(events, ["workflow_dispatch"])
 
     def test_cc0_discovery_uploads_no_candidate_artifacts(self):
         self.assertNotIn("actions/upload-artifact@", CC0)
