@@ -1,3 +1,40 @@
+name: Insect photo source discovery
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 5 * * 1'
+  push:
+    branches: [main]
+    paths:
+      - 'training/discover_inaturalist_candidates.py'
+      - 'training/dataset_groups.py'
+      - 'training/test_discovery_species.py'
+      - 'training/test_prepare_species_review.py'
+      - 'training/test_prepare_annotation_tasks.py'
+      - 'training/inaturalist_media.py'
+      - 'training/test_inaturalist_media.py'
+      - 'training/prepare_visual_review_gallery.py'
+      - 'training/test_prepare_visual_review_gallery.py'
+      - 'training/prepare_annotation_tasks.py'
+      - 'training/test_audit_inaturalist_candidates.py'
+      - 'training/import_authorized_images.py'
+      - 'training/test_import_authorized_images.py'
+      - '.github/workflows/hornet-photo-discovery.yml'
+      - 'training/audit_inaturalist_candidates.py'
+      - 'training/prepare_species_review.py'
+      - 'training/prepare_annotation_tasks.py'
+      - 'training/verify_inaturalist_photo_metadata.py'
+      - 'training/prepare_hornet_visual_review.py'
+      - 'training/render_hornet_review_gallery.py'
+      - 'training/test_render_hornet_review_gallery.py'
+      - 'training/test_hornet_license_audit.py'
+permissions:
+  contents: read
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
