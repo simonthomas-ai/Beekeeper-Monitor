@@ -168,6 +168,7 @@ test('requires a separate EXIF metadata acknowledgement for every ZIP export', a
   await fillRights(page);
   await page.locator('#field-dataset-form button[type="submit"]').click();
   await attestEveryRecord(page);
+  await expect(page.locator('#field-dataset-summary')).toContainText('0 ohne abgeschlossene Nutzerprüfung');
   const consent = page.locator('#field-dataset-export-consent');
   await expect(consent).not.toBeChecked();
   await expect(page.locator('#field-dataset-export')).toBeDisabled();
