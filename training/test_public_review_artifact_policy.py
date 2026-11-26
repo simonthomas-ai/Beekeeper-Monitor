@@ -55,8 +55,16 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
         self.assertNotIn("actions/upload-artifact@", CC0)
         self.assertNotIn("name: original-velutina-images", CC0)
         self.assertNotIn("name: ki-cc0-quellen-prueflisten", CC0)
-        self.assertIn("rm -rf public-review-assets", CC0)
+        self.assertIn('review_dir="${RUNNER_TEMP:?}/vespaguard-review-assets"', CC0)
+        self.assertIn('--output-dir "${review_dir}/images/velutina"', CC0)
+        self.assertIn('rm -rf -- "${RUNNER_TEMP:?}/vespaguard-review-assets"', CC0)
+        self.assertIn("ephemeren GitHub-Runner", CC0)
+        self.assertNotIn("keine Bildbytes gespeichert", CC0)
+        download = "name: Unveraenderte CC0-Originaldateien fuer Vespa velutina herunterladen"
+        image_cleanup = "name: Originalbildbytes nach temporaerer Pruefung entfernen"
         cleanup = "name: Generierte Review-Metadaten nach Ergebnisbericht entfernen"
+        self.assertLess(CC0.index(download), CC0.index(image_cleanup))
+        self.assertLess(CC0.index(image_cleanup), CC0.index("name: Ergebnis"))
         self.assertIn(cleanup, CC0)
         self.assertLess(CC0.index("name: Ergebnis"), CC0.index(cleanup))
         self.assertIn("rm -f training/inaturalist-review-queue.csv", CC0)
