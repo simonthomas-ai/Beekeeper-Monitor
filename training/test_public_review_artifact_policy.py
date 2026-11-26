@@ -22,18 +22,6 @@ CANDIDATE_REVIEW_WORKFLOWS = (
     "cc0-insect-3d.yml",
     "verify-grab3d-bee.yml",
 )
-CHECKOUT_CREDENTIALS_HARDENED_WORKFLOWS = (
-    "cc0-review-queue.yml",
-    "inaturalist-balanced-discovery.yml",
-    "hornet-photo-discovery.yml",
-    "gbif-media-discovery.yml",
-    "open-3d-metadata.yml",
-    "commons-importer.yml",
-    "cc0-insect-3d.yml",
-    "verify-grab3d-bee.yml",
-    "upstream-integration-intake.yml",
-    "autonomous-control.yml",
-)
 
 
 FORBIDDEN_PUBLIC_ARTIFACT_NAMES = (
@@ -75,22 +63,37 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
                 content = (WORKFLOWS / workflow_name).read_text(encoding="utf-8")
                 self.assertNotIn("actions/upload-artifact@", content)
 
-    def test_external_review_workflows_disable_checkout_credential_persistence(self):
-        for workflow_name in CHECKOUT_CREDENTIALS_HARDENED_WORKFLOWS:
-            with self.subTest(workflow=workflow_name):
-                lines = (WORKFLOWS / workflow_name).read_text(encoding="utf-8").splitlines()
-                checkout_indices = [
-                    index for index, line in enumerate(lines)
-                    if "uses: actions/checkout@" in line
-                ]
-                self.assertTrue(checkout_indices, "workflow must contain a pinned checkout")
-                for index in checkout_indices:
-                    end = next(
-                        (j for j in range(index + 1, len(lines))
-                         if lines[j].startswith("      - ")),
-                        len(lines),
-                    )
-                    step = "\\n".join(lines[index:end])
+    def test_every_workflow_checkout_disables_credential_persistence(self):
+        workflow_paths = sorted(
+            [*WORKFLOWS.glob("*.yml"), *WORKFLOWS.glob("*.yaml")]
+        )
+        self.assertTrue(workflow_paths, "workflow directory must not be empty")
+        for path in workflow_paths:
+            lines = path.read_text(encoding="utf-8").splitlines()
+            checkout_indices = [
+                index for index, line in enumerate(lines)
+                if "uses: actions/checkout@" in line
+            ]
+            for index in checkout_indices:
+                use_indent = len(lines[index]) - len(lines[index].lstrip())
+                start = index
+                if not lines[index].lstrip().startswith("- uses:"):
+                    for candidate in range(index - 1, -1, -1):
+                        match = __import__("re").match(r"^(\\s*)-\\s+", lines[candidate])
+                        if match and len(match.group(1)) < use_indent:
+                            start = candidate
+                            break
+                start_indent = len(lines[start]) - len(lines[start].lstrip())
+                end = next(
+                    (
+                        candidate for candidate in range(index + 1, len(lines))
+                        if (match := __import__("re").match(r"^(\\s*)-\\s+", lines[candidate]))
+                        and len(match.group(1)) <= start_indent
+                    ),
+                    len(lines),
+                )
+                step = "\\n".join(lines[start:end])
+                with self.subTest(workflow=path.name, checkout_line=index + 1):
                     self.assertIn("persist-credentials: false", step)
 
     def test_forbidden_candidate_artifact_names_are_absent_from_upload_steps(self):
