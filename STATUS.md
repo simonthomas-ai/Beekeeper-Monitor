@@ -1,4 +1,26 @@
-# Aktualisierung – 26.11.2026, 10:45 UTC
+# Aktueller Nachtrag – 26.11.2026, 14:48 UTC
+
+## Verifizierte Repository-Stände
+- **Beekeeper-Monitor:** `b3a9d499a5dc1542fa74190768d915ba907d6250`. PR [#316](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/316) ist gemergt. 22 zuvor nicht gehärtete Workflow-Dateien setzen nun bei jedem Checkout `persist-credentials: false`; der Regressionstest prüft alle Workflow-YAML-Dateien statt einer Teil-Allowlist. Alle 12 PR-getriggerten Workflow-Läufe auf dem geprüften PR-Head waren erfolgreich, darunter Gesamttest, CodeQL, KiCad-ERC und CC0-Artifact-Policy.
+- **BeeKeeper3000:** `77bd1c012af502afa42b9a79bf9eff0deda37032`. Quality Gates, CodeQL und Supply-Chain/SBOM auf diesem Stand waren erfolgreich. Die Supply-Chain-Abdeckung bleibt ausdrücklich partiell (u. a. keine vollständige Produkt-SBOM für geerbten C++-Code, Firmware, Modelle oder Datensätze).
+- [PR #317](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/317) ist offen: Der bisherige PWA-Artefaktname `vespaguard-private-pwa` war irreführend, weil das Repository öffentlich ist. Die vorgeschlagene Korrektur benennt das Artefakt `vespaguard-pwa-preview`, weist im Artefakt auf öffentliche Lesbarkeit hin und begrenzt die Aufbewahrung auf 7 Tage. Zum Zeitpunkt dieses Nachtrags liefen Gesamttest und CodeQL noch; der CC0-Policy-Lauf war erfolgreich.
+
+## Öffentliche Actions-Artefakte – aktueller Befund
+- Die aktuellen Discovery-Workflows veröffentlichen keine ungeprüften Kandidaten-Queues mehr. Der CC0-Hauptzweiglauf [#45823611443](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45823611443) war erfolgreich und die Artefakt-API lieferte eine leere Liste.
+- Vier historische Artefakte sind weiterhin vorhanden und öffentlich zugänglich, bis sie manuell gelöscht werden oder ablaufen: `original-velutina-images` (ID `15058597151`), `ki-cc0-quellen-prueflisten` (ID `15058522636`), `inaturalist-balanced-review-queue` (ID `15108851881`) und `insect-photo-review-queue` (ID `15107897872`). Die vollständigen Run-/Größen-/Ablaufdaten stehen in [Issue #312](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/312); #308 dokumentiert die zwei älteren CC0-Artefakte. Keine davon wurde heruntergeladen oder gelöscht.
+- Der aktuell noch vorhandene alte PWA-Build `vespaguard-private-pwa` (Artefakt-ID `15118529028`, 65.655 Bytes) ist ebenfalls für Leser des öffentlichen Repositories zugänglich und läuft am 03.12.2026 ab. Er enthält statische App-Dateien, keine Feldaufnahmen. PR #317 korrigiert die irreführende Bezeichnung für künftige Builds.
+
+## Weiterhin gesperrte Freigaben
+- GitHub Pages bleibt im Workflow mit `if: false` deaktiviert; keine öffentliche Veröffentlichung wurde ausgelöst.
+- Beide Root-`LICENSE`-Dateien fehlen. BeeKeeper3000-`LICENSES.md` ist ein vorläufiges Inventar, keine Gesamtlizenz. Modell-/Gewichts-/Bildrechte bleiben einzeln ungeklärt.
+- `datasets/beekeeper` und `training/reviewed-annotations.json` fehlen. Der Hauptzweig-Gesamttest protokolliert `TRAINING: failure`, `ANNOTATIONS: failure` und `KI-STATUS: BLOCKIERT`.
+- Der BeeKeeper-Kameraadapter erwartet Bounding-Box-Detektionen; der Trainingsklassifikator exportiert `[1,7]`-Logits. PR [#110](https://github.com/simonthomas-ai/BeeKeeper3000/pull/110) ist weiterhin Draft und laut Commitvergleich 2 Commits voraus / 15 hinter `main`.
+- Branch-Protection/Rulesets für beide `main`-Zweige sind laut offenem Governance-Issue [BeeKeeper3000 #84](https://github.com/simonthomas-ai/BeeKeeper3000/issues/84) weiterhin nicht gesetzt. Die verfügbare GitHub-Aktionsschnittstelle bietet keine Branch-Protection-Mutation; nicht umgangen.
+- Keine unabhängige Precision-/Recall-/Fehlalarm- oder Standort-Holdout-Validierung und keine reale Hardware-/Dauerlaufabnahme nachgewiesen.
+
+Der nachfolgende 10:45-UTC-Status ist ein historischer Snapshot und nicht mehr der aktuelle Hauptzweigstand.
+
+## Historischer Statussnapshot – Aktualisierung – 26.11.2026, 10:45 UTC
 
 ## Geprüfte Hauptzweigstände
 - **Beekeeper-Monitor:** `00af387cac734fb591990d752b19036237ee8148`. PR [#311](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/311) ist gemergt. Die sechs öffentlichen Kandidatengalerien sowie der davon abhängige veraltete iNaturalist-Lizenzscraper und sein täglicher Workflow sind aus dem aktuellen Quellbaum entfernt.
