@@ -58,7 +58,7 @@ def validate_image_file(path):
 
 
 def validate_checkpoint_rights_approval(root, approval_path, checkpoint_sha256, source_url):
-    """Validate a versioned human rights-review record bound to one exact checkpoint.
+    """Validate a local human rights-review record bound to one exact checkpoint.
 
     This checks the record's structure and byte/source binding only. It does not
     verify the referenced licence evidence or provide legal clearance.
@@ -75,12 +75,18 @@ def validate_checkpoint_rights_approval(root, approval_path, checkpoint_sha256, 
             raise ValueError("Checkpoint rights approval path must not contain symbolic links")
     if not candidate.is_file():
         raise FileNotFoundError("A local checkpoint rights approval file inside the repository is required before training")
-    if candidate.stat().st_size > 64 * 1024:
+    try:
+        if candidate.stat().st_size > 64 * 1024:
+            raise ValueError("Checkpoint rights approval file exceeds the 64 KiB limit")
+        approval_bytes = candidate.read_bytes()
+    except OSError as exc:
+        raise ValueError("Checkpoint rights approval file cannot be read safely") from exc
+    if len(approval_bytes) > 64 * 1024:
         raise ValueError("Checkpoint rights approval file exceeds the 64 KiB limit")
 
     try:
-        approval = json.loads(candidate.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        approval = json.loads(approval_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ValueError("Checkpoint rights approval must be valid UTF-8 JSON") from exc
     if not isinstance(approval, dict):
         raise ValueError("Checkpoint rights approval must be a JSON object")
@@ -127,12 +133,14 @@ def validate_checkpoint_rights_approval(root, approval_path, checkpoint_sha256, 
         not isinstance(evidence_reference, str)
         or not evidence_reference.strip()
         or len(evidence_reference) > 2048
+        or "?" in evidence_reference
+        or "#" in evidence_reference
         or any(ord(char) < 32 for char in evidence_reference)
     ):
-        raise ValueError("Checkpoint rights approval requires a bounded evidence reference")
+        raise ValueError("Checkpoint rights approval requires a bounded evidence reference without query strings or fragments")
 
     result = dict(approval)
-    result["approval_file_sha256"] = hashlib.sha256(candidate.read_bytes()).hexdigest()
+    result["approval_file_sha256"] = hashlib.sha256(approval_bytes).hexdigest()
     return result
 
 
@@ -230,7 +238,7 @@ def main():
     parser.add_argument('--pretrained-model',default='yolo11n.pt')
     parser.add_argument('--pretrained-model-source-url',default='https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt')
     parser.add_argument('--pretrained-model-sha256',required=False)
-    parser.add_argument('--checkpoint-rights-approval',required=False, help='Versioned human rights-review JSON bound to the exact local checkpoint SHA-256 and source URL')
+    parser.add_argument('--checkpoint-rights-approval',required=False, help='Local human rights-review JSON bound to the exact checkpoint SHA-256 and source URL')
     parser.add_argument('--confidence-threshold',type=float,default=0.5)
     parser.add_argument('--batch',type=int,default=16)
     parser.add_argument('--workers',type=int,default=4)
@@ -266,8 +274,15 @@ def main():
         parser.error('--confidence-threshold must be in 0..1; do not interpret this as a validated operating threshold')
     from urllib.parse import urlparse
     source_url=urlparse(args.pretrained_model_source_url)
-    if source_url.scheme != 'https' or not source_url.netloc:
-        parser.error('--pretrained-model-source-url must be an HTTPS provenance URL')
+    if (
+        source_url.scheme != 'https'
+        or not source_url.netloc
+        or source_url.username
+        or source_url.password
+        or source_url.query
+        or source_url.fragment
+    ):
+        parser.error('--pretrained-model-source-url must be a public HTTPS provenance URL without credentials, query or fragment')
     if not args.checkpoint_rights_approval:
         parser.error('--checkpoint-rights-approval is required; --accept-agpl alone does not approve pretrained checkpoint rights')
     try:
