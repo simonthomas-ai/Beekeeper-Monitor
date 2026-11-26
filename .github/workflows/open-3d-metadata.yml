@@ -1,3 +1,26 @@
+name: Open 3D insect metadata discovery
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 5 * * *' # daily UTC, metadata only
+  push:
+    branches: [main]
+    paths:
+      - 'training/discover_sketchfab_insects.py'
+      - 'training/test_discover_sketchfab_insects.py'
+      - '.github/workflows/open-3d-metadata.yml'
+  pull_request:
+    paths:
+      - 'training/discover_sketchfab_insects.py'
+      - 'training/test_discover_sketchfab_insects.py'
+      - '.github/workflows/open-3d-metadata.yml'
+permissions:
+  contents: read
+jobs:
+  review-metadata:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
