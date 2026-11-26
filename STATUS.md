@@ -1,3 +1,47 @@
+# Aktualisierung – 26.11.2026, 05:04 UTC
+
+## Aktueller Repository-Stand
+
+- **Beekeeper-Monitor main:** `84223a6f8a90444c1329516fcc22780b615cbf05` (PR [#301](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/301) gemergt).
+- **BeeKeeper3000 main:** `031c91370da85c6fa42dd8992b6adfc20ddf06c7` (PR [#123](https://github.com/simonthomas-ai/BeeKeeper3000/pull/123) gemergt).
+
+## Neue Review-Provenienz im Feldexport
+
+- Jede manuell freigegebene Aufnahme benötigt jetzt eine getrennte pseudonyme `reviewed_by`-Kennung und einen eigenen zeitzonenbewussten `reviewed_at`-Zeitpunkt.
+- Der Prüfzeitpunkt stammt aus der lokalen Browser-Uhr; er ist nicht signiert oder vertrauenswürdig bestätigt.
+- Die Felder dokumentieren manuelle Bild-/Labelprüfung, **keine** unabhängige Rechteprüfung oder entomologische Bestätigung.
+- Der BeeKeeper-Validator verlangt diese Felder und gibt den aus den tatsächlich gelesenen Bildbytes berechneten SHA-256-Wert sowie Rechte-/Review-Metadaten zurück.
+- Der Monitor-ZIP-Export bleibt `images/` + `annotations.jsonl`; der getrennte model-manifest-v2-`provenance.jsonl`-Konverter aus BeeKeeper3000 Issue [#120](https://github.com/simonthomas-ai/BeeKeeper3000/issues/120) fehlt weiterhin.
+
+## Tatsächlich geprüfte PR-CI
+
+- Monitor Ein-Klick-Gesamttest [#969](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45758818718): **erfolgreich**.
+- Monitor Repository-Integration [#77](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45758818710): **erfolgreich**.
+- Monitor CodeQL [#25](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45758818715): JavaScript/TypeScript und Python **erfolgreich**.
+- Im Monitor-Feldexportjob: 20 BeeKeeper-Datensatz-Unit-Tests, 10 Playwright-Tests und der Python-Roundtrip **erfolgreich**.
+- BeeKeeper3000 PR #123: Quality Gates [#211](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45757989411) und CodeQL [#403](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45757989434) **erfolgreich vor dem Merge**. Ein separater Post-Merge-Hauptzweiglauf war über die verbundene Abfrage nicht verfügbar.
+
+Der Monitor-Gesamttest meldet getrennt:
+- `STATIC`, `BROWSER`, `MODEL`, `IMPORTTESTS`, `TAXONOMY`: **success**.
+- `TRAINING`, `ANNOTATIONS`: **failure / BLOCKIERT**.
+- `datasets/beekeeper` und `training/reviewed-annotations.json` fehlen.
+- 23 offene Freigabepunkte. Die erfolgreiche Software-CI ist keine KI-, Rechts- oder Feldfreigabe.
+
+## Weiterhin offene Betriebs- und Rechtsgates
+
+- Alle sechs Modellkandidaten sind nur revisionsgebundene Metadaten mit `rights_and_runtime_pending`; keine Gewichte heruntergeladen oder aktiviert.
+- Repository-Lizenzdateien fehlen im Root beider Projekte. `LICENSES.md` ist ein vorläufiges Inventar; Repository-Lizenzen beweisen keine Rechte an konkreten Gewichten oder Trainingsbildern.
+- Browserdaten in IndexedDB sind nicht zusätzlich verschlüsselt. Originalbilder können EXIF/GPS enthalten; der ZIP-Export entfernt diese Metadaten nicht und wird nur nach ausdrücklicher Nutzeraktion lokal erzeugt.
+- Impressum und Datenschutz enthalten weiterhin nicht bestätigte Betreiber-/Kontaktplatzhalter.
+- Pages-Deployment bleibt mit `if: false` deaktiviert; kein Deployment wurde ausgelöst. Ein bereits früher veröffentlichter Pages-Stand wird durch diese Workflow-Sperre nicht automatisch entfernt.
+- `main`-Branch-Protection/Rulesets sind weiterhin administrativ offen. Sie können über die verbundene GitHub-Schnittstelle nicht geschrieben werden; siehe BeeKeeper3000 [#84](https://github.com/simonthomas-ai/BeeKeeper3000/issues/84) und Monitor [#210](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/210).
+
+## Nächster sicherer Schritt
+
+Den Provenienz-Konverter in BeeKeeper3000 Issue #120 implementieren. Er muss eine separate source-level-Rechteprüfung verlangen und darf die Nutzerattestierung `rights.status=training_approved` **nicht** automatisch in `license_review_status=approved` umdeuten. Danach ZIP → Validator → `provenance.jsonl` → model-manifest-v2-Validierung mit synthetischen Fixtures durchtesten. Reale Bilder, Einwilligungsdokumente, GPS und Trainingsdaten bleiben aus CI ausgeschlossen.
+
+---
+
 # Abnahmestand
 
 ## Aktualisierung – 26.11.2026
