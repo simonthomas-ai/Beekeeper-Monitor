@@ -1,8 +1,8 @@
-name: PWA-Buildvorschau (öffentliches Actions-Artefakt, kein Deployment)
+name: PWA-Buildvorschau (manuell, öffentliches Actions-Artefakt, kein Deployment)
+# Public preview artifacts are created only after an explicit manual request.
+# This repository is public; every uploaded artifact is readable by repository readers.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 permissions:
   contents: read
 jobs:
@@ -48,10 +48,10 @@ jobs:
               if not candidate.is_file():
                   raise SystemExit(f"Missing offline PWA shell asset: {entry}")
           PY
-          printf '%s\n' 'Öffentliches GitHub-Actions-Artefakt eines öffentlichen Repositories.' 'Jeder Repository-Leser kann dieses Artefakt herunterladen; es ist nicht privat. Es enthält nur statische App-Dateien, keine Benutzerfotos, GPS-Daten, Secrets oder Modellgewichte. Keine gehostete Website. Aufbewahrung: 7 Tage.' > pwa-preview/README-ARTEFAKT-HINWEIS.txt
+          printf '%s\n' 'Öffentliches GitHub-Actions-Artefakt eines öffentlichen Repositories.' 'Jeder Repository-Leser kann dieses Artefakt herunterladen; es ist nicht privat. Es enthält nur statische App-Dateien, keine Benutzerfotos, GPS-Daten, Secrets oder Modellgewichte. Keine gehostete Website. Aufbewahrung: 1 Tag.' > pwa-preview/README-ARTEFAKT-HINWEIS.txt
       - name: Buildvorschau als öffentliches GitHub-Actions-Artefakt speichern
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: vespaguard-pwa-preview
           path: pwa-preview/
-          retention-days: 7
+          retention-days: 1
