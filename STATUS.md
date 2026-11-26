@@ -1,28 +1,40 @@
-# Aktualisierung – 26.11.2026
+# Aktualisierung – 26.11.2026, 06:45 UTC
 
-## Aktueller Repository-Stand
-- **Beekeeper-Monitor main:** `8ec2270a79056ed20bf5c6af65d8731c0fb75ea0` (PR #302, Auditstatus aktualisiert).
-- **BeeKeeper3000 main:** `63bef0204c063c8b4b17af7b3b26a8021b259c2b` (PR #124, Provenienzkonverter gemergt).
+## Geprüfte Hauptzweigstände (Codebasis)
+- **Beekeeper-Monitor:** `69a0e8bc9cbdacc85bec1be03d74eeadede64ac8` – PR [#303](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/303) ist gemergt.
+- **BeeKeeper3000:** `63bef0204c063c8b4b17af7b3b26a8021b259c2b` – PR [#124](https://github.com/simonthomas-ai/BeeKeeper3000/pull/124) ist gemergt.
+- Die SHAs bezeichnen die geprüfte Codebasis vor dieser reinen Statuskorrektur; sie sind nicht der Commit dieser Dokumentänderung.
 
-## Neue Provenienzkonvertierung
-- BeeKeeper3000 PR [#124](https://github.com/simonthomas-ai/BeeKeeper3000/pull/124) ist gemergt.
-- Der lokale Konverter erstellt aus einem bereits validierten ZIP deterministisch `provenance.jsonl` und `training_data_sources.json`.
-- Eine separate source-rights-Reviewdatei ist Pflicht. Die Nutzerattestierung `rights.status=training_approved` wird niemals automatisch zu `license_review_status=approved` hochgestuft.
-- Lokale Feldaufnahmen verwenden `local-capture://<opaque-id>` und die SHA-256-Prüfsumme des exakt validierten ZIP-Snapshots. Öffentliche Quellen benötigen eine unveränderliche Revision und kanonische CC0-/CC-BY-Nachweise.
-- BeeKeeper-PR-CI: Quality Gates #45761113773 und CodeQL #45761113708 erfolgreich; 15/15 neue synthetische Converter-/Manifest-Roundtriptests bestanden. Post-Merge-Hauptzweigläufe sind separat zu prüfen.
+## Nach Merge bestätigte Hauptzweig-CI
+- Monitor Ein-Klick-Gesamttest [#45762328909](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45762328909): **success**.
+- Monitor Repository-Integration [#45762328966](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45762328966): **success**.
+- Monitor CodeQL [#45762328894](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45762328894): **success**.
+- Privater PWA-Build [#45762328874](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45762328874): **success**; nur GitHub-Artefakt, keine Pages-Veröffentlichung.
+- BeeKeeper3000 Quality Gates [#45761425319](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45761425319) und CodeQL [#45761425277](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45761425277): **success**.
+- Der Monitor-Feldexportjob prüfte den echten Browser-ZIP-Export gegen 20 Validator-Unit-Tests, 15 synthetische Provenienzkonverter-Tests, den model-manifest-v2-Validator und den Python-Roundtrip. Alle Schritte erfolgreich. Es wurden ausschließlich künstliche Testbildbytes und synthetische Rechte-Reviews verwendet.
 
-## Repository-übergreifende Ende-zu-Ende-Prüfung
-- Monitor PR [#303](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/303) ergänzt den tatsächlichen PWA-ZIP-Export um den vollständigen synthetischen Pfad: ZIP-Validator → Provenienzkonverter → model-manifest-v2-Validator.
-- Beide Monitor-Integrationsworkflows und der Partner-Pin-Test werden auf BeeKeeper3000 `63bef0204c063c8b4b17af7b3b26a8021b259c2b` festgelegt.
-- PR #303 ist noch offen; erst nach erfolgreicher CI ist dieser Cross-Repository-Pfad bestätigt.
+## KI- und Datenfreigabe bleibt BLOCKIERT
+- Der Hauptzweig-Gesamttest meldet weiterhin `TRAINING: failure` und `ANNOTATIONS: failure`.
+- Konkreter Fehler: `FileNotFoundError: Real training dataset directory is missing: datasets/beekeeper`.
+- `training/reviewed-annotations.json` fehlt ebenfalls.
+- Diese Prüfungen sind absichtlich separat/fehlertolerant, damit Software-CI grün bleiben kann; der Ergebnisbericht setzt ausdrücklich `KI-STATUS: BLOCKIERT`.
+- Sechs Modellkandidaten sind nur revisionsgebundene Metadaten mit `rights_and_runtime_pending`; keine Gewichte wurden heruntergeladen oder aktiviert.
+- Keine unabhängige Precision-/Recall-, Fehlalarm- oder Feldvalidierung; keine belegte 99-%-Erkennung.
 
-## Weiterhin gesperrt
-- Keine realen Trainingsdaten/Annotationen im Repository; `datasets/beekeeper` und `training/reviewed-annotations.json` fehlen weiterhin.
-- Keine freigegebenen Modellgewichte, keine automatische Hornissen-/Varroa-Inferenz und keine unabhängige Genauigkeits- oder Feldvalidierung.
-- Source-rights-Review bleibt eine Betreiberangabe und ersetzt keinen externen Rechtsnachweis.
-- Root-Projektlizenzen, DSGVO-Betreiberangaben, EXIF-/GPS-Bereinigung und Browserdatenverschlüsselung sind weiterhin offen.
-- Branch Protection bleibt administrativ offen; die GitHub-Integration liefert für die klassische Protection-API HTTP 403 und die Ruleset-Abfrage keine Regeln.
-- Öffentliche Pages-Veröffentlichung wurde nicht ausgelöst; der Deployment-Job bleibt gesperrt.
+## Sicherheit, Datenschutz, Rechte und Deployment
+- Provenienzkonverter verlangt separate source-rights-Reviewdatei und stuft Nutzerattestierung nicht automatisch zu Rechtsfreigabe hoch.
+- Lokale Fotos bleiben in IndexedDB; diese Browserdaten sind nicht zusätzlich durch die Anwendung verschlüsselt. Exportwarnung und ausdrückliche EXIF-Bestätigung bestehen, aber Originalbild-Metadaten werden nicht entfernt.
+- Root-`LICENSE` fehlt in beiden Repositories (GitHub-Contents-Abfrage 404). BeeKeeper3000-`LICENSES.md` ist ein vorläufiges Inventar, keine vollständige Projektlizenz oder Release-Freigabe.
+- Betreiber-/Kontaktplatzhalter in `impressum.html` und `datenschutz.html` sind weiterhin vorhanden.
+- Pages-Workflow bleibt mit `if: false` deaktiviert; der private PWA-Build ist keine öffentliche Veröffentlichung.
+- Ruleset-Abfrage liefert für beide Repositories `[]`. Die klassische Branch-Protection-Abfrage liefert HTTP 403; ihr genauer Zustand kann über diese Integration nicht verifiziert oder geändert werden. Keine Umgehung vorgenommen.
+
+## Nächste Prioritäten
+1. Branch Protection administrativ aktivieren und anschließend unabhängig rücklesen.
+2. Pseudonyme Review-Metadaten und Rechteprovenienz nur mit echten, getrennten Freigabeprozessen nutzen; keine Testattestierungen als reale Nachweise übernehmen.
+3. Rechtlich freigegebene, fachlich annotierte Bilder bereitstellen und die unabhängige KI-Validierung durchführen.
+4. Datenschutz-/Betreiberangaben, EXIF-Bereinigung bzw. sichere Exportstrategie und vollständige Lizenz-/SBOM-Kette vor öffentlichem Pilot abschließen.
+
 
 ---
 
