@@ -19,7 +19,7 @@ Der Zeitstempel bezeichnet das Hinzufügen in der PWA und wird nicht aus EXIF ab
 
 ## Exportvertrag
 
-Jede Zeile von `annotations.jsonl` enthält die Bildreferenz, Klassen, einen zeitzonenbewussten Zeitstempel, eine zufällige Sitzungs-ID, den manuellen Prüfstatus und strukturierte Rechteangaben. `labeler_id` ist optional und darf nur ein Pseudonym sein.
+Jede Zeile von `annotations.jsonl` enthält die Bildreferenz, Klassen, einen zeitzonenbewussten Zeitstempel, eine zufällige Sitzungs-ID, den manuellen Prüfstatus und strukturierte Rechteangaben. `labeler_id` ist optional und muss das Format `reviewer:<opaque-id>` verwenden; Namen, E-Mail-Adressen und URLs sind unzulässig.
 
 Beispiel für eine eigene Aufnahme mit dokumentierter individueller Erlaubnis:
 
