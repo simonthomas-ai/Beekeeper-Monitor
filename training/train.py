@@ -111,7 +111,7 @@ def validate_checkpoint_rights_approval(root, approval_path, checkpoint_sha256, 
     if not isinstance(reviewer_id, str) or not re.fullmatch(r"reviewer:[A-Za-z0-9._-]{8,128}", reviewer_id):
         raise ValueError("Checkpoint rights approval requires a pseudonymous reviewer:<opaque-id>")
     reviewed_at = approval.get("reviewed_at")
-    if not isinstance(reviewed_at, str) or not re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", reviewed_at):
+    if not isinstance(reviewed_at, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", reviewed_at):
         raise ValueError("Checkpoint rights approval reviewed_at must be an ISO date")
     from datetime import date
     try:
