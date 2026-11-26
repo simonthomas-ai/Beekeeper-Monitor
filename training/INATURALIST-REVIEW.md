@@ -35,8 +35,7 @@ If sources do not provide enough suitable, independently observed, licensed
 photos, the workflow reports a shortfall instead of duplicating images,
 weakening license checks or inventing records. All records remain
 `UNREVIEWED`; this is a candidate pool, not 1,000 approved training images.
-The workflow also generates `training/inaturalist-review-gallery.html` with
-a filter for the five groups.
+The discovery workflow creates candidate CSV/JSON/HTML files only in its temporary Actions runner workspace. It removes those files after writing an aggregate status summary; it does not publish or commit the candidate queue or galleries.
 
 ## Image resolution
 
@@ -62,10 +61,7 @@ independence and any labeling requirements. `CC-BY-VERSION-UNVERIFIED` is
 deliberately not accepted as CC-BY-4.0 and cannot pass training provenance.
 No YOLO bounding boxes are produced.
 
-A dedicated GitHub Actions workflow runs the balanced 1,000-candidate metadata
-discovery weekly and stores the CSV plus its metadata-audit report as a
-short-lived Actions artifact. It does not commit candidate metadata to `main`
-or approve training.
+A dedicated GitHub Actions workflow runs metadata discovery on a schedule and on manual request. Because this repository is public, it no longer uploads candidate metadata or original-image files as Actions artifacts. It writes only aggregate counts/status to the run summary and removes generated CSV, JSON and HTML review files from the runner workspace.
 
 For quality screening, a separate fail-closed selector passes only rows marked
 exactly `CC0-1.0`, with the official CC0 licence URL, observer identity,
@@ -91,6 +87,11 @@ Do not commit unreviewed photos, credentials or personal location data.
 API calls should be infrequent and respect iNaturalist's service policies.
 
 
-## Unveränderte Originaldateien in der öffentlichen Velutina-Prüfung
+## Öffentliche Kandidatengalerien pausiert
 
-Die Datei-Prüfung ist nicht mit einer Bildbearbeitung gleichzusetzen. `training/download_original_inaturalist_images.py` lädt nur Kandidaten mit bestandener Dateiprüfung und exakter CC0-API-Nachprüfung herunter. Die Original-Response-Bytes werden unverändert gespeichert; SHA-256, Dateiformat, Pixelmaße und Dateigröße stehen im Manifest. GitHub Pages übernimmt die Originaldateien aus einem Actions-Artefakt. Vor Deployment werden die Hashes erneut verglichen. Es gibt keine Größenänderung, kein Zuschneiden, keine Drehung, keine EXIF-Umschreibung, keine Neukodierung, keine Kompression und keine Thumbnail-Erzeugung. Die Galerie verweist lokal auf genau diese Bytes.
+Die früher eingecheckten Kandidatengalerien wurden aus dem aktuellen Quellbaum entfernt. Die öffentliche PWA zeigt nur noch eine Statusseite; sie veröffentlicht keine Kandidatenlisten, Originalbilder oder Beobachter-Identitäten. Die generische lokale Review-Oberfläche `review/photos.html` bleibt ein Werkzeug für eine vom Prüfer bereitgestellte lokale CSV und lädt nur die darin angegebenen iNaturalist-Bildquellen. Sie ist nicht mit einem freigegebenen Datensatz verbunden.
+
+Der CC0-Workflow kann Originalbildbytes auf dem kurzlebigen Runner temporär zur technischen Prüfung speichern. Der Arbeitsordner wird anschließend mit einem Always-Cleanup entfernt; erzeugte Kandidatenlisten werden nach der aggregierten Zusammenfassung ebenfalls gelöscht. Diese technische Prüfung bestätigt keine Bildrechte, keine Artbestimmung und keine Trainingsfreigabe. Es werden keine Kandidaten-Artefakte mehr hochgeladen.
+
+Legacy-Artefakte aus früheren Läufen bleiben bis zur manuellen Löschung oder zum Ablauf der Aufbewahrung in der GitHub-Actions-Verwaltung sichtbar. Ihre Löschung ist in [Issue #308](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/308) nachzuweisen. Die früheren Galerieinhalte bleiben außerdem in der öffentlichen Git-Historie älterer Commits erreichbar; eine History-Umschreibung wurde nicht vorgenommen und benötigt eine gesonderte Eigentümerentscheidung (Issue #310).
+
