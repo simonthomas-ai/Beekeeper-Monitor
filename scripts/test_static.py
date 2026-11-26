@@ -120,6 +120,12 @@ assert 'id="varroa-mode"' in (root/'varroa.html').read_text()
 assert './varroa.html' in sw and './varroa-ui.js' in sw
 
 # No model weights are released in this repository; inference stays out of the PWA.
+# The dormant research runtime must not execute remote CDN code or claim activation.
+runtime_source = (root / "camera-onnx-runtime.js").read_text(encoding="utf-8")
+assert "cdn.jsdelivr.net" not in runtime_source
+assert "document.createElement('script')" not in runtime_source
+assert "KI-Laufzeit nicht freigegeben" in runtime_source
+assert "EXPERIMENTELLE KI AKTIV" not in runtime_source
 assert 'id="ai-readiness-status"' in html and 'NICHT SCHARF' in html
 assert 'id="camera-model"' not in html
 assert 'src="./hornet-onnx-decoder.js"' not in html
