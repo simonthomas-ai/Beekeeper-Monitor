@@ -13,7 +13,7 @@ Offline-fähige Beobachtungs-PWA für Imker zur Erfassung und Sichtung von Hinwe
 - Installierbare PWA (`manifest.webmanifest`, Service Worker) mit Offline-Protokollierung im Browser
 - Kamera- und Mikrofonzugriff für manuelle Beobachtung (`live-media.js`)
 - KI-freier Kamera-Shadow-Test mit explizit übernommenem Einzelbild, unklassifiziertem Beobachtungstyp und lokaler IndexedDB-Speicherung; keine Daueraufnahme, Erkennung oder Übertragung
-- Lokale manuelle Bildklassifikation für Feldaufnahmen: sieben Taxonomie-Slugs, Mehrfachlabels oder explizites Negativbild; JPG/JPEG, PNG, WebP; ZIP-Export (`images/` + `annotations.jsonl`) erst nach manueller Labelprüfung und ausdrücklicher Nutzerattestierung. Rechteangaben sind Freitext, kein automatisch geprüfter Nachweis
+- Lokale manuelle Bildklassifikation für Feldaufnahmen: sieben Taxonomie-Slugs, Mehrfachlabels oder explizites Negativbild; JPG/JPEG, PNG, WebP; ZIP-Export (`images/` + `annotations.jsonl`) erst nach manueller Labelprüfung und ausdrücklicher Nutzerattestierung. Rechteangaben werden strukturiert erfasst, sind aber kein automatisch geprüfter Nachweis; jede manuelle Freigabe benötigt zusätzlich eine pseudonyme Prüfer-ID und einen separaten Prüfzeitpunkt
 - Lokaler Empfangsdienst für Stationsereignisse: authentifiziert, nur Loopback, SQLite-Speicher mit Deduplizierung, Aufbewahrungsfrist, Export und Löschung ([integrations/](integrations/README.md))
 - Datenschutz-Grenze: nur validierte Metadaten, keine Bilder, kein Audio, keine GPS-Koordinaten; Bridge-Ereignisse bleiben unbestätigte Kandidaten
 - Abschaltbare lokale Warnung (Banner, Ton, Systembenachrichtigung) bei Velutina-Verdacht ab einstellbarer Konfidenz, nur bei geöffneter und verbundener Seite; immer als unbestätigter Verdacht gekennzeichnet
