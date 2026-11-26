@@ -1,4 +1,44 @@
-# Aktuell verifizierter Stand – 26.11.2026, 20:36 CET
+# Aktuell verifizierter Stand – 26.11.2026, GitHub-API-Snapshot 21:48 UTC
+
+Dieser Snapshot ergänzt und ersetzt für den aktuellen Stand den darunter archivierten 20:36-CET-Snapshot. Er trennt PR-Prüfungen von noch laufenden Post-Merge-Prüfungen und von der KI-Feldfreigabe.
+
+## Hauptzweige und integrierte Änderungen
+
+- **Beekeeper-Monitor `main`:** `ba20e5627afdabedba3692666ca4564fc56781f2` (PR #327).
+- **BeeKeeper3000 `main`:** `b841d2adb1586ab88a82cef67e8be4e1523a2f21` (PR #129).
+- Beide Repositories sind öffentlich; GitHub meldet weiterhin `license=null`; beide Root-Dateien `LICENSE` fehlen.
+- Beide `main`-Branches melden weiterhin `protected=false`; Branch-Schutz und Rulesets wurden nicht geändert.
+- Beekeeper-Monitor meldet `has_pages=true`; BeeKeeper3000 `has_pages=false`.
+- Beekeeper-Monitor `.github/workflows/pages.yml` bleibt `workflow_dispatch`-only und der Deploy-Job bleibt mit `if: ${{ false }}` gesperrt. Kein Pages-Deployment wurde ausgelöst; die repositoryweite Pages-Einstellung ist nicht deaktiviert und eine frühere Live-Veröffentlichung bleibt unbestätigt.
+
+## Neue Änderungen dieser Runde
+
+- **Monitor PR #327:** [PR](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/327), Merge-Commit `ba20e5627afdabedba3692666ca4564fc56781f2`. Die öffentliche PWA-Buildvorschau wird nicht mehr bei jedem Push erzeugt; sie ist nur noch manuell über `workflow_dispatch` auslösbar. Wenn manuell ausgelöst, bleibt das Actions-Artefakt öffentlich lesbar, wird aber nach einem Tag entfernt. `scripts/test_static.py` prüft diese Trigger- und Aufbewahrungsregeln.
+- **Monitor-CI-Korrektur:** Der erste PR-Lauf scheiterte an einer veralteten Testannahme `retention-days: 7`. Der Test wurde auf die neue Ein-Tages-Regel und manuelle Auslösung umgestellt. Der korrigierte Lauf [Gesamttest #45900200445](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45900200445), [CodeQL #45900200436](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45900200436) und [CC0-Artefakt-Policy #45900200503](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45900200503) war erfolgreich.
+- **BeeKeeper3000 PR #129:** [PR](https://github.com/simonthomas-ai/BeeKeeper3000/pull/129), Merge-Commit `b841d2adb1586ab88a82cef67e8be4e1523a2f21`. `LICENSES.md` dokumentiert jetzt ausdrücklich den Waspinator-Kandidaten: Upstream-Repository und Modellmetadaten deklarieren AGPL-3.0; die vollständige Rechtekette der Trainingsbilder/Attributionsdatei ist nicht unabhängig geklärt. Der Kandidat bleibt checksum-only und ist nicht im Runtime-Manifest.
+- **BeeKeeper3000 PR-Prüfungen:** [Quality Gates #45900483768](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45900483768), [Supply Chain / SBOM #45900483837](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45900483837) und [CodeQL #45900483750](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45900483750) waren vor dem Merge erfolgreich.
+
+## Post-Merge-Prüfungen (Snapshot 21:48 UTC)
+
+- **Monitor auf `ba20e562`:** Gesamttest [#45900540463](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45900540463), CC0-Quellenprüfung [#45900540474](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45900540474) und CodeQL [#45900540516](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45900540516) waren bei letzter Abfrage noch in Bearbeitung. Die gesonderten Trainingsdaten- und Readiness-Prüfungen waren erfolgreich, melden aber fehlende echte Daten.
+- **BeeKeeper3000 auf `b841d2ad`:** Quality Gates [#45900617855](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45900617855), CodeQL [#45900617816](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45900617816) und Supply Chain / SBOM [#45900617790](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45900617790) waren bei letzter Abfrage noch in Bearbeitung.
+- Der Push auf Monitor `ba20e562` hat keinen PWA-Vorschau-Workflow ausgelöst; das bestätigt die neue manuelle Triggerregel. Das letzte zuvor erzeugte PWA-Artefakt war `15151807914`, öffentlich lesbar, 65.783 Bytes, Ablauf 2026-12-03 20:40 UTC.
+
+## Weiterhin offene Freigabeblocker
+
+- Neun historische öffentliche Actions-Artefakte bleiben vorhanden und meldeten bei Einzelabfrage `expired=false`: fünf alte PWA-Artefakte und vier Review-/CC0-Artefakte. Die manuelle Löschung ist offen; die verbundene GitHub-Aktionsschnittstelle bietet keine Artefakt-Löschoperation. Keine Artefakte wurden heruntergeladen oder gelöscht.
+- Die rekursiven Hauptzweig-Bäume beider Repositories enthalten keine ONNX-/PT-/TFLite-/NCNN-Modellgewichte und kein `datasets/beekeeper/`.
+- Monitor `models/candidates.json` enthält sechs revisionsgebundene Kandidaten; alle stehen auf `rights_and_runtime_pending`.
+- `training/reviewed-annotations.json` und echte, pro Bild lizenz-/SHA-256-geprüfte Trainingsdaten fehlen. Im letzten Gesamttest waren `TRAINING: failure` und `ANNOTATIONS: failure`; die Software-CI blieb nur deshalb grün, weil diese Freigabestatus getrennt ausgewiesen werden.
+- BeeKeeper-Klassifikationsvertrag `[1,7]` und Monitor-Detektionsvertrag `[1,9,8400]` bleiben inkompatibel; kein produktiv validierter Adapter.
+- Der Waspinator-Quellcode und Modellmetadaten deklarieren AGPL-3.0. Das klärt nicht automatisch Rechte an allen Trainingsbildern oder die Weitergabe der Gewichte; keine Runtime-Freigabe.
+- Browser-IndexedDB und lokale SQLite-Daten sind nicht anwendungsseitig im Ruhezustand verschlüsselt. JSON-Backups können optionale Bilder und GPS enthalten. Der spezielle Feld-ZIP-Export entfernt Metadaten; die Löschung lokaler Daten entfernt keine bereits exportierten Kopien.
+
+**Status:** Softwaretests sind für den PR #327 vollständig erfolgreich; die Post-Merge-Läufe auf den neuen Hauptzweigen waren zum Snapshot noch nicht abgeschlossen. Keine Modellgewichte aktiviert, keine privaten Bienenstanddaten übertragen und kein öffentliches Deployment ausgelöst. Keine KI-Genauigkeit oder Feldreife behauptet.
+
+---
+
+## Historischer Snapshot – 26.11.2026, 20:36 CET
 
 Dieser datierte Snapshot wurde direkt gegen GitHub-Hauptzweige, Workflow-Läufe, Job-Logs, Repository-Metadaten und Actions-Artefaktlisten geprüft. Er ist keine fachliche, rechtliche oder Feldfreigabe. Ältere Prüfprotokolle bleiben weiter unten unverändert erhalten.
 
