@@ -23,7 +23,7 @@
 
 ## Sicherheit, Datenschutz, Rechte und Deployment
 - Provenienzkonverter verlangt separate source-rights-Reviewdatei und stuft Nutzerattestierung nicht automatisch zu Rechtsfreigabe hoch.
-- Lokale Fotos bleiben in IndexedDB; diese Browserdaten sind nicht zusätzlich durch die Anwendung verschlüsselt. Exportwarnung und ausdrückliche EXIF-Bestätigung bestehen, aber Originalbild-Metadaten werden nicht entfernt.
+- Lokale Fotos bleiben in IndexedDB; diese Browserdaten sind nicht zusätzlich durch die Anwendung verschlüsselt. Der Feld-ZIP-Export erzeugt lokal metadatenbereinigte PNG-Kopien; die Originalbytes bleiben in IndexedDB. Allgemeine JSON-Exporte können weiterhin Fotos und genaue GPS-Daten enthalten.
 - Root-`LICENSE` fehlt in beiden Repositories (GitHub-Contents-Abfrage 404). BeeKeeper3000-`LICENSES.md` ist ein vorläufiges Inventar, keine vollständige Projektlizenz oder Release-Freigabe.
 - Betreiber-/Kontaktplatzhalter in `impressum.html` und `datenschutz.html` sind weiterhin vorhanden.
 - Pages-Workflow bleibt mit `if: false` deaktiviert; der private PWA-Build ist keine öffentliche Veröffentlichung.
@@ -33,7 +33,7 @@
 1. Branch Protection administrativ aktivieren und anschließend unabhängig rücklesen.
 2. Pseudonyme Review-Metadaten und Rechteprovenienz nur mit echten, getrennten Freigabeprozessen nutzen; keine Testattestierungen als reale Nachweise übernehmen.
 3. Rechtlich freigegebene, fachlich annotierte Bilder bereitstellen und die unabhängige KI-Validierung durchführen.
-4. Datenschutz-/Betreiberangaben, EXIF-Bereinigung bzw. sichere Exportstrategie und vollständige Lizenz-/SBOM-Kette vor öffentlichem Pilot abschließen.
+4. Datenschutz-/Betreiberangaben, Prüfung anderer Exportwege und vollständige Lizenz-/SBOM-Kette vor öffentlichem Pilot abschließen.
 
 
 ---
@@ -51,7 +51,7 @@
 - Der Prüfzeitpunkt stammt aus der lokalen Browser-Uhr; er ist nicht signiert oder vertrauenswürdig bestätigt.
 - Die Felder dokumentieren manuelle Bild-/Labelprüfung, **keine** unabhängige Rechteprüfung oder entomologische Bestätigung.
 - Der BeeKeeper-Validator verlangt diese Felder und gibt den aus den tatsächlich gelesenen Bildbytes berechneten SHA-256-Wert sowie Rechte-/Review-Metadaten zurück.
-- Der Monitor-ZIP-Export bleibt `images/` + `annotations.jsonl`; der getrennte model-manifest-v2-`provenance.jsonl`-Konverter aus BeeKeeper3000 Issue [#120](https://github.com/simonthomas-ai/BeeKeeper3000/issues/120) fehlt weiterhin.
+- Der Monitor-ZIP-Export enthält `images/` (seit dem geplanten Datenschutz-Update als bereinigte PNG-Kopien) + `annotations.jsonl`. Der getrennte model-manifest-v2-`provenance.jsonl`-Konverter ist in BeeKeeper3000-Commit `63bef0204c063c8b4b17af7b3b26a8021b259c2b` implementiert; Issue [#120](https://github.com/simonthomas-ai/BeeKeeper3000/issues/120) wurde am 26.11.2026 technisch geschlossen. Die source-rights-Prüfung bleibt eine separate Betreiberangabe.
 
 ## Tatsächlich geprüfte PR-CI
 
@@ -71,14 +71,14 @@ Der Monitor-Gesamttest meldet getrennt:
 
 - Alle sechs Modellkandidaten sind nur revisionsgebundene Metadaten mit `rights_and_runtime_pending`; keine Gewichte heruntergeladen oder aktiviert.
 - Repository-Lizenzdateien fehlen im Root beider Projekte. `LICENSES.md` ist ein vorläufiges Inventar; Repository-Lizenzen beweisen keine Rechte an konkreten Gewichten oder Trainingsbildern.
-- Browserdaten in IndexedDB sind nicht zusätzlich verschlüsselt. Originalbilder können EXIF/GPS enthalten; der ZIP-Export entfernt diese Metadaten nicht und wird nur nach ausdrücklicher Nutzeraktion lokal erzeugt.
+- Browserdaten in IndexedDB sind nicht zusätzlich verschlüsselt. Der Feld-ZIP-Export re-encodiert Bilder lokal als PNG und entfernt EXIF/GPS-, XMP- und eingebettete Text-/Zeit-Metadaten aus Exportkopien; Originalbytes bleiben lokal. Andere JSON-Exporte können weiterhin sensible Fotos oder GPS-Daten enthalten.
 - Impressum und Datenschutz enthalten weiterhin nicht bestätigte Betreiber-/Kontaktplatzhalter.
 - Pages-Deployment bleibt mit `if: false` deaktiviert; kein Deployment wurde ausgelöst. Ein bereits früher veröffentlichter Pages-Stand wird durch diese Workflow-Sperre nicht automatisch entfernt.
 - `main`-Branch-Protection/Rulesets sind weiterhin administrativ offen. Sie können über die verbundene GitHub-Schnittstelle nicht geschrieben werden; siehe BeeKeeper3000 [#84](https://github.com/simonthomas-ai/BeeKeeper3000/issues/84) und Monitor [#210](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/210).
 
 ## Nächster sicherer Schritt
 
-Den Provenienz-Konverter in BeeKeeper3000 Issue #120 implementieren. Er muss eine separate source-level-Rechteprüfung verlangen und darf die Nutzerattestierung `rights.status=training_approved` **nicht** automatisch in `license_review_status=approved` umdeuten. Danach ZIP → Validator → `provenance.jsonl` → model-manifest-v2-Validierung mit synthetischen Fixtures durchtesten. Reale Bilder, Einwilligungsdokumente, GPS und Trainingsdaten bleiben aus CI ausgeschlossen.
+Der Provenienz-Konverter aus BeeKeeper3000 Issue #120 ist implementiert und per synthetischem Cross-Repository-Roundtrip geprüft. Als nächste Schritte bleiben die Metadatenbereinigung des PWA-ZIP-Exports, reale rechtlich geprüfte Daten, Betreiberfreigaben und die unabhängige KI-Validierung. Reale Bilder, Einwilligungsdokumente, GPS und Produktions-Trainingsdaten bleiben aus CI ausgeschlossen.
 
 ---
 
