@@ -3,7 +3,9 @@ import re
 import unittest
 from pathlib import Path
 
-from scripts.audit_workflow_action_pins import (\n    find_permission_policy_violations, find_unpinned_actions, find_unpinned_images,\n)
+from scripts.audit_workflow_action_pins import (
+    find_permission_policy_violations, find_unpinned_actions, find_unpinned_images,
+)
 
 
 def checkout_step_blocks(text):
