@@ -127,12 +127,6 @@
     return labels;
   }
 
-  function extensionFor(type) {
-    const extension = MIME_EXTENSIONS[type.toLowerCase()];
-    if (!extension) throw Error('Nicht unterstütztes Bildformat.');
-    return extension;
-  }
-
   function normalizeSource(value) {
     const source = typeof value === 'string' ? value.trim() : '';
     if (!source || source.length > 200) {
