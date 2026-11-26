@@ -27,7 +27,7 @@ class BeeKeeperImporterRoundTripTests(unittest.TestCase):
                 "labels": ["vespa_velutina", "apis_mellifera"],
                 "captured_at": "2026-11-23T08:00:00+01:00",
                 "capture_session_id": "capture-session-pseudonym",
-                "labeler_id": "reviewer-pseudonym",
+                "labeler_id": "reviewer:field-0001",
                 "review_status": "approved",
                 "rights": {
                     "source": "Eigene Feldaufnahme",
