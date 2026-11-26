@@ -38,7 +38,7 @@ assert (root/"tests/test_field_dataset_zip.py").is_file()
 assert "Bilder noch Labels" in (root/"datenschutz.html").read_text()
 assert "./field-image-privacy.js" in sw
 assert "./field-dataset.js" in sw
-assert "beekeeper-shell-v21" in sw
+assert "beekeeper-shell-v22" in sw
 assert "annotations.jsonl" in html
 assert "field-image-privacy.js" in pages
 assert "field-dataset.js" in pages
