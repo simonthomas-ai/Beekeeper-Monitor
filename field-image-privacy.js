@@ -91,7 +91,7 @@
   }
 
   function webpDimensions(bytes) {
-    if (bytes.length < 30 || ascii(bytes, 0, 4) !== 'RIFF' || ascii(bytes, 8, 4) !== 'WEBP' ||
+    if (bytes.length < 26 || ascii(bytes, 0, 4) !== 'RIFF' || ascii(bytes, 8, 4) !== 'WEBP' ||
         readU32LE(bytes, 4) + 8 !== bytes.length) {
       fail('WebP-Bild ist ungültig oder unvollständig.');
     }
