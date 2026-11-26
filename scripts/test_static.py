@@ -17,6 +17,7 @@ for path in ("backup-contract.js","app.js","integrations-ui.js","alert-rules.js"
     assert (root/path).is_file(),path
 assert "capture=\"environment\"" in html
 assert 'id="field-dataset"' in html
+assert 'src="./field-image-privacy.js" defer' in html
 assert 'src="./field-dataset.js" defer' in html
 assert 'accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"' in html
 assert "nicht automatisch geprüft" in html
@@ -27,6 +28,7 @@ assert 'id="field-rights-attribution"' in html
 assert 'id="field-rights-permission-ref"' in html
 field_dataset_source = (root/"field-dataset.js").read_text()
 assert "rightsContractComplete" in field_dataset_source
+assert "sanitizeImageForExport" in field_dataset_source
 assert "RIGHTS_LICENSES" in field_dataset_source
 assert (root/"tests/test_beekeeper_importer_roundtrip.py").is_file()
 assert "BEEKEEPER_MULTILABEL_VALIDATOR" in (root/"tests/test_beekeeper_importer_roundtrip.py").read_text()
@@ -34,9 +36,11 @@ assert (root/"docs/FIELD-DATASET-CAPTURE.md").is_file()
 assert (root/"scripts/validate_field_dataset_zip.py").is_file()
 assert (root/"tests/test_field_dataset_zip.py").is_file()
 assert "Bilder noch Labels" in (root/"datenschutz.html").read_text()
+assert "./field-image-privacy.js" in sw
 assert "./field-dataset.js" in sw
-assert "beekeeper-shell-v20" in sw
+assert "beekeeper-shell-v21" in sw
 assert "annotations.jsonl" in html
+assert "field-image-privacy.js" in pages
 assert "field-dataset.js" in pages
 for class_slug in ("vespa_velutina","vespa_crabro","other_vespidae","apis_mellifera","bombus_spp","syrphidae","other_insect"):
     assert class_slug in html and class_slug in (root/"field-dataset.js").read_text()
@@ -81,7 +85,7 @@ assert "SHELL.has(url.href)" in sw
 assert "path: _site" in pages
 assert r"grep -Eq '\[[^]]+\]'" in pages
 assert re.search(r"\[[^]]+\]", "[MISSING OPERATOR DETAILS]")
-assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js field-dataset.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg _site/" in pages
+assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js field-image-privacy.js field-dataset.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg _site/" in pages
 assert "cp wissen/wissenschaft-hornissen-bienen.html _site/wissen/" in pages
 assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
 # Local original-image byte verification runs only after Pages stages the
@@ -109,6 +113,7 @@ assert './camera-onnx-runtime.js' not in sw
 assert 'camera-onnx-runtime.js' not in pages
 private_copy_lines = [line for line in private_build.splitlines() if line.lstrip().startswith("cp ")]
 assert private_copy_lines, "private PWA asset copy commands must remain explicit"
+assert any("field-image-privacy.js" in line for line in private_copy_lines), "private PWA must include the image privacy module"
 assert any("field-dataset.js" in line for line in private_copy_lines), "private PWA must include the field dataset module"
 offline_assets = sw.split("const FILES=[", 1)[1].split("];", 1)[0]
 for asset in re.findall(r"'(\./[^']+)'", offline_assets):
