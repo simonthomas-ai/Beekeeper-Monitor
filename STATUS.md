@@ -26,7 +26,7 @@ Dieser Snapshot ergänzt und ersetzt für den aktuellen Stand den darunter archi
 
 ## Weiterhin offene Freigabeblocker
 
-- Neun historische öffentliche Actions-Artefakte bleiben vorhanden und meldeten bei Einzelabfrage `expired=false`: fünf alte PWA-Artefakte und vier Review-/CC0-Artefakte. Die manuelle Löschung ist offen; die verbundene GitHub-Aktionsschnittstelle bietet keine Artefakt-Löschoperation. Keine Artefakte wurden heruntergeladen oder gelöscht.
+- Neun historische öffentliche Actions-Artefakte bleiben vorhanden und meldeten bei Einzelabfrage `expired=false`: fünf alte PWA-Artefakte und vier Review-/CC0-Artefakte. Die manuelle Löschung ist offen; die verbundene GitHub-Aktionsschnittstelle bietet keine Artefakt-Löschoperation. Keines dieser neun historischen Artefakte wurde heruntergeladen oder gelöscht.
 - Die rekursiven Hauptzweig-Bäume beider Repositories enthalten keine ONNX-/PT-/TFLite-/NCNN-Modellgewichte und kein `datasets/beekeeper/`.
 - Monitor `models/candidates.json` enthält sechs revisionsgebundene Kandidaten; alle stehen auf `rights_and_runtime_pending`.
 - `training/reviewed-annotations.json` und echte, pro Bild lizenz-/SHA-256-geprüfte Trainingsdaten fehlen. Im letzten Gesamttest waren `TRAINING: failure` und `ANNOTATIONS: failure`; die Software-CI blieb nur deshalb grün, weil diese Freigabestatus getrennt ausgewiesen werden.
