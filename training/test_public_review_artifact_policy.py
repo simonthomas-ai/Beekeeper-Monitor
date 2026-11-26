@@ -79,7 +79,7 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
                 start = index
                 if not lines[index].lstrip().startswith("- uses:"):
                     for candidate in range(index - 1, -1, -1):
-                        match = __import__("re").match(r"^(\\s*)-\\s+", lines[candidate])
+                        match = __import__("re").match(r"^(\s*)-\s+", lines[candidate])
                         if match and len(match.group(1)) < use_indent:
                             start = candidate
                             break
@@ -87,12 +87,12 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
                 end = next(
                     (
                         candidate for candidate in range(index + 1, len(lines))
-                        if (match := __import__("re").match(r"^(\\s*)-\\s+", lines[candidate]))
+                        if (match := __import__("re").match(r"^(\s*)-\s+", lines[candidate]))
                         and len(match.group(1)) <= start_indent
                     ),
                     len(lines),
                 )
-                step = "\\n".join(lines[start:end])
+                step = "\n".join(lines[start:end])
                 with self.subTest(workflow=path.name, checkout_line=index + 1):
                     self.assertIn("persist-credentials: false", step)
 
