@@ -30,15 +30,18 @@ These tools do not supply the dataset. The source image's own license, the uploa
 
 The mobile gallery and the seven-class training intake are deliberately separate. A gallery export is an **unverified visual-review record**, not a YOLO annotation file: its rectangles have no per-object class IDs, and a `LIKELY` decision does not confirm species, image rights or bounding-box correctness.
 
-For the 94 local Velutina originals, the review export uses relative paths such as `images/velutina/622528099.jpg`. The staging tool accepts those local paths only when the original-image artifact is separately extracted and its manifest and bytes are available.
+The public candidate galleries and Actions image artifacts were discontinued on 2026-11-26. Do not download or use any legacy public Actions artifact as a training source. The CC0 discovery workflow now removes its temporary image files and generated candidate metadata from the runner and publishes no candidate artifacts.
 
-1. Export the review JSON from the mobile gallery. Keep it and the downloaded image artifact on a private local disk; do not commit review exports or image bytes.
-2. Download the successful `original-velutina-images` Actions artifact and extract it into a private directory. That directory must directly contain `velutina-original-images-manifest.csv` and `images/velutina/`.
-3. Stage the JSON without granting approval:
+For a private expert review, obtain each original image directly from its source only after an individual review of the media license, source identity and uploader's authority. Store approved files in a private, access-controlled directory and create the local manifest from the actual file bytes (byte count and SHA-256). Keep license evidence and any source-to-pseudonym mapping outside this public repository.
+
+1. Keep review exports, source evidence and original images on a private local disk; do not commit them or upload them to public Actions artifacts.
+2. Create `velutina-original-images-manifest.csv` for the privately approved files. Bind each photo ID to its observation URL, exact source image URL, concrete media license, attribution, local relative path, byte count and SHA-256. A metadata label of CC0 alone is not sufficient.
+3. Export the local visual-review JSON only after the source image is available in the private review workspace.
+4. Stage the JSON without granting training approval:
 
 ~~~sh
 python training/stage_mobile_reviews.py /secure/review-export.json \
-  --asset-root /secure/original-velutina-artifact \
+  --asset-root /secure/approved-originals \
   --output /secure/expert-queue.json
 ~~~
 
@@ -53,7 +56,7 @@ After a mobile export has been staged into an expert queue, prepare a local imag
 
 ~~~sh
 python scripts/prepare_cvat_review_pack.py /secure/expert-queue.json \
-  --asset-root /secure/original-velutina-artifact \
+  --asset-root /secure/approved-originals \
   --output-dir /secure/cvat-review-pack
 ~~~
 
@@ -65,7 +68,7 @@ The pack contains:
 
 Create a CVAT Community image task, add the seven labels from `labels.json`, and upload only `cvat-images.zip` as the image archive. Keep `metadata.csv` with the task for provenance. The pack does not contain YOLO label files, imported boxes or approval flags. CVAT's current task guide describes creating labels and uploading local image files or an image archive: https://docs.cvat.ai/docs/workspace/tasks-page/. CVAT CLI also accepts a JSON label schema and local image inputs: https://docs.cvat.ai/docs/api_sdk/cli/.
 
-The package generator refuses existing output directories, output paths inside the original artifact, altered files, missing manifest entries, symlinks and any queue that claims training approval. Its tests verify the seven-class schema and byte-preserving ZIP as well as the non-approval invariant:
+The package generator refuses existing output directories, output paths inside the approved original asset root, altered files, missing manifest entries, symlinks and any queue that claims training approval. Its tests verify the seven-class schema and byte-preserving ZIP as well as the non-approval invariant:
 
 ~~~sh
 python -m unittest scripts.test_prepare_cvat_review_pack -v
