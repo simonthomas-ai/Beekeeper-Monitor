@@ -38,7 +38,7 @@ assert (root/"tests/test_field_dataset_zip.py").is_file()
 assert "Bilder noch Labels" in (root/"datenschutz.html").read_text()
 assert "./field-image-privacy.js" in sw
 assert "./field-dataset.js" in sw
-assert "beekeeper-shell-v21" in sw
+assert "beekeeper-shell-v22" in sw
 assert "annotations.jsonl" in html
 assert "field-image-privacy.js" in pages
 assert "field-dataset.js" in pages
@@ -53,6 +53,11 @@ assert "IndexedDB" in (root/"datenschutz.html").read_text()
 assert "indexedDB.open" in app
 backup_contract=(root/"backup-contract.js").read_text()
 assert "parseBackupText" in backup_contract
+assert "buildPrivacySummaryCsv" in backup_contract
+assert "buildPrivacySummaryCsv" in app
+assert 'id="privacy-summary-export"' in html
+assert "Monatsmuster können trotzdem Rückschlüsse zulassen" in html
+assert "Monatliche Muster können dennoch Rückschlüsse ermöglichen" in (root/"datenschutz.html").read_text()
 assert "restoreMissing" in app
 assert "tx.onabort" in app
 assert "navigator.geolocation.getCurrentPosition" in app

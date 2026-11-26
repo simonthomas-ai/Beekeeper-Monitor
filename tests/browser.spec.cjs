@@ -25,6 +25,56 @@ test('real observation persists after reload and can be exported',async({page})=
  const download=await downloadPromise;
  expect(download.suggestedFilename()).toBe('beekeeper-beobachtungen.json');
 });
+test('privacy summary download excludes IDs, notes, images and exact coordinates', async ({page}) => {
+  await page.goto('/');
+  await page.evaluate(async () => {
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open('beekeeper-monitor-v2', 1);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction('observations', 'readwrite');
+      tx.objectStore('observations').put({
+        id: 'privacy-test-001',
+        at: '2026-11-21T08:00:00.000Z',
+        type: 'Asiatische Hornisse',
+        note: 'PRIVATE NOTE MUST NOT EXPORT',
+        photo: {
+          name: 'private.jpg',
+          type: 'image/jpeg',
+          content: 'data:image/jpeg;base64,aGVsbG8='
+        },
+        location: {latitude: 51.5, longitude: 7.4, accuracyMeters: 5}
+      });
+      tx.oncomplete = () => { db.close(); resolve(); };
+      tx.onerror = () => { db.close(); reject(tx.error); };
+      tx.onabort = () => { db.close(); reject(tx.error); };
+    });
+  });
+
+  page.once('dialog', async dialog => {
+    expect(dialog.message()).toContain('UTC-Monat');
+    expect(dialog.message()).toContain('GPS-Koordinaten');
+    await dialog.accept();
+  });
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', {name: 'Datensparsame Monatsübersicht (CSV)'}).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('beekeeper-monatsuebersicht-datensparsam.csv');
+  const stream = await download.createReadStream();
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  const csv = Buffer.concat(chunks).toString('utf8');
+  expect(csv).toContain('"2026-11";"Asiatische Hornisse";"1"');
+  for (const secret of [
+    'privacy-test-001', 'PRIVATE NOTE MUST NOT EXPORT', 'data:image/',
+    '51.5', '7.4', 'latitude', 'longitude'
+  ]) {
+    expect(csv).not.toContain(secret);
+  }
+});
+
 test('cancelling a sensitive observation export downloads nothing',async({page})=>{
  await page.goto('/');
  await page.getByLabel('Eigene Beobachtung').fill('Lokaler Export mit möglichem Standortbezug');
