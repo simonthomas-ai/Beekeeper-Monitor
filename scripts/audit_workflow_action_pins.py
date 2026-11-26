@@ -83,6 +83,12 @@ def find_permission_policy_violations(text: str, filename: str = "<memory>") -> 
             problems.append(f"{filename}:{top_level + 1}: top-level permissions must be explicit")
         if re.search(r"(?i)\bwrite-all\b", block):
             problems.append(f"{filename}:{top_level + 1}: write-all is forbidden; declare only required scopes")
+        # Job-level permissions override workflow defaults, so inspect them too.
+        for index, line in enumerate(lines):
+            if re.match(r"^    permissions\s*:", line):
+                job_block = permission_block(index, 4)
+                if re.search(r"(?i)\bwrite-all\b", job_block):
+                    problems.append(f"{filename}:{index + 1}: job-level write-all permissions are forbidden")
         return problems
 
     jobs_index = next((i for i, line in enumerate(lines) if line == "jobs:"), None)
