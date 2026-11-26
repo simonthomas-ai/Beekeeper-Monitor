@@ -41,6 +41,7 @@ jobs:
           python3 -m unittest tests.test_field_dataset_zip -v
           python3 -m py_compile scripts/model_readiness.py
           node --check app.js
+          node --check field-image-privacy.js
           node --check field-dataset.js
           node --check sw.js
       - name: Warnregeln und Bridge-Kandidaten (Node Unit-Tests)
