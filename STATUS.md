@@ -1,38 +1,40 @@
-# Aktuell verifizierter Stand – 26.11.2026, 19:42 CET
+# Aktuell verifizierter Stand – 26.11.2026, 20:36 CET
 
-Dieser Abschnitt ersetzt keine fachliche, rechtliche oder Feldfreigabe. Er ist ein datierter Snapshot der direkt über GitHub gelesenen Hauptzweige, Workflow-Läufe und Actions-Artefaktlisten. Ältere Prüfprotokolle bleiben weiter unten unverändert erhalten.
+Dieser datierte Snapshot wurde direkt gegen GitHub-Hauptzweige, Workflow-Läufe, Job-Logs, Repository-Metadaten und Actions-Artefaktlisten geprüft. Er ist keine fachliche, rechtliche oder Feldfreigabe. Ältere Prüfprotokolle bleiben weiter unten unverändert erhalten.
 
 ## Repository- und Hauptzweigstatus
 
-- **Beekeeper-Monitor `main`:** `c567fa1a8063cb8616cfc13f54db8c1a22f7a711`.
+- **Beekeeper-Monitor `main`:** `abe574a46171f4135b5ff9ad7937692670061bc5` (Commit vom 26.11.2026, 18:47 UTC).
 - **BeeKeeper3000 `main`:** `77bd1c012af502afa42b9a79bf9eff0deda37032`.
-- Beide Repositories sind öffentlich; GitHub meldet `license=null` für beide.
-- Beide `main`-Branches melden `protected=false`; die Branch-Protection-API verweigert dem verbundenen GitHub-App-Zugriff den Lesezugriff (HTTP 403). Keine Rulesets/Branch-Regeln wurden durch diese Prüfung verändert.
+- Beide Repositories sind öffentlich; GitHub meldet `license=null`. Eine Root-Datei `LICENSE` ist in beiden aktuellen Hauptzweigen nicht vorhanden.
+- Beide `main`-Branches melden `protected=false`; die abgefragten Repository-Rulesets-Listen sind leer. Branch-Schutz wurde nicht verändert.
 - Beekeeper-Monitor meldet `has_pages=true`; BeeKeeper3000 `has_pages=false`.
-- `.github/workflows/pages.yml` enthält weiterhin den ausdrücklichen Guard `if: ${{ false }}` am Job `deploy`. Die repositoryweite Pages-Einstellung ist damit nicht automatisch deaktiviert. Ein älterer Pages-Stand kann nicht ausgeschlossen werden; die Pages-Einstellung und eine eventuelle Altveröffentlichung müssen administrativ geprüft werden.
-- In dieser Prüfung wurde kein Pages-Deployment ausgelöst.
+- `.github/workflows/pages.yml` ist nur über `workflow_dispatch` auslösbar; der Job `deploy` enthält `if: ${{ false }}`. In dieser Prüfung wurde kein Pages-Deployment ausgelöst. Die repositoryweite Pages-Einstellung ist damit nicht deaktiviert; eine frühere Live-Veröffentlichung wurde nicht unabhängig bestätigt.
+- Beide Cross-Repository-Workflows und ihr Pin-Regressionstest verwenden den unveränderlichen BeeKeeper3000-Commit `77bd1c012af502afa42b9a79bf9eff0deda37032`. Eine alte abweichende Pin-Angabe in `docs/FIELD-DATASET-CAPTURE.md` wird mit diesem PR korrigiert.
 
 ## Aktuelle CI-Nachweise
 
-**Beekeeper-Monitor auf `c567fa1a8063cb8616cfc13f54db8c1a22f7a711`:**
-- [Ein-Klick-Gesamttest #45870436049](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45870436049): erfolgreich; alle drei Jobs abgeschlossen, einschließlich Gesamttest, ZIP-/Validator-Export und BeeKeeper-Bridge.
-- [Repository-Integration #45870436079](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45870436079): erfolgreich.
-- [CodeQL #45870436009](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45870436009): erfolgreich.
-- [PWA-Buildvorschau #45870436082](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45870436082): erfolgreich; öffentliches Actions-Artefakt `vespaguard-pwa-preview`, ID `15142681903`, 65.783 Bytes, Ablauf 2026-12-03 17:45:46 UTC. Der Workflow staged statische App-Dateien; das Artefakt ist öffentlich lesbar und kein Pages-Deployment.
-- Die Gesamttest-Jobs umfassten npm-Abhängigkeitsprüfung, statische PWA-Prüfung, Node-Unit-Tests, Browser-/Safari-WebKit-/iPhone-WebKit-Emulation, Trainingsdateninventur, Modellkatalog und Freigabesperre. Der grüne Workflow ist kein KI-Trainings- oder Feldvalidierungsnachweis.
+**Beekeeper-Monitor auf `abe574a46171f4135b5ff9ad7937692670061bc5`:**
+- [Ein-Klick-Gesamttest #45878772708](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45878772708): erfolgreich; alle drei Jobs abgeschlossen (Gesamttest, BeeKeeper3000-Bridge und Feld-Dataset-Export/Validator).
+- [CodeQL #45878772726](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45878772726): erfolgreich; JavaScript/TypeScript und Python abgeschlossen.
+- [CC0-Publication-Policy #45878772779](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45878772779): Workflow erfolgreich; der Schritt zur Prüfung einer konkreten Upstream-CC0-Run-ID war bei diesem Push-Ereignis übersprungen und wird nicht als Artefakt-Rücklese gewertet.
+- [Gesonderte CC0-Artefakt-Rücklese #45862208690](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45862208690): erfolgreich; die Actions-Artefaktliste dieses Laufs war leer.
+- [PWA-Buildvorschau #45878772663](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45878772663): erfolgreich; öffentliches Actions-Artefakt `vespaguard-pwa-preview`, ID `15146326999`, 65.783 Bytes, Ablauf 2026-12-03 18:48:06 UTC. Laut Workflow enthält es statische App-Dateien und einen Sichtbarkeitshinweis; es ist kein Pages-Deployment.
+- Die Logs des Gesamttests zeigen erfolgreiche statische, Node-Unit-, Browser-, WebKit-, iPhone-WebKit-, Import-, Taxonomie-, Modellkatalog-, Bridge- und ZIP-Validator-Prüfungen.
+- **Wichtige getrennte Freigabestatus aus demselben Log:** `TRAINING: failure` und `ANNOTATIONS: failure`. Das ist kein grüner Trainingsnachweis: `datasets/beekeeper/` und `training/reviewed-annotations.json` fehlen; der Bericht setzt den KI-Status ausdrücklich auf BLOCKIERT.
 
 **BeeKeeper3000 auf `77bd1c012af502afa42b9a79bf9eff0deda37032`:**
-- [Quality Gates #45795479713](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479713): erfolgreich.
-- [Supply Chain / SBOM #45795479697](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479697): erfolgreich.
+- [Quality Gates #45795479713](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479713): erfolgreich; Kamera-Runtime-Sicherheit, Windows-Kompatibilität, Python-Kern und Monitor-Bridge abgeschlossen.
+- [Supply Chain / SBOM #45795479697](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479697): erfolgreich; pip-audit meldete in den geprüften Bereichen keine bekannten Schwachstellen. Die Logs warnen zugleich, dass vollständige Hash-Pins empfohlen sind.
 - [CodeQL #45795479682](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479682): erfolgreich.
 - [Windows-Station #45795479670](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45795479670): erfolgreich.
-- Die SBOM-Abdeckung ist ausdrücklich partiell und umfasst nicht alle geerbten C++-Quellen, Firmware, Modellgewichte oder Datensätze.
+- Die SBOM-Abdeckung bleibt partiell; geerbte C++-Quellen, Betriebssystem-/Firmwarebestand, Modellgewichte und Datensätze sind nicht vollständig erfasst. Erfolgreiches CodeQL belegt nicht automatisch null offene Code-Scanning-Alerts.
 
 ## Historische öffentliche Actions-Artefakte – manuelle Löschung offen
 
-Alle folgenden IDs wurden am 26.11.2026 direkt über die jeweiligen Run-Artefaktlisten abgefragt; alle meldeten `expired=false`. Sie wurden nicht heruntergeladen oder gelöscht.
+Alle neun folgenden Artefakte wurden am 26.11.2026 erneut einzeln über ihre Run-Artefaktlisten abgefragt; alle meldeten `expired=false`. Sie wurden nicht heruntergeladen oder gelöscht.
 
-**Fünf alte PWA-Artefakte (irreführend als „private“ bezeichnet, statische PWA-Dateien):**
+**Fünf alte PWA-Artefakte (statische App-Dateien; der historische Name „private“ war irreführend):**
 
 | Run | Artefakt-ID | Größe | Ablauf (UTC) |
 |---|---:|---:|---|
@@ -51,36 +53,33 @@ Alle folgenden IDs wurden am 26.11.2026 direkt über die jeweiligen Run-Artefakt
 | [#45689841927](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45689841927) | 15058597151 | original-velutina-images | 161.230.685 B | 2026-12-09 20:03:37 |
 | [#45689841927](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45689841927) | 15058522636 | ki-cc0-quellen-prueflisten | 169.351 B | 2026-12-09 20:03:42 |
 
-Die aktuellen Workflows verhindern neue Kandidaten-/Review-Artefaktuploads; [Policy-Lauf #45862208690](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45862208690) war erfolgreich und seine Artefaktliste leer. Die neun Altartefakte erfordern weiterhin manuelle Löschung und anschließende API-Rücklese. Die verbundene GitHub-Schnittstelle bietet keine Artefakt-Löschaktion. Keine Umgehung versucht.
+Die aktuellen Review-/Discovery-Workflows verhindern neue Kandidaten-/Review-Artefaktuploads. Die neun Altartefakte erfordern weiterhin manuelle Löschung und anschließende API-Rücklese. Die verbundene GitHub-Schnittstelle bietet keine Artefakt-Löschaktion; keine Umgehung wurde versucht.
 
 ## KI, Modelle, Datensätze und Rechte
 
 - `models/candidates.json` enthält sechs revisionsgebundene Kandidaten; alle stehen auf `rights_and_runtime_pending`.
-- Rekursive Tree-Prüfung des Monitor-Hauptzweigs fand keine ONNX-/PyTorch-/TensorFlow-/TFLite-Modellgewichte und kein freigegebenes `datasets/beekeeper/`.
-- `datasets/beekeeper/provenance.jsonl` und `training/reviewed-annotations.json` fehlen; die Trainingsfreigabe bleibt blockiert.
-- BeeKeeper3000-Trainer exportiert einen Bildklassifikator mit sieben Logits `[1,7]`; der Monitor-Hornissen-Decoder erwartet Detektionsausgaben `[1,9,8400]` mit Bounding-Boxes. Diese Verträge sind nicht austauschbar; ein produktiver, validierter Adapter fehlt.
-- BeeKeeper3000 [PR #110](https://github.com/simonthomas-ai/BeeKeeper3000/pull/110) ist weiterhin Draft und nicht in `main` integriert.
-- Beide Root-Repository-Lizenzen fehlen. BeeKeeper3000s `LICENSES.md` ist ein vorläufiges Inventar; die dokumentierte GPL-3.0-or-later-Aussage für die begrenzte geerbte Hornet3000-Teilmenge lizenziert nicht automatisch das gesamte Repository. Modellgewichte, Bildquellen und Datensätze benötigen separate Rechte-/Attributionsnachweise.
-- PyTorch 2.15.0 bleibt wegen ungeklärter Paketprovenienz und zusammengesetztem Lizenz-Ausdruck für echtes Training gesperrt.
+- Die rekursive Tree-Prüfung des aktuellen Monitor-Hauptzweigs fand keine ONNX-/PyTorch-/TensorFlow-/TFLite-Modellgewichte und kein `datasets/beekeeper/`.
+- `datasets/beekeeper/provenance.jsonl` und `training/reviewed-annotations.json` fehlen; der Trainingslauf endet daher ausdrücklich blockiert.
+- BeeKeeper3000-Trainervertrag: RGB/NCHW `[1,3,224,224]`, Klassifikationslogits `[1,7]`. Der Monitor-Detektionsdecoder erwartet `[1,9,8400]` mit Detektions-/Bounding-Box-Vertrag. Diese Aufgaben und Tensorverträge sind nicht austauschbar; ein produktiver validierter Adapter fehlt.
+- BeeKeeper3000 [PR #110](https://github.com/simonthomas-ai/BeeKeeper3000/pull/110) ist weiterhin nicht in `main` integriert.
+- Beide Root-Lizenzen fehlen. BeeKeeper3000s `LICENSES.md` bezeichnet sich selbst als vorläufiges Engineering-Inventar, nicht als vollständige Release-Freigabe. Modellgewichte, Bildquellen und Datensätze benötigen separate Rechte-/Attributionsnachweise.
+- PyTorch 2.15.0 bleibt wegen zusammengesetztem Lizenz-Ausdruck und fehlendem PyPI-Provenienznachweis laut aktuellem Lizenzinventar für produktives Training gesperrt.
 
 ## Sicherheit, Datenschutz und Feldfreigabe
 
-- CodeQL und die aufgeführten Dependency-Audits waren für die geprüften Hauptzweige erfolgreich; sie ersetzen keine vollständige Produkt-SBOM, Lizenzprüfung oder Datenschutzbewertung.
-- Die experimentelle Kamera-ONNX-Runtime bleibt ein deaktivierter Fail-closed-Stub; kein Remote-CDN-Code, keine freigegebene Runtime und keine aktive Kamera-Inferenz.
-- Browser-IndexedDB ist nicht zusätzlich anwendungsseitig verschlüsselt. Der spezielle Feld-ZIP-Export erzeugt bereinigte PNG-Kopien ohne EXIF; der allgemeine JSON-Export kann Originalbilder und GPS enthalten.
+- Die experimentelle `camera-onnx-runtime.js` ist ein deaktivierter Research-Stub; `loadRuntime()` bricht fail-closed ab. Es wird keine externe ONNX-/WASM-Runtime nachgeladen und keine Kamera-Inferenz freigegeben.
+- Browser-IndexedDB ist nicht anwendungsseitig verschlüsselt; der normale JSON-Backup-Export enthält alle gespeicherten Beobachtungen einschließlich optionaler Bilddaten und GPS-Standort. Der spezielle Feld-ZIP-Export erzeugt neu kodierte PNG-Kopien ohne EXIF; die Originalbytes bleiben lokal im Browser.
+- Auch der lokale SQLite-Ereignisspeicher bietet keine Verschlüsselung im Ruhezustand. Das dokumentierte Backup-Werkzeug verschlüsselt Backups nicht und plant/rotiert sie nicht automatisch. Betriebssystem-/Datenträgerverschlüsselung, restriktive Dateirechte sowie eigene Aufbewahrungs- und Löschregeln sind vor realem Betrieb erforderlich. Die Loopback-API akzeptiert dagegen nur begrenzte Ereignismetadaten und weist Bilder, Audio und GPS zurück.
 - Betreiber-/Impressums-/Datenschutzfreigabe, Lösch-/Aufbewahrungstests auf realer Hardware, unabhängige Holdout-Validierung, Precision-/Recall-/Fehlalarmmessung und Kamera-/Dauerlauftests fehlen.
 - Keine 99-%-Erkennungsrate nachgewiesen; keine KI- oder Feldfreigabe.
 
 ## Offene priorisierte Vorgänge
 
 - Monitor [#308](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/308), [#312](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/312), [#318](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/318): historische öffentliche Actions-Artefakte löschen und API-seitig verifizieren.
-- Monitor [#93](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/93): Pages-/GDPR-Feldpilot-Release-Gate.
-- Monitor [#191](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/191): rechtlich geprüfte Bilddaten und unabhängige Annotationen.
-- BeeKeeper3000 [#84](https://github.com/simonthomas-ai/BeeKeeper3000/issues/84): Branch Protection/erforderliche CI.
-- BeeKeeper3000 [#67](https://github.com/simonthomas-ai/BeeKeeper3000/issues/67): rechtliche, lizenzrechtliche und Datenschutzfreigabe.
-- BeeKeeper3000 [#3](https://github.com/simonthomas-ai/BeeKeeper3000/issues/3): Modellbenchmark und Schnittstellenadapter.
+- Monitor [#93](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/93): Pages-/Datenschutz-/Feldpilot-Release-Gate.
+- BeeKeeper3000 [#84](https://github.com/simonthomas-ai/BeeKeeper3000/issues/84): Branch-Schutz für beide Hauptzweige.
+- BeeKeeper3000 [#68](https://github.com/simonthomas-ai/BeeKeeper3000/issues/68): technisches Release-Gate für Kamera, Modelle, Datenrechte und Feldabnahme.
 
----
 
 # Historischer Statusverlauf
 
