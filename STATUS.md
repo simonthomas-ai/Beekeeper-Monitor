@@ -1,3 +1,9 @@
+# Nachtrag 27.11.2026 – Partner-Pin auf aktuellen BeeKeeper3000-Hauptzweig
+
+Ausgangsstand vor dieser Änderung: Beekeeper-Monitor `main` `afd13599528c4c7ded72df9babc35dcd844026d0`; BeeKeeper3000 `main` `4676649d3d248f5b950ac1eaef7673bbd1af9f26`. Der bisherige Cross-Repository-Pin `77bd1c012af502afa42b9a79bf9eff0deda37032` lag vier Commits hinter BeeKeeper3000. Der Commitvergleich umfasste vier Commits/sechs Dateien; Bridge-, Source-API-, Kamera-Manifest- und Datensatzvalidator-Schnittstellen blieben unverändert. Die Partner-Hauptzweigprüfungen (Quality Gates, CodeQL, SBOM, Windows-Station) waren erfolgreich. PR #334 aktualisiert beide Monitor-Workflows, den Pin-Regressionstest und die Integrationsdokumentation auf den aktuellen unveränderlichen Partnerstand. Keine Gewichte, Trainingsdaten oder privaten Daten wurden übernommen; kein Deployment ausgelöst.
+
+---
+
 # Korrektur – finaler Stand nach PR #330, 27.11.2026 00:00 CET
 
 Die darunter archivierten Snapshots enthalten frühere PR-Zustände. Für den aktuellen Repository-Stand gilt:
