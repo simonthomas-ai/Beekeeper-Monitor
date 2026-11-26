@@ -2,6 +2,8 @@
 from pathlib import Path
 import unittest
 
+import yaml
+
 WORKFLOW = (
     Path(__file__).resolve().parents[1]
     / ".github"
@@ -11,6 +13,19 @@ WORKFLOW = (
 
 
 class CC0WorkflowPublicationPolicyTests(unittest.TestCase):
+    def test_validation_workflows_are_valid_yaml(self):
+        root = Path(__file__).resolve().parents[1]
+        for workflow_name in (
+            "ki-cc0-quellen.yml",
+            "model-training-readiness.yml",
+            "training-data.yml",
+            "gesamttest.yml",
+        ):
+            with self.subTest(workflow=workflow_name):
+                content = (root / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
+                parsed = yaml.safe_load(content)
+                self.assertIn("jobs", parsed)
+
     def test_validation_workflows_use_exact_audited_dependency_pins(self):
         root = Path(__file__).resolve().parents[1]
         lock = root / "training" / "requirements-ci-validation.txt"
