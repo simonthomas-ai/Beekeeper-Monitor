@@ -19,7 +19,7 @@ Der Zeitstempel bezeichnet das Hinzufügen in der PWA und wird nicht aus EXIF ab
 
 ## Exportvertrag
 
-Jede Zeile von `annotations.jsonl` enthält Bildreferenz, Klassen, Erfassungszeit, zufällige Sitzungs-ID, Prüfstatus, strukturierte Rechteangaben sowie `reviewed_by` und `reviewed_at`. `reviewed_by` muss eine pseudonyme Kennung im Format `reviewer:<opaque-id>` sein; `reviewed_at` ist ein eigener zeitzonenbewusster Zeitpunkt der manuellen Prüfung und darf nicht vor `captured_at` liegen. `labeler_id` bleibt optional und bezeichnet getrennt die Labeler-Kennung. Namen, E-Mail-Adressen und URLs sind unzulässig. Diese Review-Metadaten belegen weder unabhängige Rechteprüfung noch entomologische Bestätigung.
+Jede Zeile von `annotations.jsonl` enthält Bildreferenz, Klassen, Erfassungszeit, zufällige Sitzungs-ID, Prüfstatus, strukturierte Rechteangaben sowie `reviewed_by` und `reviewed_at`. `reviewed_by` muss eine pseudonyme Kennung im Format `reviewer:<opaque-id>` sein; `reviewed_at` ist ein eigener zeitzonenbewusster Zeitpunkt der manuellen Prüfung und darf nicht vor `captured_at` liegen. `labeler_id` bleibt optional und bezeichnet getrennt die Labeler-Kennung. Namen, E-Mail-Adressen und URLs sind unzulässig. Diese Review-Metadaten belegen weder unabhängige Rechteprüfung noch entomologische Bestätigung. `reviewed_at` stammt aus der lokalen Browser-Uhr und ist nicht kryptografisch signiert oder als vertrauenswürdige Zeit bestätigt.
 
 Beispiel für eine eigene Aufnahme mit dokumentierter individueller Erlaubnis:
 
