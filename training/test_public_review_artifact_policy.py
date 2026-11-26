@@ -38,6 +38,8 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
     def test_artifact_audit_checks_exact_source_run_without_downloading_artifacts(self):
         self.assertIn("workflow_run:", AUDIT)
         self.assertIn("actions/runs/${SOURCE_RUN_ID}/artifacts", AUDIT)
+        self.assertIn("contents/.github/workflows/ki-cc0-quellen.yml?ref=${SOURCE_SHA}", AUDIT)
+        self.assertIn("predates the no-artifact policy", AUDIT)
         self.assertIn("if [[ -n \"$artifact_names\" ]]", AUDIT)
         self.assertNotIn("actions/download-artifact", AUDIT)
         self.assertNotIn("original-velutina-images", AUDIT)
