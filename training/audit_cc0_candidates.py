@@ -36,7 +36,7 @@ def _safe_text(value, *, required=False, maximum=1000):
 
 
 def _safe_https_url(value, *, hosts):
-    if not isinstance(value, str) or not value or len(value) > 2048:
+    if not _safe_text(value, required=True, maximum=2048):
         return None
     try:
         parsed = urlsplit(value)
