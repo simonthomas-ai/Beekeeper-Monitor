@@ -44,11 +44,11 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           # Immutable partner revision; updated only after partner-main CI passed.
-          ref: 52d42bdf9aa29849cd400077e9f052d9391d60f7
+          ref: 0410b3dd17d1fce16a97a59f04e0ad359320c96b
           path: beekeeper3000
           persist-credentials: false
       - name: Verify immutable partner revision
-        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "52d42bdf9aa29849cd400077e9f052d9391d60f7"
+        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "0410b3dd17d1fce16a97a59f04e0ad359320c96b"
       - name: Python vorbereiten
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
@@ -57,7 +57,9 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
-      - name: Quell-API und Empfänger einzeln prüfen
+      - name: Quell-API, Empfänger und synthetische Outbox-E2E prüfen
+        env:
+          BEEKEEPER_BRIDGE_ENTRY: ${{ github.workspace }}/beekeeper3000/monitor-bridge/bridge.mjs
         run: |
           cd beekeeper3000
           python -m unittest network.test_source_api -v
@@ -76,4 +78,5 @@ jobs:
           echo 'Monitor commit: '$(git -C monitor rev-parse HEAD) >> "$GITHUB_STEP_SUMMARY"
           echo 'BeeKeeper3000 partner commit: '$(git -C beekeeper3000 rev-parse HEAD) >> "$GITHUB_STEP_SUMMARY"
           echo 'Der Partnerstand ist absichtlich auf einen unveränderlichen, zuvor CI-geprüften Commit gepinnt.' >> "$GITHUB_STEP_SUMMARY"
+          echo '205 synthetische Metadatenereignisse laufen über SQLite-Outbox und drain-only Runtime; keine Kamera-Frames oder KI-Inferenz.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Diese Prüfung ist noch kein Feldtest mit echter Kamera, Funkhardware oder freigegebenem KI-Modell.' >> "$GITHUB_STEP_SUMMARY"
