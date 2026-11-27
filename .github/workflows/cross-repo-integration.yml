@@ -78,4 +78,5 @@ jobs:
           echo 'Monitor commit: '$(git -C monitor rev-parse HEAD) >> "$GITHUB_STEP_SUMMARY"
           echo 'BeeKeeper3000 partner commit: '$(git -C beekeeper3000 rev-parse HEAD) >> "$GITHUB_STEP_SUMMARY"
           echo 'Der Partnerstand ist absichtlich auf einen unveränderlichen, zuvor CI-geprüften Commit gepinnt.' >> "$GITHUB_STEP_SUMMARY"
+          echo '205 synthetische Metadatenereignisse laufen über SQLite-Outbox und drain-only Runtime; keine Kamera-Frames oder KI-Inferenz.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Diese Prüfung ist noch kein Feldtest mit echter Kamera, Funkhardware oder freigegebenem KI-Modell.' >> "$GITHUB_STEP_SUMMARY"
