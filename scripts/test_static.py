@@ -14,6 +14,7 @@ pages=(root/".github/workflows/pages.yml").read_text()
 review_status=(root/"review/index.html").read_text()
 private_build=(root/".github/workflows/private-pwa.yml").read_text()
 gesamttest=(root/".github/workflows/gesamttest.yml").read_text()
+deployment=(root/"docs/DEPLOYMENT.md").read_text()
 assert "<html lang=\"de\">" in html
 for path in ("backup-contract.js","app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","field-image-privacy.js","field-dataset.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
     assert (root/path).is_file(),path
@@ -180,3 +181,6 @@ assert "        if: ${{ always() && github.event_name == 'workflow_dispatch' }}"
 assert "          retention-days: 1" in artifact_step, (
     "public browser artifact retention must remain one day"
 )
+assert "Pushes auf `main` starten Softwaretests, aber keine PWA-Buildvorschau." in deployment
+assert "workflow_dispatch" in deployment
+assert "Die Aufbewahrung ist auf 1 Tag begrenzt." in deployment
