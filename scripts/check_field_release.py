@@ -51,7 +51,9 @@ def valid_evidence_url(value: object) -> bool:
     try:
         address = ipaddress.ip_address(host)
     except ValueError:
-        return True
+        # A colon means this was intended as an IPv6 literal; malformed or
+        # zone-scoped literals must not fall through as ordinary DNS names.
+        return ":" not in host
     return address.is_global
 
 
