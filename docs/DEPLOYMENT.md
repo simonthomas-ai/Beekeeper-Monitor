@@ -18,7 +18,7 @@ Der Workflow `.github/workflows/pages.yml` ist jetzt ausschließlich manuell aus
 - Der lokale Prüfjob staged ausschließlich die freigegebenen statischen App-Dateien und `review/index.html` in `_site`; er lädt dieses Verzeichnis nicht hoch. Kandidatengalerien, Originalbilder, Bildmanifeste und Review-Identitäten werden nicht gestagt.
 - Die lokalen Rechte-/SHA-256-Audits und ihre synthetischen Unit-Tests bleiben für eine spätere geschützte manuelle Prüfung verfügbar; sie sind keine öffentliche Veröffentlichung und keine Trainingsfreigabe.
 - `.github/workflows/browser.yml` prüft die Integration mit Chromium.
-- `.github/workflows/site-health.yml` prüft täglich die öffentliche Adresse und fünf Dateien.
+- `.github/workflows/site-health.yml` ist nur manuell auslösbar; ein täglicher Online-Check ist deaktiviert. Bei manuellem Start prüft es die öffentliche Adresse und statische Assets.
 - `.github/workflows/sources.yml` prüft wöchentlich den Katalog der Forschungsquellen.
 - `.github/workflows/training-data.yml` schlägt absichtlich fehl, solange echte beschriftete Trainingsbilder fehlen.
 
