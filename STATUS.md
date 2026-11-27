@@ -1,4 +1,4 @@
-# Aktueller Prüfstand – 27.11.2026 (nach PR #132 und #337)
+# Aktueller Prüfstand – 27.11.2026 (nach PR #132, #133 und #337)
 
 ## Hauptzweige und integrierte Änderungen
 - Beekeeper-Monitor: Basisstand `b8491b8ed25d5ab7c8028a5d52cc5e760c6fbac1`; PR #336 (öffentliche Testartefakte) und PR #337 (Windows-Backup-ACL-Prüfung) sind gemergt.
