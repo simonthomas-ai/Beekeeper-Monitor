@@ -26,7 +26,7 @@ Die folgenden neun Artefakte wurden einzeln über die jeweiligen Run-Artefaktlis
 - Reviewqueues: `15108851881` (89.737 B) und `15107897872` (163.198 B; Ablauf 10.12.2026).
 - CC0-Lauf: `15058597151` (161.230.685 B Originalbilder) und `15058522636` (169.351 B Prüfliste; Ablauf 09.12.2026).
 - BeeKeeper3000: `15151838571` (658 B Waspinator-SHA-256-Prüfbericht; Ablauf 26.12.2026).
-- Die aktuellen Monitor-Gesamttest-Artefaktliste ist leer. Die historischen Dateien müssen weiterhin manuell gelöscht und anschließend per API als abwesend bestätigt werden; keine Löschaktion ist im verbundenen Werkzeug verfügbar.
+- Die Artefaktliste des aktuellen Monitor-Gesamttests ist leer. Die historischen Dateien müssen weiterhin manuell gelöscht und anschließend per API als abwesend bestätigt werden; keine Löschaktion ist im verbundenen Werkzeug verfügbar.
 
 ## Deployment, Branch-Schutz und Datenschutz
 - Monitor-Repository-API: `has_pages=true`; BeeKeeper3000: `has_pages=false`.
