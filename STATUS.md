@@ -2,7 +2,7 @@
 
 ## Geprüfte Hauptzweige
 - Beekeeper-Monitor `main`: `d576a0337dba365cfcf6ea86064a49327e3622e8`.
-- BeeKeeper3000 `main`: `4782fa4392bbc142760bb6d52ad2e6a26599311c`.
+- BeeKeeper3000 `main`: `f7b6060951969203b7efdd5fe85f159de40c043e`.
 - Beide Repository-Metadaten melden `license=null`; in den Root-Verzeichnissen wurde keine Datei `LICENSE` gefunden.
 
 ## Post-Merge-CI am aktuellen Monitor-Hauptzweig
