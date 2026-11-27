@@ -59,6 +59,20 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
         trigger_block = PWA_BUILD.split("permissions:", 1)[0]
         events = re.findall(r"(?m)^  ([A-Za-z0-9_-]+):", trigger_block)
         self.assertEqual(events, ["workflow_dispatch"])
+        self.assertIn("acknowledge_public_artifact:", PWA_BUILD)
+        self.assertIn("required: true", PWA_BUILD)
+        self.assertIn("type: boolean", PWA_BUILD)
+        self.assertIn("default: false", PWA_BUILD)
+        self.assertIn("inputs.acknowledge_public_artifact", PWA_BUILD)
+        acknowledgement = "Require explicit public artifact acknowledgement"
+        legal_gate = "Rechtstexte vor oeffentlichem Vorschauartefakt pruefen"
+        upload = "Buildvorschau als öffentliches GitHub-Actions-Artefakt speichern"
+        self.assertLess(PWA_BUILD.index(acknowledgement), PWA_BUILD.index(upload))
+        self.assertLess(PWA_BUILD.index(legal_gate), PWA_BUILD.index(upload))
+        self.assertIn("grep -Eq", PWA_BUILD)
+        self.assertIn("MUSTER", PWA_BUILD)
+        self.assertNotIn("actions/deploy-pages@", PWA_BUILD)
+        self.assertNotIn("actions/upload-pages-artifact@", PWA_BUILD)
 
     def test_cc0_discovery_uploads_no_candidate_artifacts(self):
         self.assertNotIn("actions/upload-artifact@", CC0)
