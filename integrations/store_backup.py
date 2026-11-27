@@ -67,7 +67,7 @@ def _check_windows_private_directory(directory: Path) -> None:
     if result.returncode != 0:
         raise PermissionError("Windows backup-directory ACL verification failed; refusing backup")
     try:
-        payload = json.loads(result.stdout.lstrip("\\ufeff"))
+        payload = json.loads(result.stdout.lstrip("\ufeff"))
         owner_sid = payload["owner_sid"]
         current_sid = payload["current_user_sid"]
         rules = payload["rules"]
