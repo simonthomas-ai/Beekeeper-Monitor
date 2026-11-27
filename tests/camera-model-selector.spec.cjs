@@ -21,3 +21,30 @@ test('camera model selector fails closed when the local catalog is unavailable',
   await expect(page.locator('#camera-model-status')).toContainText('nicht verfügbar');
   await expect(page.locator('#camera-model-active')).toContainText('Aktives Modell: keines');
 });
+
+test('selector never fetches weights, remote runtime code or station/outbox events', async ({ page }) => {
+  const requests = [];
+  page.on('request', request => requests.push(new URL(request.url())));
+  await page.goto('/');
+  const selector = page.locator('#camera-model');
+  await expect(page.locator('#camera-model-status')).toContainText('6 externe Kandidaten');
+
+  const attemptedSelection = await selector.evaluate(element => {
+    const candidate = [...element.options].find(option => option.value === 'hornet3000-yolov8s-onnx');
+    if (!candidate) return { found: false, disabled: false };
+    element.value = candidate.value;
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+    return { found: true, disabled: candidate.disabled };
+  });
+  expect(attemptedSelection).toEqual({ found: true, disabled: true });
+  await expect(page.locator('#camera-model-active')).toContainText('Aktives Modell: keines');
+  await expect(page.locator('#station-events-status')).toContainText('Nicht verbunden');
+  await expect(page.locator('#station-events-list li')).toHaveCount(0);
+
+  const forbidden = requests.filter(url =>
+    /\.(?:onnx|pt|wasm)(?:$|[?#])/i.test(url.pathname + url.search) ||
+    /camera-onnx-runtime|hornet-onnx-decoder|\/api\/v1\/events|outbox/i.test(url.pathname)
+  );
+  expect(forbidden).toHaveLength(0);
+  expect(requests.every(url => url.origin === 'http://127.0.0.1:8765')).toBe(true);
+});
