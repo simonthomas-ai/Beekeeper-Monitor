@@ -4,7 +4,7 @@ The local receiver serves the station PWA and accepts validated metadata from lo
 
 ## Data boundary
 
-Accepted event kinds are `camera_detection`, `acoustic_event`, `hive_telemetry`, and `varroa_count`. Every kind has a strict payload allowlist. The BeeKeeper3000 camera bridge may additionally send a bounded source event ID, `verification_status="unverified"`, and a boolean prey flag. Arbitrary fields, GPS coordinates, images, audio, base64 content and free-form personal information are rejected.
+Accepted event kinds are `camera_detection`, `manual_observation`, `acoustic_event`, `hive_telemetry`, and `varroa_count`. Every kind has a strict payload allowlist. The BeeKeeper3000 camera bridge may send a bounded source event ID, `verification_status="unverified"`, and a boolean prey flag. The mobile PWA uses `manual_observation` with `verification_status="observer_report"`; its confidence is an observer estimate, not model confidence or expert confirmation. Manual observations are excluded from the automatic hornet-alert rule. Arbitrary fields, GPS coordinates, images, audio, base64 content and free-form personal information are rejected.
 
 A bridge event remains an unverified candidate. It cannot claim that an expert confirmed a species, approved training data or verified a license. Station identifiers and source labels must be technical identifiers, not names or contact details.
 
