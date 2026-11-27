@@ -1,4 +1,46 @@
-# Aktueller Prüfstand – 27.11.2026, 01:45 CET
+# Aktueller Prüfstand – 27.11.2026 (nach PR #132 und #337)
+
+## Hauptzweige und integrierte Änderungen
+- Beekeeper-Monitor: Basisstand `b8491b8ed25d5ab7c8028a5d52cc5e760c6fbac1`; PR #336 (öffentliche Testartefakte) und PR #337 (Windows-Backup-ACL-Prüfung) sind gemergt.
+- BeeKeeper3000: `fbea17e4a1a847731320d5548c82eafb492c054f`; PR #132 ist gemergt. Source-Journal-, Kamera-Outbox- und Monitor-Backups prüfen POSIX-Rechte bzw. Windows-NTFS-ACLs vor dem Schreiben. Der Windows-Runner prüft StateRoot, BackupRoot, Staging und den veröffentlichten Backup-Satz.
+- Die Monitor-Cross-Repository-Workflows und der Pin-Regressionstest werden in diesem Stand auf genau `fbea17e4a1a847731320d5548c82eafb492c054f` aktualisiert.
+
+## Verifizierte Post-Merge-CI
+**Beekeeper-Monitor**
+- [Gesamttest #45925964000](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45925964000): completed / success; Browser, Safari WebKit, iPhone-WebKit-Emulation, Bridge und Field-Dataset-Export gegen den BeeKeeper-Validator bestanden.
+- [CodeQL #45925964049](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45925964049): success.
+- [Repository-Integration #45925963998](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45925963998): success.
+- [Integration Contracts #45925964016](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45925964016): success.
+- Die KI-Freigabe bleibt ausdrücklich blockiert: `datasets/beekeeper` fehlt; Trainingsdaten und fachlich geprüfte Annotationen melden `failure`. Der Gesamttest unterscheidet diese Sperre korrekt von Software-CI.
+
+**BeeKeeper3000**
+- [Quality Gates #45926170647](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45926170647): success.
+- [Windows Station #45926170682](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45926170682): success; synthetischer Backup-/Restore-Durchlauf für Source, Monitor und Kamera sowie Ablehnung einer für BUILTIN Users freigegebenen Ablage.
+- [Supply Chain / SBOM #45926170707](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45926170707): success.
+- [Network Reference Tests #45926170594](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45926170594): success.
+- [CodeQL #45926170602](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45926170602): success.
+
+Die ACL-Prüfungen sind **keine Verschlüsselung**. BitLocker/LUKS/FileVault, Schlüsselverwaltung, Backup-Aufbewahrung und ein Wiederherstellungstest auf echter Stationshardware bleiben erforderlich. IndexedDB und die lokalen SQLite-Daten sind nicht zusätzlich anwendungsseitig verschlüsselt.
+
+## Release-, Lizenz- und Feldgrenzen
+- Beide Root-`LICENSE`-Dateien fehlen; BeeKeeper3000 `LICENSES.md` ist ein vorläufiges Inventar, keine Gesamtfreigabe.
+- Sechs Modellkandidaten stehen weiterhin auf `rights_and_runtime_pending`; im Repository-Baum liegen keine Modellgewichte. Keine KI-Inferenz, kein Training und keine 99-%-Erkennungsleistung sind freigegeben oder nachgewiesen.
+- `pages.yml` bleibt mit `if: false` gesperrt. PWA-Vorschauen sind manuell ausgelöste, öffentlich lesbare Actions-Artefakte mit einem Tag Aufbewahrung; es wurde kein Pages-Deployment ausgelöst.
+- Historische öffentliche Artefakte bleiben offen: fünf bekannte alte PWA-Artefakte, vier Review-/CC0-Artefakte und 20 PWA-Artefakte in historischen Stichproben bestätigt (exakte Gesamtzahl nicht enumeriert). Das Originalbild-Artefakt `15058597151` umfasst 161.230.685 Bytes. Keine Inhalte heruntergeladen; keine Löschaktion verfügbar.
+- Beide `main`-Branches sind laut Branch-API ungeschützt; Ruleset-Listen sind leer. Branch Protection und Pages-Repository-Einstellung können mit den verbundenen Schreibaktionen nicht administrativ geändert werden.
+
+## Nächste Schritte
+1. Die neun konkret dokumentierten historischen PWA-/Review-/CC0-Artefakte manuell über GitHub Actions löschen und ihre Abwesenheit per API bestätigen; danach die übrige Historie vollständig inventarisieren.
+2. Branch Protection/Rulesets und Pages-Einstellungen administrativ absichern.
+3. Root-Lizenzen sowie Rechtekette der Modellgewichte und Trainingsbilder klären.
+4. Lokale Datenbank-/Backup-Verschlüsselung, Löschabläufe und Wiederherstellung auf echter Hardware prüfen.
+5. Erst nach freigegebenen Bildern und unabhängigen Annotationen Modelladapter und Feldvalidierung beginnen.
+
+Keine privaten Bienenstanddaten, Fotos, GPS-Koordinaten oder Zugangsdaten übertragen. Keine unfreigegebenen Modellgewichte geladen oder aktiviert. Kein öffentliches Deployment ausgelöst.
+
+---
+
+# Historischer Prüfstand – 27.11.2026, 01:45 CET
 
 Dieser Nachtrag basiert auf den aktuell abgefragten Hauptzweigen, Workflow-Jobs und Logs. Ältere Status-Snapshots weiter unten sind Historie und dürfen nicht als heutige Commit-/Freigabeaussage gelesen werden.
 
