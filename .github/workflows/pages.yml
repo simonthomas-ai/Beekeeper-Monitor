@@ -1,6 +1,6 @@
 name: Validate PWA staging (no deployment)
 # Manual validation only. This workflow contains no Pages upload or deployment action.
-# Re-enable only after explicit approval and legal review.
+# Any future publication requires a separate reviewed workflow and explicit administrative approval.
 on:
   workflow_dispatch:
 permissions:
@@ -16,9 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.sha }}
           persist-credentials: false
-      - name: Check app before publishing
+      - name: Check app and local staging
         run: |
           python scripts/check_sources.py
           python scripts/test_static.py
@@ -58,10 +58,10 @@ jobs:
       - name: Enforce completed legal notices before any future publication
         run: |
           set -euo pipefail
-          # Keep this fail-closed gate after the image audit but before any upload.
+          # Keep this fail-closed gate before any future publication.
           if grep -Eq '\[[^]]+\]' _site/impressum.html _site/datenschutz.html || \
              grep -Eiq 'MUSTER[[:space:]]*/[[:space:]]*PLATZHALTER|Angaben noch unvollständig|Angaben sind derzeit unvollständig' _site/impressum.html _site/datenschutz.html; then
-            echo "::error::Rechtstexte enthalten noch Platzhalter; Deployment gesperrt."
+            echo "::error::Rechtstexte enthalten noch Platzhalter; lokale Freigabeprüfung fehlgeschlagen."
             exit 1
           fi
       - name: Verify staged files without publishing
