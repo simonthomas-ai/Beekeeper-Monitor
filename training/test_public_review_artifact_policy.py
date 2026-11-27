@@ -69,7 +69,7 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
         upload = "Buildvorschau als öffentliches GitHub-Actions-Artefakt speichern"
         self.assertLess(PWA_BUILD.index(acknowledgement), PWA_BUILD.index(upload))
         self.assertLess(PWA_BUILD.index(legal_gate), PWA_BUILD.index(upload))
-        self.assertIn("grep -Eq", PWA_BUILD)
+        self.assertIn(r"grep -Eq '\[[^]]+\]'", PWA_BUILD)
         self.assertIn("MUSTER", PWA_BUILD)
         self.assertNotIn("actions/deploy-pages@", PWA_BUILD)
         self.assertNotIn("actions/upload-pages-artifact@", PWA_BUILD)
