@@ -239,11 +239,11 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           # Pin the integration partner to a reviewed commit; avoid moving-main CI drift.
-          ref: 62f36a6f4b4f61a5cd671b63c710c328d9019128
+          ref: cd47c57220e5c63069d4c14413c7c37eb652e80c
           path: beekeeper3000
           persist-credentials: false
       - name: Verify pinned BeeKeeper3000 revision
-        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "62f36a6f4b4f61a5cd671b63c710c328d9019128"
+        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "cd47c57220e5c63069d4c14413c7c37eb652e80c"
       - name: Beekeeper-Monitor fuer repo-uebergreifenden Vertrag auschecken
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -321,11 +321,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: simonthomas-ai/BeeKeeper3000
-          ref: 62f36a6f4b4f61a5cd671b63c710c328d9019128
+          ref: cd47c57220e5c63069d4c14413c7c37eb652e80c
           path: beekeeper3000
           persist-credentials: false
       - name: Verify pinned BeeKeeper3000 revision
-        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "62f36a6f4b4f61a5cd671b63c710c328d9019128"
+        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "cd47c57220e5c63069d4c14413c7c37eb652e80c"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
