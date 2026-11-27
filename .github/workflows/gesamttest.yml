@@ -233,11 +233,11 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           # Pin the integration partner to a reviewed commit; avoid moving-main CI drift.
-          ref: f7b6060951969203b7efdd5fe85f159de40c043e
+          ref: 6adf0235c0f321eb42f57bd5966b46e1e400bcec
           path: beekeeper3000
           persist-credentials: false
       - name: Verify pinned BeeKeeper3000 revision
-        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "f7b6060951969203b7efdd5fe85f159de40c043e"
+        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "6adf0235c0f321eb42f57bd5966b46e1e400bcec"
       - name: Beekeeper-Monitor fuer repo-uebergreifenden Vertrag auschecken
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -292,7 +292,26 @@ jobs:
           const otherRow = {event_id:'a'.repeat(64),received_at:timestamp,event:other};
           if (rules.selectAlerts([otherRow],{enabled:true},new Set(),Date.now()).alerts.length)
             throw new Error('Native hornet must not trigger velutina warning');
-          console.log('PASS: BeeKeeper3000 source -> bridge -> Monitor Python contract -> JS warning rule');
+          const manual = toMonitorEvent({
+            id: 'cross-repo-manual-1', origin: 'manual_observation',
+            observed_at: timestamp, station_id: 'mobile-station-01',
+            species: 'Vespa velutina', confidence: 0.55, prey_detected: false
+          });
+          if (!manual || manual.kind !== 'manual_observation' ||
+              manual.source !== 'beekeeper_mobile' ||
+              manual.payload.label !== 'observer_report:vespa_velutina' ||
+              manual.payload.verification_status !== 'observer_report') {
+            throw new Error('Manual PWA observation was not preserved as a manual report');
+          }
+          const manualCheck = spawnSync('python3', ['-c',
+            'import sys; from integrations.event_contracts import HiveEvent; HiveEvent.from_json(sys.stdin.read())'
+          ], { input: JSON.stringify(manual), encoding: 'utf8', cwd: 'monitor' });
+          if (manualCheck.status !== 0) throw new Error('Monitor rejected manual observation: ' + manualCheck.stderr);
+          const manualRow = { event_id: 'b'.repeat(64), received_at: timestamp, event: manual };
+          if (rules.selectAlerts([manualRow], {enabled:true, thresholdPercent:50}, new Set(), Date.now()).alerts.length) {
+            throw new Error('Manual observer report incorrectly triggered a hornet alert');
+          }
+          console.log('PASS: camera candidates and manual PWA observations retain separate event types end to end');
           NODE
       - name: Ergebnis im gemeinsamen Bericht
         if: always()
@@ -315,11 +334,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: simonthomas-ai/BeeKeeper3000
-          ref: f7b6060951969203b7efdd5fe85f159de40c043e
+          ref: 6adf0235c0f321eb42f57bd5966b46e1e400bcec
           path: beekeeper3000
           persist-credentials: false
       - name: Verify pinned BeeKeeper3000 revision
-        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "f7b6060951969203b7efdd5fe85f159de40c043e"
+        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "6adf0235c0f321eb42f57bd5966b46e1e400bcec"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
