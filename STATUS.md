@@ -1,3 +1,20 @@
+# Nachtrag nach BeeKeeper3000 PR #141 und Monitor PR #352 – 27.11.2026, 10:03 UTC
+
+- Aktueller Monitor-Hauptzweig: `f95d74df845aed0e944f9ae5e7d13cc57dbcfeb1`; aktueller BeeKeeper3000-Hauptzweig: `cd47c57220e5c63069d4c14413c7c37eb652e80c`.
+- BeeKeeper3000 PR [#141](https://github.com/simonthomas-ai/BeeKeeper3000/pull/141) wurde als `cd47c572` gemergt. Die Kamera-Runtime weist Detektoren ohne Modellmanifest ab; experimentelle lokale Medieninferenz verlangt `--shadow` und verwirft alle Detektionen ohne Outbox-Schreibzugriff. Post-Merge-Quality-Gates #45977595084, Windows-Station #45977594875, CodeQL #45977595120, Network-Tests #45977594906 und Supply-Chain/SBOM #45977594966 bestanden.
+- Monitor PR [#352](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/352) wurde als `f95d74df` gemergt. Die Cross-Repository-Workflows und der Pin-Regressionstest verwenden nun unveränderlich BeeKeeper3000 `cd47c572`. PR-Gesamttest #45977836538, Bridge-Integration #45977836489 und CodeQL #45977836575 bestanden. Die Bridge-Logs bestätigen den exakten Partner-SHA; der Field-Dataset-Export nutzt ausschließlich synthetische Fixtures.
+- Der Gesamttest meldet weiterhin `MODEL: success`, aber `TRAINING: failure`, `ANNOTATIONS: failure` und `KI-STATUS: BLOCKIERT`: `datasets/beekeeper` und `training/reviewed-annotations.json` fehlen. Keine echte Modellinferenz oder Feldfreigabe.
+- Beide Repositories enthalten im aktuellen Git-Baum keine Modellgewichte oder Trainingsdatensätze. Alle acht BeeKeeper3000-Fähigkeiten bleiben `enabled: false`, `model: null`, `status: not_validated`.
+- Deployment: Monitor-Metadaten melden weiterhin `has_pages=true`; `.github/workflows/pages.yml` ist nur ein manueller Verify-only-Workflow ohne Upload-/Deploy-Aktion. Eine ältere Live-Seite ist nicht verifiziert. Kein Deployment ausgelöst.
+- Administration: Beide `main`-Branches melden `protected=false`; beide Ruleset-Listen sind leer. Branch-Protection-Read liefert HTTP 403, und die verbundene Schnittstelle bietet keine Schreibaktion. Manuelle Absicherung bleibt erforderlich.
+- Rechte: Beide Repository-Metadaten melden `license=null`; Root-`LICENSE` fehlt. Externe Modell-/Datensatzkandidaten bleiben rechtlich gesperrt. `independently_validated` im Manifest ist eine Betreiberangabe, kein vom Runtime-Code unabhängiger Nachweis der Modellgüte oder Rechtslage.
+- Historische öffentliche Artefakte sind weiterhin aktiv: neun Monitor-Artefakte (fünf alte `vespaguard-private-pwa`, zwei Reviewqueues, zwei CC0-Artefakte) und der 658-Byte-Waspinator-Prüfbericht. Zusätzlich ist die korrekt benannte PWA-Vorschau `15137419854` öffentlich und beabsichtigt; sie ist kein Pages-Deployment. Die Altartefakte wurden nicht heruntergeladen und müssen manuell gelöscht werden; die verbundene Schnittstelle bietet keine Löschaktion. Siehe Issues [#308](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/308), [#312](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/312), [#318](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/318).
+- Datenschutz: SQLite/IndexedDB und lokale Backups besitzen keine zusätzliche anwendungsseitige Verschlüsselung. Der neue Annotation-Validator blockiert direkte Namen/E-Mail/URLs und GPS-/Kontaktfelder, ersetzt aber keine Verschlüsselung oder Authentisierung.
+
+Aktuelle Integrationskarte: [docs/VESPAGUARD-INTEGRATION.md](docs/VESPAGUARD-INTEGRATION.md). Offene Admin-/Artefaktmaßnahmen bleiben in den verlinkten Issues dokumentiert.
+
+---
+
 # Nachtrag nach Monitor PR #347 – 27.11.2026
 
 - PR [#347](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/347) wurde nach grüner PR-CI gemergt: `8af15ed58eda2291bc829c0ae41439bf9059837c`.
