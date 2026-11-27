@@ -70,7 +70,7 @@ jobs:
         run: |
           set -euo pipefail
           # Fail closed: the public preview must not distribute incomplete legal notices.
-          if grep -Eq '\\[[^]]+\\]' pwa-preview/impressum.html pwa-preview/datenschutz.html || \\
+          if grep -Eq '\[[^]]+\]' pwa-preview/impressum.html pwa-preview/datenschutz.html || \
              grep -Eiq 'MUSTER[[:space:]]*/[[:space:]]*PLATZHALTER|Angaben noch unvollständig|Angaben sind derzeit unvollständig' pwa-preview/impressum.html pwa-preview/datenschutz.html; then
             echo "::error::Rechtstexte enthalten noch Platzhalter; öffentliches Vorschauartefakt wird nicht erstellt."
             exit 1
