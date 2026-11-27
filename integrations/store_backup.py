@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sqlite3
 import stat
 import subprocess
@@ -65,7 +66,12 @@ def _check_windows_private_directory(directory: Path) -> None:
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise PermissionError("cannot verify Windows backup-directory ACL; refusing backup") from exc
     if result.returncode != 0:
-        raise PermissionError("Windows backup-directory ACL verification failed; refusing backup")
+        detail = (result.stderr or "").strip().splitlines()
+        summary = detail[-1][:200] if detail else "PowerShell returned an error"
+        summary = re.sub(r"[A-Za-z]:\\[^\s]+", "<path>", summary)
+        raise PermissionError(
+            f"Windows backup-directory ACL verification failed (exit {result.returncode}): {summary}"
+        )
     try:
         payload = json.loads(result.stdout.lstrip("\ufeff"))
         owner_sid = payload["owner_sid"]
@@ -73,9 +79,9 @@ def _check_windows_private_directory(directory: Path) -> None:
         rules = payload["rules"]
         if isinstance(rules, dict):
             rules = [rules]
-        if not isinstance(rules, list) or not rules or owner_sid != current_sid:
-            raise ValueError("invalid owner or ACL rules")
         allowed_sids = {current_sid, "S-1-5-18", "S-1-5-32-544"}
+        if not isinstance(rules, list) or not rules or owner_sid not in allowed_sids:
+            raise ValueError("invalid owner or ACL rules")
         rights_by_sid = {}
         for rule in rules:
             sid = rule["sid"]
