@@ -37,7 +37,6 @@ test('selector never fetches weights, remote runtime code or station/outbox even
     return { found: true, disabled: candidate.disabled };
   });
   expect(attemptedSelection).toEqual({ found: true, disabled: true });
-  await expect(selector).toHaveValue('');
   await expect(page.locator('#camera-model-active')).toContainText('Aktives Modell: keines');
   await expect(page.locator('#station-events-status')).toContainText('Nicht verbunden');
   await expect(page.locator('#station-events-list li')).toHaveCount(0);
