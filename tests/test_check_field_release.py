@@ -80,6 +80,7 @@ class FieldReleaseEvidenceTests(unittest.TestCase):
             "https://127.0.0.1/evidence",
             "https://192.168.1.10/evidence",
             "https://[::1]/evidence",
+            "https://[fe80::1%25eth0]/evidence",
             "https://bad host/evidence",
             "https://example.org:invalid/evidence",
         )
