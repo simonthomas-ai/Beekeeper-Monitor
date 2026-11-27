@@ -1,75 +1,174 @@
 #!/usr/bin/env python3
-"""Validate human-reviewed annotation records without creating fictitious labels.
+"""Validate human-reviewed annotation metadata without creating labels or approvals.
 
-Input JSON: {"records":[{"photo_id":"...","species":"Vespa velutina",
-"license":"CC0-1.0","license_verified":true,"species_verified":true,
-"image_quality_verified":true,"reviewer":"name","source_url":"https://...",
-"boxes":[{"class_id":0,"x":0.5,"y":0.5,"width":0.2,"height":0.3}]}]}
-This validates metadata and boxes, not image pixels, split integrity, or legal rights.
+This is a metadata/geometry gate only. It does not inspect image pixels, prove
+licence evidence, authenticate reviewers, validate split independence, or
+approve a dataset for training.
 """
 import argparse
 import json
 import math
+import re
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-REQUIRED = ("photo_id", "species", "license", "license_verified",
-            "species_verified", "image_quality_verified", "reviewer", "source_url", "boxes")
-SUPPORTED_LICENSES = {"CC0-1.0", "CC-BY-4.0"}
 try:
     from .class_schema import CLASS_NAMES
 except ImportError:  # Supports direct execution: python training/validate_reviewed_annotations.py
     from class_schema import CLASS_NAMES
 
+MAX_FILE_BYTES = 16 * 1024 * 1024
+MAX_RECORDS = 100_000
+MAX_BOXES_PER_RECORD = 1_000
+MAX_SOURCE_URL_LENGTH = 2_048
+MAX_PHOTO_ID_LENGTH = 128
+SUPPORTED_LICENSES = {"CC0-1.0", "CC-BY-4.0"}
+REQUIRED = frozenset({
+    "photo_id", "species", "license", "license_verified",
+    "species_verified", "image_quality_verified", "reviewer",
+    "reviewed_at", "source_url", "boxes",
+})
+PHOTO_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+PSEUDONYMOUS_REVIEWER = re.compile(r"^reviewer:[A-Za-z0-9][A-Za-z0-9._:-]{7,79}$")
+
+
+def _unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON key")
+        result[key] = value
+    return result
+
+
+def _read_payload(path):
+    candidate = Path(path)
+    if candidate.is_symlink():
+        raise ValueError("annotation input must not be a symbolic link")
+    try:
+        with candidate.open("rb") as stream:
+            raw = stream.read(MAX_FILE_BYTES + 1)
+    except OSError as exc:
+        raise ValueError("annotation input cannot be read") from exc
+    if len(raw) > MAX_FILE_BYTES:
+        raise ValueError("annotation input exceeds the 16 MiB limit")
+    try:
+        payload = json.loads(raw.decode("utf-8"), object_pairs_hook=_unique_object)
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError, ValueError) as exc:
+        raise ValueError("annotation input must be bounded UTF-8 JSON with unique keys") from exc
+    return payload
+
+
+def _validate_source_url(value, index):
+    if (
+        not isinstance(value, str)
+        or not value
+        or len(value) > MAX_SOURCE_URL_LENGTH
+        or "?" in value
+        or "#" in value
+        or any(ord(char) < 32 for char in value)
+    ):
+        raise ValueError(f"Record {index}: source_url must be a bounded credential-free HTTPS URL without query or fragment")
+    try:
+        parsed = urlparse(value)
+        parsed.port  # Reject malformed ports.
+    except ValueError as exc:
+        raise ValueError(f"Record {index}: invalid source_url") from exc
+    if (
+        parsed.scheme != "https"
+        or not parsed.hostname
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ValueError(f"Record {index}: source_url must be credential-free HTTPS without query or fragment")
+
+
+def _validate_reviewed_at(value, index):
+    if not isinstance(value, str) or not value or len(value) > 40:
+        raise ValueError(f"Record {index}: reviewed_at must be a timezone-aware ISO-8601 timestamp")
+    try:
+        stamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"Record {index}: reviewed_at must be a timezone-aware ISO-8601 timestamp") from exc
+    if stamp.tzinfo is None or stamp.utcoffset() is None:
+        raise ValueError(f"Record {index}: reviewed_at must include a timezone")
+
+
 def check(path):
-    payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    records = payload.get("records")
-    if not isinstance(records, list) or not records:
-        raise ValueError("Nonempty records array required")
+    payload = _read_payload(path)
+    if not isinstance(payload, dict) or set(payload) != {"records"}:
+        raise ValueError("Top-level annotation JSON must contain only a records array")
+    records = payload["records"]
+    if not isinstance(records, list) or not records or len(records) > MAX_RECORDS:
+        raise ValueError(f"records must contain 1 to {MAX_RECORDS} entries")
+
     ids = set()
+    box_count = 0
     for index, record in enumerate(records):
-        if not isinstance(record, dict) or any(key not in record for key in REQUIRED):
-            raise ValueError(f"Record {index}: missing required fields")
-        photo_id = str(record["photo_id"]).strip()
-        if not photo_id or photo_id in ids:
-            raise ValueError(f"Record {index}: missing/duplicate photo_id")
+        if not isinstance(record, dict) or set(record) != REQUIRED:
+            raise ValueError(f"Record {index}: unknown or missing fields")
+        photo_id = record["photo_id"]
+        if (
+            not isinstance(photo_id, str)
+            or len(photo_id) > MAX_PHOTO_ID_LENGTH
+            or not PHOTO_ID.fullmatch(photo_id)
+            or photo_id in ids
+        ):
+            raise ValueError(f"Record {index}: photo_id must be a unique opaque identifier")
         ids.add(photo_id)
-        for field in ("species", "reviewer"):
-            if not isinstance(record[field], str) or not record[field].strip():
-                raise ValueError(f"Record {index}: missing {field}")
+
+        if not isinstance(record["species"], str) or record["species"] not in CLASS_NAMES:
+            raise ValueError(f"Record {index}: species must be one of the seven project class IDs")
         if record["license"] not in SUPPORTED_LICENSES:
             raise ValueError(f"Record {index}: unsupported or unverified license version")
         for field in ("license_verified", "species_verified", "image_quality_verified"):
             if record[field] is not True:
                 raise ValueError(f"Record {index}: {field} must be explicitly true")
-        url = urlparse(record["source_url"])
-        if url.scheme != "https" or not url.netloc:
-            raise ValueError(f"Record {index}: invalid source_url")
+
+        reviewer = record["reviewer"]
+        if not isinstance(reviewer, str) or not PSEUDONYMOUS_REVIEWER.fullmatch(reviewer.strip()):
+            raise ValueError(f"Record {index}: reviewer must use reviewer:<opaque-id>; names, emails and URLs are forbidden")
+        _validate_reviewed_at(record["reviewed_at"], index)
+        _validate_source_url(record["source_url"], index)
+
         boxes = record["boxes"]
-        if not isinstance(boxes, list) or not boxes:
-            raise ValueError(f"Record {index}: no bounding boxes")
+        if not isinstance(boxes, list) or not boxes or len(boxes) > MAX_BOXES_PER_RECORD:
+            raise ValueError(f"Record {index}: boxes must contain 1 to {MAX_BOXES_PER_RECORD} entries")
+        box_count += len(boxes)
         for box in boxes:
             if not isinstance(box, dict) or set(box) != {"class_id", "x", "y", "width", "height"}:
                 raise ValueError(f"Record {index}: invalid box schema")
             cls = box["class_id"]
             if type(cls) is not int or not 0 <= cls < len(CLASS_NAMES):
                 raise ValueError(f"Record {index}: invalid class_id")
-            values = [box[k] for k in ("x", "y", "width", "height")]
-            if any(type(v) not in (int, float) or not math.isfinite(v) for v in values):
+            values = [box[key] for key in ("x", "y", "width", "height")]
+            if any(type(value) not in (int, float) or not math.isfinite(value) for value in values):
                 raise ValueError(f"Record {index}: invalid box number")
-            x, y, w, h = values
-            if not (0 < w <= 1 and 0 < h <= 1 and 0 <= x <= 1 and 0 <= y <= 1):
+            x, y, width, height = values
+            if not (0 < width <= 1 and 0 < height <= 1 and 0 <= x <= 1 and 0 <= y <= 1):
                 raise ValueError(f"Record {index}: invalid box bounds")
-            if x-w/2 < 0 or x+w/2 > 1 or y-h/2 < 0 or y+h/2 > 1:
+            if x - width / 2 < 0 or x + width / 2 > 1 or y - height / 2 < 0 or y + height / 2 > 1:
                 raise ValueError(f"Record {index}: bounding box exceeds image")
-    return {"reviewed_records": len(records), "validated_boxes": sum(len(r["boxes"]) for r in records),
-            "limitations": "Metadata-only: image files, identity, license evidence, and split leakage require separate verification"}
+
+    return {
+        "reviewed_records": len(records),
+        "validated_boxes": box_count,
+        "limitations": (
+            "Metadata/geometry only: image pixels, licence evidence, reviewer identity, "
+            "split independence and training/field approval require separate verification"
+        ),
+    }
+
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="Human-reviewed JSON; no generated approvals")
     args = parser.parse_args()
     print(json.dumps(check(args.input), indent=2))
+
 
 if __name__ == "__main__":
     main()
