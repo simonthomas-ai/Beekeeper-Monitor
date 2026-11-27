@@ -101,7 +101,7 @@ class SQLiteBackupRestoreTests(unittest.TestCase):
         current = "S-1-5-21-111-222-333-1001"
         full = 0x1F01FF
         payload = {
-            "owner_sid": current,
+            "owner_sid": "S-1-5-32-544",
             "current_user_sid": current,
             "rules": [
                 {"sid": current, "type": "Allow", "rights": full},
