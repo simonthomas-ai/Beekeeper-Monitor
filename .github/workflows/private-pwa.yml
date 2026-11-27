@@ -1,8 +1,14 @@
 name: PWA-Buildvorschau (manuell, öffentliches Actions-Artefakt, kein Deployment)
-# Public preview artifacts are created only after an explicit manual request.
+# Public preview artifacts require an explicit manual request and boolean acknowledgement.
 # This repository is public; every uploaded artifact is readable by repository readers.
 on:
   workflow_dispatch:
+    inputs:
+      acknowledge_public_artifact:
+        description: 'Ich bestaetige, dass dieses Artefakt fuer alle Leser des oeffentlichen Repositories herunterladbar ist.'
+        required: true
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -12,6 +18,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Require explicit public artifact acknowledgement
+        env:
+          ACKNOWLEDGE_PUBLIC_ARTIFACT: ${{ inputs.acknowledge_public_artifact }}
+        run: |
+          if [ "$ACKNOWLEDGE_PUBLIC_ARTIFACT" != "true" ]; then
+            echo "::error::Public preview upload requires explicit acknowledgement that the artifact is readable by all repository readers."
+            exit 1
+          fi
       - name: Grundpruefungen
         run: |
           python scripts/check_sources.py
@@ -52,6 +66,15 @@ jobs:
                   raise SystemExit(f"Missing offline PWA shell asset: {entry}")
           PY
           printf '%s\n' 'Öffentliches GitHub-Actions-Artefakt eines öffentlichen Repositories.' 'Jeder Repository-Leser kann dieses Artefakt herunterladen; es ist nicht privat. Es enthält nur statische App-Dateien, keine Benutzerfotos, GPS-Daten, Secrets oder Modellgewichte. Keine gehostete Website. Aufbewahrung: 1 Tag.' > pwa-preview/README-ARTEFAKT-HINWEIS.txt
+      - name: Rechtstexte vor oeffentlichem Vorschauartefakt pruefen
+        run: |
+          set -euo pipefail
+          # Fail closed: the public preview must not distribute incomplete legal notices.
+          if grep -Eq '\\[[^]]+\\]' pwa-preview/impressum.html pwa-preview/datenschutz.html || \\
+             grep -Eiq 'MUSTER[[:space:]]*/[[:space:]]*PLATZHALTER|Angaben noch unvollständig|Angaben sind derzeit unvollständig' pwa-preview/impressum.html pwa-preview/datenschutz.html; then
+            echo "::error::Rechtstexte enthalten noch Platzhalter; öffentliches Vorschauartefakt wird nicht erstellt."
+            exit 1
+          fi
       - name: Buildvorschau als öffentliches GitHub-Actions-Artefakt speichern
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
