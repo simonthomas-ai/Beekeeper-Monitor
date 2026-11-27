@@ -115,6 +115,12 @@ class ReviewedAnnotationTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "opaque identifier"):
                     self._check(record)
 
+    def test_rejects_non_string_license_values(self):
+        record = self._record(0)
+        record["license"] = []
+        with self.assertRaisesRegex(ValueError, "unsupported or unverified license"):
+            self._check(record)
+
     def test_rejects_unknown_fields_that_could_carry_private_data(self):
         record = self._record(0)
         record["gps"] = "51.0,7.0"
