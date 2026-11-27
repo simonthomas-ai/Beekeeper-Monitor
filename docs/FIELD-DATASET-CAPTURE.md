@@ -4,7 +4,7 @@
 
 ## Browser- und iPhone-Ablauf
 
-1. Öffne die PWA lokal unter `http://localhost:8000/` oder über eine private HTTPS-Vorschau. Für iPhone-Kamerazugriff ist HTTPS erforderlich. Die öffentliche Pages-Veröffentlichung bleibt separat deaktiviert.
+1. Öffne die PWA lokal unter `http://localhost:8000/` oder über eine private HTTPS-Vorschau. Für iPhone-Kamerazugriff ist HTTPS erforderlich. Der Pages-Deploy-Workflow ist mit `if: false` gesperrt; die Repository-Metadaten melden jedoch `has_pages=true`. Eine ältere Pages-Veröffentlichung kann daher weiterhin bestehen. Vor jeder Freigabe Settings → Pages prüfen bzw. deaktivieren (siehe [Issue #340](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/340)).
 2. Unter **Lokale Feldaufnahme und manuelle Bildklassifikation** wähle ein JPEG/JPG-, PNG- oder WebP-Bild bis 8 MB. HEIC wird bewusst abgelehnt; wandle es vor der Auswahl lokal auf dem Gerät in JPEG um.
 3. Wähle ausdrücklich **Eine oder mehrere Zielklassen** und alle zutreffenden Klassen oder **Negativbild ohne Zielklasse**. Ein Negativbild wird mit `labels: []` exportiert.
 4. Trage als Quelle entweder exakt **Eigene Feldaufnahme** oder eine credential-freie HTTPS-Fotoquellen-URL ein. URLs mit Zugangsdaten, Query-Parametern oder Fragmenten werden abgelehnt.
