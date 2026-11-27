@@ -22,7 +22,7 @@
 - Branch-Protection-Endpunkte liefern HTTP 403; die Ruleset-Abfragen liefern für beide Repositories `[]`. Die verbindliche Administrationskonfiguration konnte über die verbundene Schnittstelle nicht bestätigt oder geändert werden.
 
 ## Deployment und öffentliche Artefakte
-- `.github/workflows/pages.yml` ist auf `workflow_dispatch` beschränkt und führt ausschließlich lokales `verify-only)-Staging aus. Es enthält keine Pages-Upload- oder Deploy-Aktion. Kein Deployment wurde in dieser Prüfung ausgelöst.
+- `.github/workflows/pages.yml` ist auf `workflow_dispatch` beschränkt und führt ausschließlich lokales `verify-only`-Staging aus. Es enthält keine Pages-Upload- oder Deploy-Aktion. Kein Deployment wurde in dieser Prüfung ausgelöst.
 - Die Pages-Konfiguration bzw. tatsächliche Live-Erreichbarkeit konnte über die verfügbaren GitHub-Lese-Endpunkte nicht abschließend verifiziert werden. Der Workflow deaktiviert nicht automatisch eine eventuell bestehende Pages-Konfiguration.
 - Die Artefaktliste des aktuellen Monitor-Gesamttests ist leer. Historische öffentliche Artefakte aus früheren Läufen sind in [Issue #312](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/312) und [Issue #318](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/318) dokumentiert; ihre vollständige Bereinigung wurde in diesem Lauf nicht erneut bestätigt. Die Artefakt-Löschaktion ist über die verbundene Schnittstelle nicht verfügbar.
 
@@ -36,8 +36,6 @@
 - PR #153 auf vollständige CI prüfen; nur bei erfolgreicher Pflicht-CI als Dokumentationsänderung integrieren.
 - Auf dem Stationsgerät den No-AI-Stationsdoctor und optional den dokumentierten Einzelbild-Kameraverbindungstest durchführen. Keine Bilder, GPS-Daten, Schlüssel oder privaten Logs öffentlich übertragen.
 - Historische öffentliche Actions-Artefakte, Pages-Einstellung und Branch-Schutz administrativ prüfen/bereinigen; Modell- und Trainingsfreigabe erst nach vollständiger Rechtekette und unabhängiger Feldvalidierung.
-
----
 
 ---
 
