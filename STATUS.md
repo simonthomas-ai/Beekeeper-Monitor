@@ -1,7 +1,7 @@
 # Aktueller Audit-Snapshot – 27.11.2026, 16:42 UTC
 
 ## Geprüfte Hauptzweige
-- Beekeeper-Monitor `main`: `d576a0337dba365cfcf6ea86064a49327e3622e8`.
+- Beekeeper-Monitor-Ausgangsstand für dieses Pin-Update: `43faa3722c86475d3db22086e58edeaff7f5c82e`.
 - BeeKeeper3000 `main`: `f7b6060951969203b7efdd5fe85f159de40c043e`.
 - Beide Repository-Metadaten melden `license=null`; in den Root-Verzeichnissen wurde keine Datei `LICENSE` gefunden.
 
