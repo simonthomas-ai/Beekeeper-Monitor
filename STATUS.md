@@ -1,4 +1,15 @@
-# Aktueller Prüfstand – 27.11.2026, 07:40 CET (nach Monitor PR #346)
+# Nachtrag nach Monitor PR #347 – 27.11.2026
+
+- PR [#347](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/347) wurde nach grüner PR-CI gemergt: `8af15ed58eda2291bc829c0ae41439bf9059837c`.
+- Post-Merge [Gesamttest #45955382463](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45955382463) und [CodeQL #45955382510](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45955382510) erfolgreich; Bridge- und Field-Dataset-Export-Jobs ebenfalls erfolgreich.
+- PR-Prüfungen auf Head `559726f6`: Gesamttest #45955135107, CodeQL #45955135114 und CC0-Artefaktpolitik #45955135086 erfolgreich.
+- `.github/workflows/pages.yml` enthält auf `main` nur noch einen manuellen lokalen `verify-only`-Job; keine Pages-Konfigurations-, Upload- oder Deploy-Aktion. Die Repository-Einstellung bleibt `has_pages=true`; eine ältere Live-Seite ist nicht verifiziert und wird durch den Merge nicht abgeschaltet.
+- [KI-Trainingsbereitschaft #45955382639](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45955382639) und [Echtdatenprüfung #45955382404](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45955382404) formal erfolgreich, aber ihre Logs melden weiterhin fehlendes `datasets/beekeeper` und fehlende fachlich geprüfte Annotationen. Kein Training, keine Modellfreigabe.
+- [CC0-Kandidatenprüfung #45955382442](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45955382442) war bei der letzten Abfrage noch in Bearbeitung; Artefaktliste leer. Originalbildbytes werden im temporären Runner mit einem `if: always()`-Cleanup entfernt; die Recherche ist keine Trainingsfreigabe.
+
+---
+
+# Audit-Snapshot – 27.11.2026, 07:40 CET (vor Monitor PR #347)
 
 ## Tatsächlich geprüfte Hauptzweige
 - Beekeeper-Monitor `main`: `50347b96fa3ffed82fe16db2de37cfc06b4558b7` (PR #346; Cross-Repository-Pin aktualisiert).
@@ -21,7 +32,7 @@
 - Die Vulnerability-Logs melden für die geprüften optionalen Python-/Kamera-Abhängigkeitsgruppen „No known vulnerabilities found“. pip-audit weist zusätzlich auf nicht vollständig hash-gepinnte Requirements hin; dies ist eine Supply-Chain-Verbesserungsmöglichkeit, kein gemeldeter CVE.
 
 ## Öffentlich verfügbare historische Actions-Artefakte
-Die folgenden neun Artefakte wurden einzeln über die jeweiligen Run-Artefaktlisten geprüft; alle meldeten `expired=false`. Inhalte wurden nicht heruntergeladen:
+Neun historische Monitor-Artefakte plus ein BeeKeeper3000-Bericht (zehn insgesamt) wurden einzeln über die jeweiligen Run-Artefaktlisten geprüft; alle meldeten `expired=false`. Inhalte wurden nicht heruntergeladen:
 - PWA-Vorschauen: `15124542124`, `15118529028`, `15115678841`, `15115577897`, `15108012720` (je 65.655 B; Ablauf 03.12.2026).
 - Reviewqueues: `15108851881` (89.737 B) und `15107897872` (163.198 B; Ablauf 10.12.2026).
 - CC0-Lauf: `15058597151` (161.230.685 B Originalbilder) und `15058522636` (169.351 B Prüfliste; Ablauf 09.12.2026).
