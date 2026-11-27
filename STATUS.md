@@ -1,52 +1,64 @@
-# Aktueller Prüfstand – 27.11.2026, 06:05 CET (Post-Merge-Nachprüfung)
+# Aktueller Prüfstand – 27.11.2026 (Post-Merge nach Monitor PR #345 und BeeKeeper3000 PR #136)
 
 ## Hauptzweige und Cross-Repository-Pin
-- Beekeeper-Monitor `main`: `ef56a8a53b965113292272e1f23fa500cbded705` (PR #343 gemergt).
-- BeeKeeper3000 `main`: `157076acaf7900d6e1d3b154657d04e79c3e8760` (PR #134 und #135 gemergt).
-- Beide Monitor-Cross-Repository-Workflows und der Pin-Regressionstest verwenden unveränderlich BeeKeeper3000 `157076ac`.
+- Beekeeper-Monitor `main`: `972e690f88dab4f66d8594c524b0c70a56dfd54b` (PR #345 gemergt).
+- BeeKeeper3000 `main`: `f61a54e9ea4dc7e07c6b63dd2af27ce043072214` (PR #136 gemergt).
+- Beide Monitor-Cross-Repository-Workflows und der Pin-Regressionstest verwenden unveränderlich BeeKeeper3000 `f61a54e9`.
+- PR #345 aktualisierte `.github/workflows/gesamttest.yml`, `.github/workflows/cross-repo-integration.yml`, den Pin-Test und die Integrations-/Datenerfassungsdokumentation.
 
-## Aktuelle abgeschlossene CI auf den Hauptzweigen
+## Post-Merge-CI – tatsächliche Runs
 
-**Beekeeper-Monitor – Commit `ef56a8a5`:**
-- [Ein-Klick-Gesamttest #45943280871](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45943280871): completed / success; Browser, Safari WebKit, iPhone-WebKit-Emulation, Field-Dataset-Export, Bridge und lokale PWA-Verträge erfolgreich.
-- [Repository-Integration #45943280866](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45943280866): completed / success.
-- [CodeQL #45943280888](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45943280888): completed / success; Python und JavaScript/TypeScript.
-- Die Artefaktliste des Gesamttests #45943280871 ist leer.
+**Beekeeper-Monitor – Commit `972e690f`:**
+- [Ein-Klick-Gesamttest #45945232314](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45945232314): completed / success; Browser, Safari WebKit, iPhone-WebKit-Emulation, Bridge und Field-Dataset-Export erfolgreich.
+- [Repository-Integration #45945232360](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45945232360): completed / success; Partnerrevision `f61a54e9` exakt ausgecheckt und verifiziert.
+- [CodeQL #45945232287](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45945232287): completed / success; Python und JavaScript/TypeScript.
+- Die Artefaktliste des Gesamttests #45945232314 ist leer.
+- Im Gesamttest sind `MODEL: success`, aber `TRAINING: failure` und `ANNOTATIONS: failure` protokolliert. `MODEL` ist nur die Modellkatalog-/Metadatenprüfung. Der Log schreibt ausdrücklich `KI-STATUS: BLOCKIERT`.
 
-**BeeKeeper3000 – Commit `157076ac`:**
-- [Quality Gates #45942664160](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45942664160): completed / success.
-- [CodeQL #45942664172](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45942664172): completed / success.
-- [Supply Chain / SBOM #45942664303](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45942664303): completed / success.
-- [Windows-Stationstest #45942664111](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45942664111): completed / success.
-- [Waspinator-Metadatenprüfung #45942664120](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45942664120): completed / success; prüft nur GitHub-Metadaten und ruft keine Gewichtsbytes ab.
+**BeeKeeper3000 – Commit `f61a54e9`:**
+- [Quality Gates #45944675912](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45944675912): completed / success.
+- [CodeQL #45944675944](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45944675944): completed / success.
+- [Supply Chain / SBOM #45944675934](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45944675934): completed / success.
+- [Windows-Stationstest #45944675924](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45944675924): completed / success.
+- [Gepinntes Waspinator-Metadatenaudit #45944676038](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45944676038): completed / success, keine Modellbytes und keine Artefakte.
+- [Upstream-Waspinator-Metadatenaudit #45944675886](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45944675886): completed / success, nur GitHub-Metadaten, keine Gewichtsbytes und keine Artefakte.
 
-## Waspinator: historischer Byte-Abruf und Korrektur
-- Der frühere Workflow hat in [Run #45893210187](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45893210187) einmalig die gepinnten 9.602.112 Bytes des externen Waspinator-Gewichts abgerufen, um SHA-256 zu berechnen. Die Logs bestätigen: nicht geladen, ausgeführt, konvertiert, trainiert, installiert, aktiviert oder weiterverteilt.
-- Als öffentliches Actions-Artefakt wurde nur der 658-Byte-Prüfbericht [#15151838571](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45893210187/artifacts/15151838571) gespeichert; bei letzter Abfrage `expired=false`, Ablauf 26.12.2026. Das Artefakt enthält keine Modellgewichte.
-- PR [#134](https://github.com/simonthomas-ai/BeeKeeper3000/pull/134) entfernte den Workflow mit Gewichtsdownload und ersetzte ihn durch Metadatenprüfung ohne Modellbytes. PR [#135](https://github.com/simonthomas-ai/BeeKeeper3000/pull/135) ergänzte den kurzlebigen `github.token` mit `contents: read`, nachdem der erste Post-Merge-Metadatenlauf wegen HTTP 403 / API-Rate-Limit scheiterte.
-- Der aktuelle Post-Merge-Metadatenlauf #45942664120 besteht. Der neue Workflow liest nur Commit-, Pfad-, Größen- und Git-Blob-Metadaten; der Git-Blob-Identifier ist kein SHA-256 und keine Lizenzfreigabe.
+## Waspinator: historischer Byte-Abruf und aktuelle Sperre
+- Der frühere Workflow hat in [Run #45893210187](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45893210187) einmalig exakt 9.602.112 Bytes des gepinnten externen NCNN-Gewichts abgerufen, ausschließlich zur SHA-256-Berechnung. Der Log bestätigt: nicht geladen, importiert, ausgeführt, konvertiert, trainiert, installiert, aktiviert oder weiterverteilt.
+- Hochgeladen wurde nur der 658-Byte-Prüfbericht [Artefakt #15151838571](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45893210187/artifacts/15151838571), nicht die Gewichtsdatei. Bei letzter Abfrage `expired=false`, Ablauf 26.12.2026.
+- PR #134 entfernte den byte-downloadenden Workflow; PR #135 authentifizierte Metadatenabfragen read-only; PR #136 entfernte zusätzlich den 30-Tage-Upload des Upstream-Metadatenreports und ergänzte Regressionstests.
+- Aktuelle Waspinator-Audits lesen nur Metadaten. Git-Blob-IDs sind keine SHA-256 und kein Lizenznachweis. Der historische 658-Byte-Bericht bleibt öffentlich, bis er abläuft oder manuell gelöscht wird.
 
-## KI- und Datenfreigabe – getrennt von Software-CI
-Der Log des aktuellen Monitor-Gesamttests #45943280871 weist aus:
-- `BROWSER`, `WEBKIT`, `IPHONE`, Modellkatalog-/Metadatenprüfung, Importtests und Taxonomie: success.
-- `TRAINING: failure` und `ANNOTATIONS: failure`.
-- `training/reviewed-annotations.json` und ein vollständiger freigegebener Trainingsbestand fehlen.
-- Der Lauf schreibt ausdrücklich `KI-STATUS: BLOCKIERT`; `MODEL: success` ist nur die Katalog-/Metadatenprüfung, keine Inferenz.
-- Sechs Monitor-Kandidaten bleiben `rights_and_runtime_pending`; keine 99-%-Erkennungsleistung, unabhängigen Holdout-Metriken oder Fehlalarmraten pro Kamerastunde sind nachgewiesen.
+## Öffentliche historische Actions-Artefakte – erneut per API bestätigt
+Alle folgenden Artefakte meldeten bei der Metadatenprüfung `expired=false`. Inhalte wurden nicht heruntergeladen.
 
-BeeKeeper3000 PR [#110](https://github.com/simonthomas-ai/BeeKeeper3000/pull/110) bleibt Draft; acht Fähigkeiten sind deaktiviert. Die lokale ONNX-Kamerapipeline bleibt experimentell und enthält kein freigegebenes Modell.
+| Artefakt | ID | Größe | Ablauf UTC |
+|---|---:|---:|---|
+| `original-velutina-images` | `15058597151` | 161.230.685 B | 09.12.2026 20:03 |
+| `ki-cc0-quellen-prueflisten` | `15058522636` | 169.351 B | 09.12.2026 20:03 |
+| `inaturalist-balanced-review-queue` | `15108851881` | 89.737 B | 10.12.2026 10:42 |
+| `insect-photo-review-queue` | `15107897872` | 163.198 B | 10.12.2026 10:42 |
+| `vespaguard-private-pwa` | `15108012720` | 65.655 B | 03.12.2026 10:39 |
+| Waspinator-SHA-256-Bericht | `15151838571` | 658 B | 26.12.2026 |
+
+Das 161-MB-Artefakt ist als unreviewte Originalbildsammlung bezeichnet; die CC0-/Review-Artefakte enthalten Kandidaten-/Quellen-/Attributionsdaten laut ihren Workflows und bestehenden Issues. Sie sind in öffentlichen Repositories für Repository-Leser zugänglich. Die exakte vollständige historische Artefaktzahl ist weiterhin nicht paginiert ermittelt. Die neuen Review-/CC0-Workflows und die aktuellen Gesamttests erzeugen keine solchen Artefakte mehr. Die Löschung historischer Artefakte ist über die verbundene GitHub-Schnittstelle nicht verfügbar; Issues [#308](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/308), [#312](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/312) und [#318](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/318) wurden mit den erneuten API-Befunden kommentiert.
+
+## Modell-, Datensatz- und Lizenzstatus
+- Monitor enthält sechs deaktivierte Modellkandidaten, alle `rights_and_runtime_pending`; BeeKeeper3000 führt Waspinator separat und deaktiviert.
+- Gepinnte Quellhinweise: Hornet3000/VespCV GPL-3.0; VespAI CC BY-NC-SA 4.0 mit AGPL-3.0-Modellcode; Varrodetector und Gratheon AGPL-3.0; Waspinator AGPL-3.0. Das sind Quell-/Projektangaben, keine Freigabe der Gewichte oder jedes Trainingsbildes.
+- Per-Bild-Provenienz, Attribution und Rechte zur Modellableitung/Weitergabe sind nicht vollständig nachgewiesen. Varroa auf Klebebrettern und Varroa auf Bienen sind getrennte Aufgaben.
+- In den aktuellen Git-Bäumen beider Repositories wurden keine Dateien mit Modellgewichts-Endungen (ONNX/PT/PTH/BIN/TFLite/Safetensors/NCNN) gefunden.
+- Die Root-Datei `LICENSE` fehlt in beiden Repositories. BeeKeeper3000 hat nur ein vorläufiges `LICENSES.md`; der Root-Lizenzverzicht ist wegen der ungeklärten vollständigen Rechtekette bewusst.
+- BeeKeeper3000 PR #110 bleibt Draft; acht Modellfähigkeiten sind deaktiviert.
 
 ## Deployment, Datenschutz und administrative Freigaben
-- Monitor-Repository öffentlich; Repository-Metadaten melden `has_pages=true`.
-- `.github/workflows/pages.yml` ist nur manuell auslösbar; Deploy-Job ist explizit `if: false`; keine `pages: write`- oder `id-token: write`-Berechtigung. In dieser Prüfung wurde kein Deployment ausgelöst.
-- Die veröffentlichte Website war über den Web-Abruf nicht erreichbar; das beweist nicht, dass eine ältere Pages-Veröffentlichung offline ist. Settings → Pages bleibt über [Issue #340](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/340) administrativ zu prüfen.
-- Beide `main`-Branches melden `protected=false`; beide Ruleset-Listen sind leer. Die Repository-Metadaten melden für das verbundene Konto `admin=true`, aber die verfügbaren GitHub-Aktionen haben keine Schreiboperation für Pages- oder Branch-Protection-Einstellungen.
-- Die Root-Datei `LICENSE` fehlt in beiden Repositories (Contents API: 404). Vorläufige Lizenzinventare sind keine projektweite Lizenzfreigabe.
-- Frühere Audits dokumentierten neun konkrete historische Monitor-PWA-/Review-/CC0-Artefakte und weitere PWA-Stichproben. Diese Altartefakte wurden in dieser Runde nicht erneut einzeln abgefragt oder gelöscht; Issues [#318](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/318) und [#312](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/312) bleiben offen. Der aktuelle Monitor-Gesamttest hat keine Artefakte erzeugt.
-- SQLite und IndexedDB sind nicht zusätzlich anwendungsseitig verschlüsselt. Backup-ACL-Prüfungen ersetzen keine Verschlüsselung; Datenträgerverschlüsselung, Schlüsselverwaltung und echter Restore-Test bleiben erforderlich.
-- Die gepinnten Modell-/Datensatz-Quelllizenzen sind in [MODEL-DATASET-LICENSE-AUDIT-2026-11-27.md](docs/MODEL-DATASET-LICENSE-AUDIT-2026-11-27.md) dokumentiert. Rechte an Gewichten und einzelnen Trainingsbildern sind nicht vollständig nachgewiesen.
+- Monitor-Repository-Metadaten melden `has_pages=true`; BeeKeeper3000 `has_pages=false`.
+- Monitor `.github/workflows/pages.yml` ist manuell auslösbar, aber der Deploy-Job ist explizit `if: false`; keine Pages-Veröffentlichung wurde ausgelöst. Die aktuelle veröffentlichte Pages-Konfiguration/-Inhalte konnten nicht verifiziert werden. [Issue #340](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/340) bleibt offen.
+- Beide `main`-Branches melden über die Branch-API `protected=false`; beide Ruleset-Listen sind leer. Das verbundene Konto hat Admin-Rechte, aber die verfügbare GitHub-Integration stellt keine Schreibaktion für Branch Protection/Rulesets bereit. [Issue #84](https://github.com/simonthomas-ai/BeeKeeper3000/issues/84) wurde aktualisiert.
+- SQLite und IndexedDB sind nicht zusätzlich anwendungsseitig verschlüsselt. Backup-ACL-Prüfungen verhindern bestimmte unberechtigte Dateizugriffe, ersetzen aber keine Verschlüsselung, Schlüsselverwaltung oder Wiederherstellungsprüfung.
+- Betreiber-/DSGVO-Rollen, Rechtsgrundlagen, Lösch- und Aufbewahrungsprozesse, Impressum und Datenschutzhinweise sind nicht vollständig freigegeben.
 
-**Release-/Feldstatus: BLOCKIERT.** Software-CI belegt nur die ausgeführten Softwarepfade. Sie belegt keine validierte KI, DSGVO-Freigabe, vollständige Rechtekette oder Feldreife.
+**Release-/Feldstatus: BLOCKIERT.** Software-CI und Cross-Repository-Verträge sind auf den geprüften Commits erfolgreich. Es gibt keine freigegebenen Modellgewichte, keinen vollständigen Trainingsbestand und keine fachlich geprüfte `training/reviewed-annotations.json`. Keine 99-%-Erkennungsleistung, keine unabhängigen Holdout-Metriken und keine Feldreife sind nachgewiesen.
 
 Keine privaten Bienenstanddaten, Fotos, GPS-Koordinaten oder Zugangsdaten übertragen. Keine unfreigegebenen Modellgewichte ausgeführt oder trainiert. Kein öffentliches Deployment ausgelöst.
 
