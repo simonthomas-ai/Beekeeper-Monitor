@@ -1,3 +1,61 @@
+# Aktueller Prüfstand – 27.11.2026, 01:45 CET
+
+Dieser Nachtrag basiert auf den aktuell abgefragten Hauptzweigen, Workflow-Jobs und Logs. Ältere Status-Snapshots weiter unten sind Historie und dürfen nicht als heutige Commit-/Freigabeaussage gelesen werden.
+
+## Hauptzweige
+
+- **Beekeeper-Monitor `main`:** `67c1dbbdf5ab1dccfc698c2d1ea932835162007`.
+- **BeeKeeper3000 `main`:** `4676649d3d248f5b950ac1eaef7673bbd1af9f26`.
+- Der Monitor pinnt BeeKeeper3000 unveränderlich auf genau diesen Partner-Commit.
+
+## Tatsächlich geprüfte CI-Läufe
+
+**Beekeeper-Monitor, Commit `67c1dbbdf5ab1dccfc698c2d1ea932835162007`:**
+- [Ein-Klick-Gesamttest #45914218498](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45914218498): completed / success; alle drei Jobs (Gesamttest, Feld-Dataset-Export gegen BeeKeeper-Validator, BeeKeeper-Bridge-Integration) erfolgreich.
+- [Repository-Integration #45914218238](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45914218238): completed / success.
+- [CodeQL #45914218129](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45914218129): completed / success.
+- Im Gesamttest bestanden Chromium, Safari/WebKit, iPhone-WebKit-Emulation, Node-/Python-Unit-Tests, PWA-Verträge, ZIP-Export-Roundtrip, Partner-Validator, Bridge-Replay und SQLite-Neustart.
+
+**BeeKeeper3000, Commit `4676649d3d248f5b950ac1eaef7673bbd1af9f26`:**
+- [Quality Gates #45907665077](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45907665077): success.
+- [Supply Chain / SBOM #45907665052](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45907665052): success.
+- [Windows-Station #45907665022](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45907665022): success.
+- [CodeQL #45907664994](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45907664994): success.
+
+## KI-Datenstatus aus dem tatsächlichen Monitor-Log
+
+Der Software-Gesamttest ist grün; die KI-Datenfreigabe ist es nicht:
+- Trainingsinventur: train 0 Bilder/0 Labels, val 0/0, test 0/0.
+- `datasets/beekeeper/provenance.jsonl` fehlt.
+- `training/train.py --validate-only` bricht mit `FileNotFoundError` ab: Dataset-Verzeichnis fehlt.
+- `training/reviewed-annotations.json` fehlt; der Annotationsschritt meldet ausdrücklich BLOCKIERT.
+- Der Laufbericht enthält `Echte Trainingsdaten: failure`, `Fachlich geprüfte Annotationen: failure` und `KI-STATUS: BLOCKIERT`. Diese Forschungs-/Freigabeschritte sind absichtlich keine Software-CI-Erfolgskriterien.
+
+Es gibt sechs Modellkandidaten; alle stehen auf `rights_and_runtime_pending`. Keine freigegebenen Gewichte, kein rechtlich freigegebener Trainingsbestand, kein unabhängiger Holdout und keine gemessenen Precision-/Recall-/Fehlalarmraten. Die Modellverträge Klassifikation `[1,7]` und Detektion `[1,9,8400]` sind unterschiedliche Aufgaben; ein produktiv validierter Adapter fehlt. 99-%-Erkennung und Feldreife sind nicht nachgewiesen. PR [BeeKeeper3000 #110](https://github.com/simonthomas-ai/BeeKeeper3000/pull/110) bleibt Draft.
+
+## Sicherheit, Datenschutz und Deployment
+
+- Beide `main`-Branches melden über die Branch-API `protected=false`; beide Repository-Ruleset-Listen sind leer. Der Branch-Protection-Endpunkt selbst lieferte für diese Integration 403; Änderungen an Schutzregeln sind über die verfügbaren Aktionen nicht möglich.
+- Beide Root-Dateien `LICENSE` fehlen (Contents-API 404). BeeKeeper3000 `LICENSES.md` bezeichnet sich ausdrücklich als vorläufiges Inventar und nicht als vollständige Release-Freigabe.
+- `.github/workflows/pages.yml` ist `workflow_dispatch`-only; der Deploy-Job ist mit `if: false` gesperrt. In dieser Prüfung wurde kein Pages-Deployment ausgelöst. Die repositoryweite Pages-Einstellung konnte über den verfügbaren Fetch-Endpunkt nicht gelesen werden; daher wird sie hier nicht als deaktiviert oder aktiv bestätigt.
+- Die Monitor-CI lud bei diesem Lauf noch ein öffentlich lesbares Actions-Artefakt `gesamttest-berichte` hoch: ID `15161278670`, 1.267 Bytes, Aufbewahrung ein Tag. Der Workflow enthielt dafür bisher `if: always()` und lief bei Push/PR. Diese Änderung macht den Upload nur noch nach ausdrücklichem `workflow_dispatch`; bis zum Merge gilt auf `main` noch die bisherige Regel.
+- Zusätzlich waren Browser-/WebKit-Fehlertraces (manuell, nur bei Fehler) und die wöchentliche autonome Projektsteuerung (14 Tage) als öffentliche Artefakte konfiguriert. Diese PR setzt für Browser/WebKit ein Tag Aufbewahrung und begrenzt den autonomen Trace-Upload auf manuelles `workflow_dispatch` mit einem Tag; bis zum Merge gelten die bisherigen Workflow-Regeln.
+- Historisch wurden 20 unterschiedliche PWA-Artefakte über mehrere Läufe einzeln bestätigt; die exakte aktive Gesamtzahl ist nicht vollständig enumeriert. Darunter befindet sich ein Originalbild-Artefakt mit rund 161 MB. Die Artefakte wurden nicht heruntergeladen oder gelöscht; die verfügbare GitHub-Aktion stellt keine Löschoperation bereit.
+- Browser-IndexedDB und lokale SQLite-Daten sind nicht zusätzlich anwendungsseitig im Ruhezustand verschlüsselt. JSON-Backups können Fotos und GPS enthalten; Sicherungen benötigen Geräte-/Datenträgerverschlüsselung und restriktive Zugriffsrechte.
+- Keine privaten Bienenstanddaten, Fotos, GPS-Koordinaten oder Zugangsdaten wurden übertragen. Keine Modellgewichte ausgeführt oder trainiert. Kein öffentliches Deployment ausgelöst.
+
+## Noch offen
+
+1. PR und CI-Prüfung dieser Änderung abschließen; öffentliche CI-Berichte nur nach manueller Auslösung erzeugen.
+2. Historische öffentliche Actions-Artefakte über GitHub-Administration löschen und anschließend die Artefaktliste erneut prüfen.
+3. Branch Protection/Rulesets und Pages-Einstellungen administrativ absichern.
+4. Vollständige Rechtekette, Root-Lizenzen und Provenienz für Modelle und Bilder klären.
+5. Lokale Datenbank-/Backup-Verschlüsselung und Löschabläufe auf echten Geräten testen.
+6. Erst mit freigegebenen Bildern und unabhängigen Annotationen Modelladapter, Holdout-Metriken und Feldvalidierung beginnen.
+
+**Freigabestatus: GESPERRT.** Software-CI-Erfolg ist kein Nachweis einer validierten KI, DSGVO-Freigabe oder Einsatzreife.
+---
+
 # Nachtrag 27.11.2026 – Partner-Pin auf aktuellen BeeKeeper3000-Hauptzweig
 
 Ausgangsstand vor dieser Änderung: Beekeeper-Monitor `main` `afd13599528c4c7ded72df9babc35dcd844026d0`; BeeKeeper3000 `main` `4676649d3d248f5b950ac1eaef7673bbd1af9f26`. Der bisherige Cross-Repository-Pin `77bd1c012af502afa42b9a79bf9eff0deda37032` lag vier Commits hinter BeeKeeper3000. Der Commitvergleich umfasste vier Commits/sechs Dateien; Bridge-, Source-API-, Kamera-Manifest- und Datensatzvalidator-Schnittstellen blieben unverändert. Die Partner-Hauptzweigprüfungen (Quality Gates, CodeQL, SBOM, Windows-Station) waren erfolgreich. PR #334 aktualisiert beide Monitor-Workflows, den Pin-Regressionstest und die Integrationsdokumentation auf den aktuellen unveränderlichen Partnerstand. Keine Gewichte, Trainingsdaten oder privaten Daten wurden übernommen; kein Deployment ausgelöst.
