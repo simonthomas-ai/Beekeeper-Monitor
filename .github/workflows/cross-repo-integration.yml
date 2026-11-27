@@ -57,7 +57,9 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
-      - name: Quell-API und Empfänger einzeln prüfen
+      - name: Quell-API, Empfänger und synthetische Outbox-E2E prüfen
+        env:
+          BEEKEEPER_BRIDGE_ENTRY: ${{ github.workspace }}/beekeeper3000/monitor-bridge/bridge.mjs
         run: |
           cd beekeeper3000
           python -m unittest network.test_source_api -v
