@@ -10,6 +10,7 @@ app=(root/"app.js").read_text()
 sw=(root/"sw.js").read_text()
 manifest=json.loads((root/"manifest.webmanifest").read_text())
 catalog=json.loads((root/"sources/catalog.json").read_text())
+model_candidates=json.loads((root/"models/candidates.json").read_text())
 pages=(root/".github/workflows/pages.yml").read_text()
 review_status=(root/"review/index.html").read_text()
 private_build=(root/".github/workflows/private-pwa.yml").read_text()
@@ -19,7 +20,7 @@ browser_workflow=(root/".github/workflows/browser.yml").read_text()
 webkit_workflow=(root/".github/workflows/webkit.yml").read_text()
 autonomous_workflow=(root/".github/workflows/autonomous-control.yml").read_text()
 assert "<html lang=\"de\">" in html
-for path in ("backup-contract.js","app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","field-image-privacy.js","field-dataset.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
+for path in ("backup-contract.js","app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","field-image-privacy.js","field-dataset.js","camera-model-selector.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
     assert (root/path).is_file(),path
 assert "capture=\"environment\"" in html
 assert 'id="field-dataset"' in html
@@ -44,10 +45,14 @@ assert (root/"tests/test_field_dataset_zip.py").is_file()
 assert "Bilder noch Labels" in (root/"datenschutz.html").read_text()
 assert "./field-image-privacy.js" in sw
 assert "./field-dataset.js" in sw
-assert "beekeeper-shell-v22" in sw
+assert "beekeeper-shell-v23" in sw
+assert "./camera-model-selector.js" in sw
+assert "./models/candidates.json" in sw
 assert "annotations.jsonl" in html
 assert "field-image-privacy.js" in pages
 assert "field-dataset.js" in pages
+assert "camera-model-selector.js" in pages
+assert "cp models/candidates.json _site/models/" in pages
 for class_slug in ("vespa_velutina","vespa_crabro","other_vespidae","apis_mellifera","bombus_spp","syrphidae","other_insect"):
     assert class_slug in html and class_slug in (root/"field-dataset.js").read_text()
 for legal in ("datenschutz.html", "impressum.html"):
@@ -144,7 +149,21 @@ assert "document.createElement('script')" not in runtime_source
 assert "KI-Laufzeit nicht freigegeben" in runtime_source
 assert "EXPERIMENTELLE KI AKTIV" not in runtime_source
 assert 'id="ai-readiness-status"' in html and 'NICHT SCHARF' in html
-assert 'id="camera-model"' not in html
+assert 'id="camera-model"' in html
+assert 'id="camera-model-status"' in html
+assert 'id="camera-model-active"' in html
+assert 'src="./camera-model-selector.js" defer' in html
+assert model_candidates["schema_version"] == 1
+assert model_candidates["status"] == "candidates_only_no_execution"
+assert len(model_candidates["models"]) == 6
+assert all(row.get("review_status") == "rights_and_runtime_pending" for row in model_candidates["models"])
+assert all(not any(key in row for key in ("enabled","active","inference_enabled","deployable","sha256","license_approved")) for row in model_candidates["models"])
+selector_source=(root/"camera-model-selector.js").read_text()
+assert "models/candidates.json" in selector_source
+assert "same-origin" in selector_source
+assert "redirect: 'error'" in selector_source
+assert "Kein Modell aktiv" in selector_source
+assert "Aktives Modell: keines" in selector_source
 assert 'src="./hornet-onnx-decoder.js"' not in html
 assert './hornet-onnx-decoder.js' not in sw
 assert 'src="./camera-onnx-runtime.js"' not in html
@@ -167,6 +186,8 @@ private_copy_lines = [line for line in private_build.splitlines() if line.lstrip
 assert private_copy_lines, "private PWA asset copy commands must remain explicit"
 assert any("field-image-privacy.js" in line for line in private_copy_lines), "private PWA must include the image privacy module"
 assert any("field-dataset.js" in line for line in private_copy_lines), "private PWA must include the field dataset module"
+assert any("camera-model-selector.js" in line for line in private_copy_lines), "private PWA must include the camera model selector"
+assert any("cp models/candidates.json pwa-preview/models/" in line for line in private_copy_lines), "private PWA must include the local candidate catalog"
 offline_assets = sw.split("const FILES=[", 1)[1].split("];", 1)[0]
 for asset in re.findall(r"'(\./[^']+)'", offline_assets):
     relative = asset.removeprefix("./")
