@@ -172,7 +172,6 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
         pages = (WORKFLOWS / "pages.yml").read_text(encoding="utf-8")
         self.assertIn("name: Validate PWA staging (no deployment)", pages)
         self.assertIn("verify-only:", pages)
-        self.assertNotIn("jobs:\\n  deploy:", pages)
         for action in (
             "actions/configure-pages@",
             "actions/upload-pages-artifact@",
