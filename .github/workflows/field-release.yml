@@ -9,6 +9,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Unit tests for fail-closed field evidence validation
+        run: python3 -m unittest discover -s tests -p 'test_check_field_release.py' -v
       - name: Verify explicit release evidence
         run: python3 scripts/check_field_release.py
