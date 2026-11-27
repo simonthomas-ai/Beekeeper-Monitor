@@ -39,7 +39,6 @@ class EventContractTests(unittest.TestCase):
             "confidence": 0.55,
             "verification_status": "observer_report",
         }
-        self.event("manual_observation", {**payload, "verification_status": "unverified"}).__class__
         with self.assertRaises(ValueError):
             self.event("manual_observation", {**payload, "verification_status": "expert_confirmed"}).validate()
         with self.assertRaises(ValueError):
