@@ -1,39 +1,43 @@
-# Aktueller Audit-Snapshot – 27.11.2026, 16:42 UTC
+# Aktueller Audit-Snapshot – 27.11.2026, 22:37 UTC
 
-## Geprüfte Hauptzweige
-- Beekeeper-Monitor-Ausgangsstand für dieses Pin-Update: `43faa3722c86475d3db22086e58edeaff7f5c82e`.
-- BeeKeeper3000 `main`: `6adf0235c0f321eb42f57bd5966b46e1e400bcec`.
-- Beide Repository-Metadaten melden `license=null`; in den Root-Verzeichnissen wurde keine Datei `LICENSE` gefunden.
-- Die PWA exportiert manuelle Sichtungen jetzt mit `origin=manual_observation`; Bridge und Monitor-Vertrag unterscheiden sie von `camera_detection`. Die Warnregeln schließen manuelle Berichte aus.
+## Geprüfte Hauptzweige und Cross-Repository-Pin
+- Beekeeper-Monitor `main`: `30d7d98bd0c855737534ef2e35bd17f9afb9f642` (PR #368; getrennte Ereignisart `manual_observation`).
+- BeeKeeper3000 `main`: `c090cb88a007d93e331c65d1d590aada7aa7bfde` (PR #152, Dokumentationsänderung).
+- Die Monitor-Cross-Repository-Workflows pinnen absichtlich BeeKeeper3000 `6adf0235c0f321eb42f57bd5966b46e1e400bcec` (PR #151), den geprüften funktionalen Vertrag. Der spätere BeeKeeper-Commit #152 änderte nur Feldtestdokumentation, nicht die Runtime-/Bridge-Schnittstelle.
+- Beide Repositories sind öffentlich. Die Root-Verzeichnisse enthalten keine Datei `LICENSE`; GitHub-Metadaten melden `license=null`.
 
-## Post-Merge-CI am aktuellen Monitor-Hauptzweig
-- [Ein-Klick-Gesamttest #46029786446](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46029786446): completed/success; alle drei Jobs erfolgreich. Bridge-Integration und Field-Dataset-Export gegen den gepinnten BeeKeeper3000-Stand waren erfolgreich. Der Browser-Artefakt-Schritt wurde übersprungen; die Artefaktliste dieses Laufs ist leer.
-- [CodeQL #46029786447](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46029786447): completed/success.
-- Der Gesamttest-Log zeigt ausdrücklich `TRAINING: failure` und `ANNOTATIONS: failure`: `datasets/beekeeper` und `training/reviewed-annotations.json` fehlen. Die Freigabezeile lautet `KI-STATUS: BLOCKIERT`. Die erfolgreiche Modellkatalogprüfung (`MODEL: success`) ist keine Prüfung realer Gewichte oder Inferenz.
-- Der Bericht zählt 23 offene Freigabepunkte. Die iPhone-WebKit-Prüfung ist eine Browser-Emulation, kein aktueller physischer iPhone-Test.
+## Aktuelle CI auf den geprüften Commits
+- Monitor [Ein-Klick-Gesamttest #46072797565](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46072797565): completed/success, alle drei Jobs erfolgreich. [Repository-Integration #46072797587](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46072797587) und [CodeQL #46072797613](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46072797613): completed/success.
+- Der Monitor-Gesamttest-Job protokolliert 48 Chromium-, 47 WebKit- und 47 iPhone-WebKit-Emulationstests erfolgreich. Die iPhone-Prüfung ist eine Browser-Emulation, kein physischer iPhone-Test. Die Bridge-Integration bestand 35 Tests; der Cross-Repository-Log bestätigt, dass manuelle PWA-Berichte als `manual_observation` erhalten bleiben und keine Hornissenwarnung auslösen. Die Artefaktliste des Gesamttestlaufs ist leer.
+- Monitor-Gesamttest: `TRAINING: failure` und `ANNOTATIONS: failure`, weil `datasets/beekeeper/` und `training/reviewed-annotations.json` fehlen. Der Bericht schreibt ausdrücklich `KI-STATUS: BLOCKIERT`. Diese Forschungs-/Datenprüfungen sind bewusst nicht verpflichtende Software-CI-Kriterien; der abschließende CI-Gate prüft die Software-Schritte und den Modellkatalog, nicht Training oder Annotationen.
+- BeeKeeper3000 `main` ist nach dem Dokumentations-PR #152 `c090cb8`. [Quality Gates #46072977697](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46072977697) und [CodeQL #46072977696](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46072977696): completed/success.
+- Die funktionale BeeKeeper-Änderung PR #151 auf `6adf023` bestand [Quality Gates #46072393439](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46072393439), [Windows-Station #46072393428](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46072393428), [Network Tests #46072393543](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46072393543), [SBOM/Supply Chain #46072393524](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46072393524) und [CodeQL #46072393418](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46072393418).
+- Der aktuelle Cross-Repository-Test arbeitet mit synthetischen Fixtures; er belegt weder reale Kameraaufnahmen noch KI-Inferenz oder Hardwarebetrieb.
 
-## BeeKeeper3000 – aktueller Hauptzweig
-- [Quality Gates #46022027042](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46022027042): completed/success; Python-/Sicherheitstests, Kamera-Runtime, Windows-Kompatibilität und Monitor-Bridge erfolgreich.
-- [Network Tests #46022026797](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46022026797), [Supply Chain / SBOM #46022026815](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46022026815) und [CodeQL #46022026701](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46022026701): jeweils completed/success.
-- `camera/model-capabilities.json`: alle acht Fähigkeiten bleiben `enabled=false`, `model=null`, `status=not_validated`. Die beiden eingetragenen externen Kandidaten `hornet3000` und `waspinator` bleiben `rights_and_runtime_pending`.
-- Im Monitor-Katalog stehen sechs Kandidaten; alle sind ebenfalls `rights_and_runtime_pending`. Die getrennten Inventare sind keine Freigabe und werden nicht vereinheitlicht, solange Rechte und Schnittstellen ungeklärt sind.
+## Integration, Sicherheit und Datenschutz
+- Die Mobile-PWA exportiert manuelle Sichtungen mit `origin=manual_observation`. Der lokale v2-Importer verlangt diesen Ursprung und sendet nur begrenzte Metadaten an die feste Loopback-Source-API; Fotos, GPS, Kompasswerte und Notizen werden nicht übertragen. Bridge und Monitor führen den eigenen Ereignistyp, der von Hornissenwarnungen ausgeschlossen ist.
+- Die Source API behandelt fehlendes `origin` aus Legacy-Kompatibilität als `camera`. Das Feld ist jedoch client-deklariertes Routing-Metadatum, keine kryptografische Geräte-/Kamera-Attestierung. Der offene BeeKeeper-PR [#153](https://github.com/simonthomas-ai/BeeKeeper3000/pull/153) ergänzt diese Klarstellung und präzisiert die optionale lokale manuelle PWA-Übergabe; er ist noch nicht gemergt.
+- Die Source API bindet an Loopback und verlangt einen API-Schlüssel. SQLite/IndexedDB und lokale Backups besitzen keine zusätzliche anwendungsseitige Verschlüsselung; Windows-NTFS-ACLs und Datenträgerverschlüsselung müssen lokal abgesichert werden.
+- `impressum.html` und `datenschutz.html` enthalten weiterhin Betreiber-/Kontakt-Platzhalter. Vollständige DSGVO-/Betreiberfreigabe liegt nicht vor.
+- Branch-Protection-Endpunkte liefern HTTP 403; die Ruleset-Abfragen liefern für beide Repositories `[]`. Die verbindliche Administrationskonfiguration konnte über die verbundene Schnittstelle nicht bestätigt oder geändert werden.
 
-## Deployment, Datenschutz und Governance
-- Monitor-Repository-Metadaten melden `has_pages=true`; `.github/workflows/pages.yml` enthält auf `main` nur einen manuellen Verify-only-Job ohne Upload- oder Deploy-Aktion. Die tatsächliche Live-Erreichbarkeit bzw. Pages-Quelle konnte mit den verfügbaren Lese-Endpunkten nicht bestätigt werden. In diesem Audit wurde kein Deployment ausgelöst.
-- `impressum.html` und `datenschutz.html` enthalten weiterhin Betreiber-/Kontakt-Platzhalter und erklären die Angaben ausdrücklich als unvollständig. Keine öffentliche Produktivfreigabe.
-- Beide `main`-Branches melden `protected=false`; die Branch-Protection-Statuschecks sind `off`. Die vorhandene PowerShell-Konfigurationshilfe kann lokal mit administrativem GitHub-Zugriff ausgeführt werden; die verbundene Schnittstelle stellt hier keine Schreibaktion für Branch Protection bereit.
-- Die manuelle PWA-Vorschau ist als öffentliches Actions-Artefakt gekennzeichnet, wird nur per `workflow_dispatch` gestartet und hat eine Aufbewahrung von einem Tag. Sie ist kein privates Artefakt und kein Deployment.
-- Lokale IndexedDB-/SQLite-Daten und Backups besitzen keine zusätzliche anwendungsseitige Verschlüsselung. Exportierte Medien/GPS-Daten sind daher wie sensible Daten zu behandeln.
+## Deployment und öffentliche Artefakte
+- `.github/workflows/pages.yml` ist auf `workflow_dispatch` beschränkt und führt ausschließlich lokales `verify-only)-Staging aus. Es enthält keine Pages-Upload- oder Deploy-Aktion. Kein Deployment wurde in dieser Prüfung ausgelöst.
+- Die Pages-Konfiguration bzw. tatsächliche Live-Erreichbarkeit konnte über die verfügbaren GitHub-Lese-Endpunkte nicht abschließend verifiziert werden. Der Workflow deaktiviert nicht automatisch eine eventuell bestehende Pages-Konfiguration.
+- Die Artefaktliste des aktuellen Monitor-Gesamttests ist leer. Historische öffentliche Artefakte aus früheren Läufen sind in [Issue #312](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/312) und [Issue #318](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/318) dokumentiert; ihre vollständige Bereinigung wurde in diesem Lauf nicht erneut bestätigt. Die Artefakt-Löschaktion ist über die verbundene Schnittstelle nicht verfügbar.
 
-## Rechte und KI-Freigabe
-- Der Lizenz-Audit vom 27.11.2026 dokumentiert fehlende per-Bild-Rechte-/Provenienzketten und ungeklärte Weitergaberechte für die externen Modellkandidaten. Kein Modell und kein fremder Datensatz wurde in dieser Runde importiert oder aktiviert.
-- Eine Root-Projektlizenz fehlt weiterhin. `LICENSES.md` bzw. Drittanbieterhinweise ersetzen keine eindeutige Gesamtprojektlizenz.
-- Keine belastbare Precision-/Recall-/Fehlalarmrate, kein unabhängiger Feld-Holdout und keine 99-%-Validierung nachgewiesen.
+## Modelle, Datensätze und echte Einsatzbereitschaft
+- BeeKeeper3000 `camera/model-capabilities.json`: alle acht Fähigkeiten `enabled=false`, `model=null`, `status=not_validated`. Monitor-Katalog: sechs Kandidaten, alle `rights_and_runtime_pending`.
+- Keine freigegebenen Gewichte, kein vollständiger per-Bild-Rechte-/Provenienznachweis, kein realer Trainingsbestand und keine fachlich geprüften Annotationen. Externe Kandidaten bleiben gesperrt; keine Gewichte oder Trainingsbilder wurden importiert oder aktiviert.
+- Kein unabhängiger Feld-Holdout, keine belastbare Precision-/Recall-/Fehlalarmrate und keine 99-%-Validierung.
+- Freigegeben ist ausschließlich der beaufsichtigte lokale No-AI-Pilot. Die physische Stations-/Kameraabnahme ist nicht Teil dieser CI-Läufe und wurde in diesem Audit nicht ausgeführt.
 
-## Feldstatus und nächster Schritt
-- Freigegeben ist ausschließlich der beaufsichtigte lokale No-AI-Pilot gemäß [Feldtestfreigabe](https://github.com/simonthomas-ai/BeeKeeper3000/blob/main/docs/FIELDTEST-START-RELEASE-2026-11-27.md).
-- Nächste reale Prüfung: auf dem Stationsgerät `scripts/station_doctor.py --no-model` gemäß [No-AI-Anleitung](https://github.com/simonthomas-ai/BeeKeeper3000/blob/main/docs/NO-MODEL-FIELDTEST.md) ausführen; optional anschließend den dokumentierten Einzelbild-Verbindungstest. Keine Fotos/GPS/Secrets hochladen.
-- Dieser Snapshot belegt weder eine physische Hardwareabnahme noch KI-, DSGVO-, Rechts- oder Produktivfreigabe.
+## Nächster Schritt
+- PR #153 auf vollständige CI prüfen; nur bei erfolgreicher Pflicht-CI als Dokumentationsänderung integrieren.
+- Auf dem Stationsgerät den No-AI-Stationsdoctor und optional den dokumentierten Einzelbild-Kameraverbindungstest durchführen. Keine Bilder, GPS-Daten, Schlüssel oder privaten Logs öffentlich übertragen.
+- Historische öffentliche Actions-Artefakte, Pages-Einstellung und Branch-Schutz administrativ prüfen/bereinigen; Modell- und Trainingsfreigabe erst nach vollständiger Rechtekette und unabhängiger Feldvalidierung.
+
+---
 
 ---
 
