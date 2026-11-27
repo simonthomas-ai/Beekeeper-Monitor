@@ -8,14 +8,15 @@ import json
 import math
 import re
 
-Kind = Literal["camera_detection", "acoustic_event", "hive_telemetry", "varroa_count"]
-ALLOWED = {"camera_detection", "acoustic_event", "hive_telemetry", "varroa_count"}
+Kind = Literal["camera_detection", "manual_observation", "acoustic_event", "hive_telemetry", "varroa_count"]
+ALLOWED = {"camera_detection", "manual_observation", "acoustic_event", "hive_telemetry", "varroa_count"}
 IDENTIFIER = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9._:-]{0,79}$")
 LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 SOURCE_EVENT_ID = re.compile(r"^[\x21-\x7E]{1,128}$")
 
 REQUIRED_FIELDS = {
     "camera_detection": {"label", "confidence"},
+    "manual_observation": {"label", "confidence", "verification_status"},
     "acoustic_event": {"label", "confidence"},
     "hive_telemetry": {"temperature_c", "humidity_pct"},
     "varroa_count": {"mites", "bees_examined"},
@@ -24,6 +25,7 @@ OPTIONAL_FIELDS = {
     # Exact compatibility fields sent by the BeeKeeper3000 bridge. They are
     # limited machine metadata; no media, coordinates or arbitrary text.
     "camera_detection": {"origin_event_id", "verification_status", "prey_detected"},
+    "manual_observation": {"origin_event_id", "prey_detected"},
     "acoustic_event": set(),
     "hive_telemetry": set(),
     "varroa_count": set(),
@@ -76,7 +78,7 @@ class HiveEvent:
         if not required.issubset(self.payload) or not set(self.payload).issubset(allowed):
             raise ValueError("Payload does not match the strict metadata contract")
 
-        if self.kind in {"camera_detection", "acoustic_event"}:
+        if self.kind in {"camera_detection", "manual_observation", "acoustic_event"}:
             label = self.payload["label"]
             confidence = self.payload["confidence"]
             if not isinstance(label, str) or not LABEL.fullmatch(label):
@@ -84,16 +86,17 @@ class HiveEvent:
             confidence_number = _finite_number(confidence, "confidence")
             if not 0 <= confidence_number <= 1:
                 raise ValueError("Invalid confidence")
-            if self.kind == "camera_detection":
+            if self.kind in {"camera_detection", "manual_observation"}:
                 if "origin_event_id" in self.payload:
                     origin_id = self.payload["origin_event_id"]
                     if not isinstance(origin_id, str) or not SOURCE_EVENT_ID.fullmatch(origin_id):
                         raise ValueError("Invalid origin event ID")
+                expected_status = "observer_report" if self.kind == "manual_observation" else "unverified"
                 if (
                     "verification_status" in self.payload
-                    and self.payload["verification_status"] != "unverified"
+                    and self.payload["verification_status"] != expected_status
                 ):
-                    raise ValueError("Untrusted events may only remain unverified")
+                    raise ValueError("Event verification status does not match its origin")
                 if (
                     "prey_detected" in self.payload
                     and type(self.payload["prey_detected"]) is not bool
