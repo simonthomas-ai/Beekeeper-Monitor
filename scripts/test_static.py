@@ -171,7 +171,7 @@ assert all("hornet-onnx-decoder.js" not in line for line in private_copy_lines)
 
 # Browser reports can contain traces/screenshots. This repository is public, so
 # automated push/PR runs must not publish artifacts to all repository readers.
-artifact_marker = "      - name: Browser-Testartefakte (öffentlich, 1 Tag)\\n"
+artifact_marker = "      - name: Browser-Testartefakte (öffentlich, 1 Tag)"
 assert gesamttest.count(artifact_marker) == 1, "expected exactly one public browser-artifact step"
 artifact_step = gesamttest.split(artifact_marker, 1)[1].split("      - name: Gesamtergebnis", 1)[0]
 assert "        if: ${{ always() && github.event_name == 'workflow_dispatch' }}" in artifact_step, (
