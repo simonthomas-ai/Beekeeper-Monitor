@@ -1,3 +1,7 @@
+> **Neuester Audit-Snapshot (27.11.2026, 08:56 CET):** [Aktuellen GitHub-Prüfstand, CI-Logs, offene PRs, Deployment-, Datenschutz- und Lizenzbefunde öffnen](docs/AUDIT-SNAPSHOT-2026-11-27-0856-CET.md). Ältere Abschnitte darunter sind historische Stände.
+
+---
+
 # Nachtrag nach Monitor PR #347 – 27.11.2026
 
 - PR [#347](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/347) wurde nach grüner PR-CI gemergt: `8af15ed58eda2291bc829c0ae41439bf9059837c`.
