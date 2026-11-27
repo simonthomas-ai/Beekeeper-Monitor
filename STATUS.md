@@ -2,8 +2,9 @@
 
 ## Geprüfte Hauptzweige
 - Beekeeper-Monitor-Ausgangsstand für dieses Pin-Update: `43faa3722c86475d3db22086e58edeaff7f5c82e`.
-- BeeKeeper3000 `main`: `f7b6060951969203b7efdd5fe85f159de40c043e`.
+- BeeKeeper3000 `main`: `6adf0235c0f321eb42f57bd5966b46e1e400bcec`.
 - Beide Repository-Metadaten melden `license=null`; in den Root-Verzeichnissen wurde keine Datei `LICENSE` gefunden.
+- Die PWA exportiert manuelle Sichtungen jetzt mit `origin=manual_observation`; Bridge und Monitor-Vertrag unterscheiden sie von `camera_detection`. Die Warnregeln schließen manuelle Berichte aus.
 
 ## Post-Merge-CI am aktuellen Monitor-Hauptzweig
 - [Ein-Klick-Gesamttest #46029786446](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46029786446): completed/success; alle drei Jobs erfolgreich. Bridge-Integration und Field-Dataset-Export gegen den gepinnten BeeKeeper3000-Stand waren erfolgreich. Der Browser-Artefakt-Schritt wurde übersprungen; die Artefaktliste dieses Laufs ist leer.
