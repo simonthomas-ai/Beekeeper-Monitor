@@ -1,21 +1,18 @@
-name: Deploy PWA to GitHub Pages
-# Public deployment intentionally disabled for private development.
+name: Validate PWA staging (no deployment)
+# Manual validation only. This workflow contains no Pages upload or deployment action.
 # Re-enable only after explicit approval and legal review.
 on:
   workflow_dispatch:
 permissions:
   contents: read
-  actions: read
 concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  deploy:
-    if: ${{ false }} # Explicitly disabled: never publish from this workflow
+  verify-only:
+    name: Validate staged PWA without publishing
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -58,7 +55,7 @@ jobs:
           test -s _site/datenschutz.html
           test -s _site/impressum.html
           touch _site/.nojekyll
-      - name: Enforce completed legal notices before Pages upload
+      - name: Enforce completed legal notices before any future publication
         run: |
           set -euo pipefail
           # Keep this fail-closed gate after the image audit but before any upload.
@@ -67,63 +64,10 @@ jobs:
             echo "::error::Rechtstexte enthalten noch Platzhalter; Deployment gesperrt."
             exit 1
           fi
-      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        with:
-          path: _site
-      - name: Wait for uploaded Pages artifact to become visible
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Verify staged files without publishing
         run: |
-          set -euo pipefail
-          for attempt in $(seq 1 12); do
-            if gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" --paginate --jq '.artifacts[] | select(.name == "github-pages" and .expired == false) | .id' | grep -Eq '^[0-9]+$'; then
-              echo "Pages artifact is available through the Actions API."
-              exit 0
-            fi
-            echo "Pages artifact not yet visible (attempt ${attempt}/12); retrying in 5 seconds."
-            sleep 5
-          done
-          echo "::error::Uploaded github-pages artifact did not become visible within 60 seconds."
-          exit 1
-      # GitHub's Actions artifacts API can list a newly uploaded artifact before
-      # the deploy-pages artifact service can retrieve its metadata.
-      - name: Allow Pages artifact metadata to propagate
-        run: sleep 45
-      - id: deployment
-        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
-      - name: Oeffentliche Website und Rechtstexte nach Deployment kontrollieren
-        run: |
-          python - <<'PY'
-          import re
-          import time
-          from urllib.error import HTTPError, URLError
-          from urllib.request import Request, urlopen
-
-          base = "https://simonthomas-ai.github.io/Beekeeper-Monitor/"
-          checks = {
-              "": "id=\"projektleistung\"",
-              "wissen/wissenschaft-hornissen-bienen.html": "Forschung und Fachquellen aus Asien",
-              "wissen/weltlage-vespa-velutina.html": "Weltweite Verbreitung und Forschungsstand",
-          }
-          for path in ("impressum.html", "datenschutz.html"):
-              checks[path] = None
-          for path, marker in checks.items():
-              url = base + path
-              for attempt in range(12):
-                  try:
-                      with urlopen(Request(url, headers={"User-Agent": "VespaGuard-Deployment-Check/1.0", "Cache-Control": "no-cache"}), timeout=20) as response:
-                          body = response.read().decode("utf-8")
-                          legal = path in ("impressum.html", "datenschutz.html")
-                          placeholders = bool(re.search(r"\[[^]]+\]|MUSTER\s*/\s*PLATZHALTER|Angaben (?:noch|sind derzeit) unvollständig", body, re.IGNORECASE))
-                          if response.status == 200 and ((not placeholders and bool(body.strip())) if legal else marker in body):
-                              print(f"OK HTTP 200 and expected content: {url}", flush=True)
-                              break
-                          print(f"Unexpected response or content: {url} (attempt {attempt + 1}/12)", flush=True)
-                  except (HTTPError, URLError, TimeoutError) as exc:
-                      print(f"Attempt {attempt + 1}/12 for {url}: {exc}", flush=True)
-                  if attempt < 11:
-                      time.sleep(10)
-              else:
-                  raise SystemExit(f"Public page not verified after deployment: {url}")
-          PY
+          test -s _site/index.html
+          test -s _site/datenschutz.html
+          test -s _site/impressum.html
+          test -s _site/review/index.html
+          echo "PASS: local PWA staging validated; no Pages artifact or deployment was created."
