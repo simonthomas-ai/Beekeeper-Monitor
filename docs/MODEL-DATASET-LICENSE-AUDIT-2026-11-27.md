@@ -4,7 +4,7 @@
 
 Geprüft wurden ausschließlich öffentliche Lizenzdateien, README-/Konfigurationsdateien und Git-Baum-Metadaten an den unten angegebenen unveränderlichen Upstream-Commits. Es wurden keine Modellgewichte, Datensatzarchive, Fotos oder Attributionsdateien heruntergeladen oder ausgeführt. Die Prüfung bestätigt die im jeweiligen Quellprojekt veröffentlichten Erklärungen; sie ist keine juristische Freigabe und keine unabhängige Prüfung der Rechte einzelner Bilder.
 
-Die sechs Kandidaten in `models/candidates.json` des Beekeeper-Monitor stehen weiterhin auf `rights_and_runtime_pending` und sind deaktiviert. Der zusätzliche Waspinator-Kandidat steht im deaktivierten BeeKeeper3000-Fähigkeitskatalog (PR #110, Draft).
+Die sechs Kandidaten in `models/candidates.json` des Beekeeper-Monitor stehen weiterhin auf `rights_and_runtime_pending` und sind deaktiviert. Der zusätzliche Waspinator-Kandidat steht im deaktivierten BeeKeeper3000-Fähigkeitskatalog (PR #137, gemergt); seine Freigabe bleibt weiterhin gesperrt.
 
 ## Kandidaten im Beekeeper-Monitor
 
