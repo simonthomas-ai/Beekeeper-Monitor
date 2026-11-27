@@ -122,7 +122,8 @@ def check(path):
 
         if not isinstance(record["species"], str) or record["species"] not in CLASS_NAMES:
             raise ValueError(f"Record {index}: species must be one of the seven project class IDs")
-        if record["license"] not in SUPPORTED_LICENSES:
+        license_id = record["license"]
+        if not isinstance(license_id, str) or license_id not in SUPPORTED_LICENSES:
             raise ValueError(f"Record {index}: unsupported or unverified license version")
         for field in ("license_verified", "species_verified", "image_quality_verified"):
             if record[field] is not True:
