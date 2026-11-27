@@ -9,7 +9,7 @@ Die GitHub-Pages-URL ist die vorgesehene öffentliche Adresse, aber die Veröffe
 ## Automatische Abläufe
 
 - **Aktueller Stand:** `.github/workflows/pages.yml` ist ausschließlich manuell auslösbar und der Job `deploy` hat ausdrücklich `if: ${{ false }}`. Weder Push noch manueller Start veröffentlichen die Website.
-- Pushes auf `main` starten PWA-Buildvorschauen als GitHub-Actions-Artefakt und Softwaretests; diese veröffentlichen keine Website.
+- Pushes auf `main` starten Softwaretests, aber keine PWA-Buildvorschau. Die PWA-Buildvorschau wird nur über ein ausdrückliches `workflow_dispatch` im Workflow `.github/workflows/private-pwa.yml` erzeugt; sie veröffentlicht keine Website.
 - Der CC0-Rechercheworkflow lädt Bildbytes nur vorübergehend in den isolierten GitHub-Runner, um Dateiformat und technische Lesbarkeit zu prüfen. Die Originalbild-Arbeitsdateien werden vor Ende des Jobs entfernt.
 - Der CC0-Rechercheworkflow veröffentlicht weder Originalbild-Artefakte noch Kandidaten-Metadaten-Artefakte. Er schreibt nur aggregierte Prüfergebnisse in die Actions-Zusammenfassung und entfernt danach die erzeugten CSV-, JSON- und HTML-Prüflisten.
 - `.github/workflows/gallery-original-artifact-audit.yml` prüft nach einem erfolgreichen CC0-Lauf anhand genau dieser Run-ID, dass keine Kandidaten-Artefakte veröffentlicht wurden.
@@ -29,7 +29,7 @@ Der verpflichtende Workflow-Audit `scripts/audit_workflow_action_pins.py` prüft
 
 ## Sichtbarkeit der PWA-Buildvorschau
 
-Das Repository ist öffentlich. Das Actions-Artefakt `vespaguard-pwa-preview` ist deshalb für alle Personen mit Repository-Leserechten herunterladbar und **nicht privat**. Es enthält nur statische PWA-Dateien und einen Hinweistext; keine Benutzerfotos, Bienenstand-GPS-Daten, Secrets oder Modellgewichte. Die Aufbewahrung ist auf 7 Tage begrenzt. Das Artefakt ist kein Pages-Deployment und erzeugt keine gehostete Website.
+Das Repository ist öffentlich. Das Actions-Artefakt `vespaguard-pwa-preview` ist deshalb für alle Personen mit Repository-Leserechten herunterladbar und **nicht privat**. Es enthält nur statische PWA-Dateien und einen Hinweistext; keine Benutzerfotos, Bienenstand-GPS-Daten, Secrets oder Modellgewichte. Die Aufbewahrung ist auf 1 Tag begrenzt. Das Artefakt ist kein Pages-Deployment und erzeugt keine gehostete Website.
 
 ## Originalbild-Prüfung und Datenzugriff
 
