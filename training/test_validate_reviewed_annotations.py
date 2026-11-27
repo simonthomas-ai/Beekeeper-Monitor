@@ -54,12 +54,16 @@ class ReviewedAnnotationTests(unittest.TestCase):
         self.assertEqual(report["validated_boxes"], 1)
 
     def test_class_id_after_schema_is_rejected(self):
+        record = self._record(7)
+        record["species"] = CLASS_NAMES[0]
         with self.assertRaisesRegex(ValueError, "invalid class_id"):
-            self._check(self._record(7))
+            self._check(record)
 
     def test_negative_class_id_is_rejected(self):
+        record = self._record(-1)
+        record["species"] = CLASS_NAMES[0]
         with self.assertRaisesRegex(ValueError, "invalid class_id"):
-            self._check(self._record(-1))
+            self._check(record)
 
     def test_boolean_class_id_is_rejected(self):
         record = self._record(0)
