@@ -1,7 +1,7 @@
 # Data lifecycle, privacy boundaries and deployment checklist
 
 Status: engineering documentation, not legal advice or a GDPR compliance certificate.
-This document describes the current source tree as reviewed on 2026-11-20.
+This document describes the current source tree as reviewed on 2026-11-27.
 Every deployment owner must confirm the actual configuration, network topology,
 browser behaviour, retention settings and applicable legal basis before a pilot.
 
@@ -128,6 +128,19 @@ contains sensitive station metadata and must be stored on encrypted media with
 restricted NTFS ACLs. The backup's manifest detects accidental corruption; it
 does not encrypt the backup or prove that a second physical device can restore
 it. A device-level restore rehearsal is required before a pilot.
+
+As reviewed on 2026-11-27, the Monitor SQLite backup helper and the BeeKeeper3000
+source-journal/camera-outbox backup helpers fail closed unless POSIX ownership
+and directory modes are private or the Windows NTFS DACL is restricted. On
+Windows, the current user and SYSTEM must have FullControl; the owner must be
+the current user, SYSTEM or BUILTIN Administrators; only those principals and
+optional BUILTIN Administrators are allowed, and deny ACEs or broad groups
+abort the backup. The coordinated station runner verifies StateRoot, BackupRoot,
+staging and the published backup directory before accepting a backup set.
+These checks enforce access control, **not encryption**. Backups still contain
+sensitive station metadata and must be stored on BitLocker/LUKS/FileVault or
+another encrypted volume. Browser IndexedDB and local SQLite data are not
+encrypted by the application itself.
 
 The Monitor supports authenticated per-event deletion and time-based retention.
 The BeeKeeper3000 source journal now provides an authenticated per-event
