@@ -61,8 +61,8 @@ jobs:
           DISCOVERY_RESULT: ${{ steps.discovery.outcome }}
         run: |
           python3 scripts/autonomous_control_report.py
-      - name: Preserve test reports only
-        if: always()
+      - name: Preserve test reports only (manual, public, one day)
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: autonomous-control-results
@@ -70,7 +70,7 @@ jobs:
             test-results/
             playwright-report/
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 1
       - name: Record failed checks as a GitHub issue
         if: ${{ always() && (steps.static.outcome != 'success' || steps.browser.outcome != 'success' || steps.readiness.outcome != 'success' || steps.discovery.outcome != 'success') }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
