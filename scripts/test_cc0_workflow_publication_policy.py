@@ -21,6 +21,7 @@ class CC0WorkflowPublicationPolicyTests(unittest.TestCase):
             "training-data.yml",
             "gesamttest.yml",
             "pages.yml",
+            "private-pwa.yml",
         ):
             with self.subTest(workflow=workflow_name):
                 content = (root / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
