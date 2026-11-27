@@ -60,6 +60,16 @@ test('BeeKeeper3000 unverified velutina candidate triggers an opt-in warning', (
   assert.match(rules.describe(result.alerts[0]), /unbestätigt/);
 });
 
+test('manual observer reports never trigger camera or acoustic warnings', () => {
+  const report = row('a', { kind: 'manual_observation' }, {
+    label: 'observer_report:vespa_velutina',
+    confidence: 1,
+    verification_status: 'observer_report'
+  });
+  const result = rules.selectAlerts([report], on(), new Set(), NOW);
+  assert.equal(result.alerts.length, 0);
+});
+
 test('other bridge species and misleading prefixes never trigger velutina warnings', () => {
   for (const label of [
     'unverified_candidate:vespa_crabro',
