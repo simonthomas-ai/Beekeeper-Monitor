@@ -1,6 +1,16 @@
+# Nachtrag nach Monitor PR #353 – 27.11.2026, 10:13 UTC
+
+- Monitor PR [#353](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/353) wurde als reiner Dokumentations-Merge integriert: `ba5bfcadbf98ec65403411566df11a121e8e9ac6`. Der funktionale Audit-Stand blieb `f95d74df845aed0e944f9ae5e7d13cc57dbcfeb1`; BeeKeeper3000 `main` blieb `cd47c57220e5c63069d4c14413c7c37eb652e80c`.
+- Post-Merge auf dem tatsächlichen Monitor-Commit `ba5bfcad`: [Gesamttest #45979951650](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45979951650), [Repository-Integration #45979951796](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45979951796) und [CodeQL #45979951623](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45979951623) jeweils completed/success. Der Gesamttest enthält drei erfolgreiche Jobs (Gesamttest, Field-Dataset-Export, Bridge-Integration); die Artefaktliste ist leer.
+- Der Gesamttest-Log bestätigt `STATIC`, `ALERTTESTS`, `BROWSER`, `WEBKIT`, `IPHONE`, `MODEL`, `IMPORTTESTS`, `TAXONOMY` und `SITE` als erfolgreich. `TRAINING` und `ANNOTATIONS` bleiben absichtlich `failure`, weil `datasets/beekeeper` und `training/reviewed-annotations.json` fehlen; der Bericht nennt deshalb weiterhin `KI-STATUS: BLOCKIERT`. `MODEL: success` prüft nur den Modellkatalog, keine Inferenz.
+- BeeKeeper3000 `cd47c572`: Post-Merge-Quality-Gates #45977595084, Windows-Station #45977594875, CodeQL #45977595120, Network-Tests #45977594906 und Supply-Chain/SBOM #45977594966 jeweils completed/success.
+- PR #353 änderte weder Code noch Modell, Datensatz, Runtime-Einstellung oder Deployment. Keine privaten Feld-Daten wurden verwendet.
+
+---
+
 # Nachtrag nach BeeKeeper3000 PR #141 und Monitor PR #352 – 27.11.2026, 10:03 UTC
 
-- Aktueller Monitor-Hauptzweig: `f95d74df845aed0e944f9ae5e7d13cc57dbcfeb1`; aktueller BeeKeeper3000-Hauptzweig: `cd47c57220e5c63069d4c14413c7c37eb652e80c`.
+- Geprüfter funktionaler Monitor-Stand: `f95d74df845aed0e944f9ae5e7d13cc57dbcfeb1`; danach folgte der reine Dokumentations-Merge PR #353 (`ba5bfcadbf98ec65403411566df11a121e8e9ac6`). BeeKeeper3000 `main`: `cd47c57220e5c63069d4c14413c7c37eb652e80c`.
 - BeeKeeper3000 PR [#141](https://github.com/simonthomas-ai/BeeKeeper3000/pull/141) wurde als `cd47c572` gemergt. Die Kamera-Runtime weist Detektoren ohne Modellmanifest ab; experimentelle lokale Medieninferenz verlangt `--shadow` und verwirft alle Detektionen ohne Outbox-Schreibzugriff. Post-Merge-Quality-Gates #45977595084, Windows-Station #45977594875, CodeQL #45977595120, Network-Tests #45977594906 und Supply-Chain/SBOM #45977594966 bestanden.
 - Monitor PR [#352](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/352) wurde als `f95d74df` gemergt. Die Cross-Repository-Workflows und der Pin-Regressionstest verwenden nun unveränderlich BeeKeeper3000 `cd47c572`. PR-Gesamttest #45977836538, Bridge-Integration #45977836489 und CodeQL #45977836575 bestanden. Die Bridge-Logs bestätigen den exakten Partner-SHA; der Field-Dataset-Export nutzt ausschließlich synthetische Fixtures.
 - Der Gesamttest meldet weiterhin `MODEL: success`, aber `TRAINING: failure`, `ANNOTATIONS: failure` und `KI-STATUS: BLOCKIERT`: `datasets/beekeeper` und `training/reviewed-annotations.json` fehlen. Keine echte Modellinferenz oder Feldfreigabe.
