@@ -168,9 +168,19 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
         self.assertNotIn("training/inaturalist-review-queue.csv", content)
         self.assertIn("test-results/", content)
 
-    def test_pages_remains_disabled_and_never_stages_candidate_media(self):
+    def test_pages_is_validation_only_and_never_stages_candidate_media(self):
         pages = (WORKFLOWS / "pages.yml").read_text(encoding="utf-8")
-        self.assertIn("if: ${{ false }}", pages)
+        self.assertIn("name: Validate PWA staging (no deployment)", pages)
+        self.assertIn("verify-only:", pages)
+        for action in (
+            "actions/configure-pages@",
+            "actions/upload-pages-artifact@",
+            "actions/deploy-pages@",
+        ):
+            self.assertNotIn(action, pages)
+        trigger_block = pages.split("permissions:", 1)[0]
+        events = re.findall(r"(?m)^  ([A-Za-z0-9_-]+):", trigger_block)
+        self.assertEqual(events, ["workflow_dispatch"])
         for forbidden in (
             "original-velutina-images",
             "ki-cc0-quellen-prueflisten",

@@ -1,22 +1,24 @@
 # Automatische Veröffentlichung und Betriebsprüfungen
 
-## Aktueller Veröffentlichungsstatus – 21.11.2026
+## Aktueller Veröffentlichungsstatus – 27.11.2026
 
-Die GitHub-Pages-URL ist die vorgesehene öffentliche Adresse, aber die Veröffentlichung des aktuellen `main`-Quellstands ist derzeit nicht nachgewiesen. `impressum.html` und `datenschutz.html` enthalten noch Platzhalter für Betreiberidentität, Anschrift und Kontakt. Der Pages-Workflow erkennt diese Angaben und bricht vor dem Upload des Veröffentlichungsartefakts absichtlich ab.
+Die Repository-API meldet für das öffentliche Repository `simonthomas-ai/Beekeeper-Monitor` weiterhin `has_pages=true`. Der Inhalt und die Erreichbarkeit einer eventuell bereits veröffentlichten Pages-Seite wurden in dieser Prüfung nicht verifiziert. Deshalb darf weder von einer aktiven noch von einer abgeschalteten Alt-Veröffentlichung ausgegangen werden.
 
-**Diese Sperre nicht umgehen und keine Betreiber- oder Rechtsdaten erfinden.** Erst nach Eintragung und Prüfung der echten Angaben darf ein Pages-Deployment erfolgreich sein. Ein früherer erfolgreicher Pages-Lauf belegt nicht, dass der aktuelle Stand veröffentlicht ist.
+Der Workflow `.github/workflows/pages.yml` ist jetzt ausschließlich manuell auslösbar und führt nur noch lokale Prüfungen sowie das Staging nach `_site` aus. Er enthält keine Pages-Konfigurations-, Upload- oder Deploy-Aktion. Er kann somit aus diesem Repository heraus keine neue Pages-Veröffentlichung anlegen oder aktualisieren.
+
+**Wichtig:** Das Entfernen des Deploy-Pfads schaltet eine bereits veröffentlichte GitHub-Pages-Seite nicht automatisch ab. Bis zur administrativen Prüfung und ausdrücklichen Freigabe muss Pages unter **Settings → Pages** deaktiviert/unpublished bleiben. Betreiberidentität, Anschrift, Kontakt, Impressum und Datenschutz sind vor jeder späteren Veröffentlichung real und rechtlich zu prüfen; keine Platzhalter erfinden.
 
 ## Automatische Abläufe
 
-- **Aktueller Stand:** `.github/workflows/pages.yml` ist ausschließlich manuell auslösbar und der Job `deploy` hat ausdrücklich `if: ${{ false }}`. Weder Push noch manueller Start veröffentlichen die Website.
+- **Aktueller Stand:** `.github/workflows/pages.yml` ist ausschließlich manuell auslösbar. Der Job `verify-only` prüft und staged lokal; sämtliche Pages-Upload-/Deploy-Aktionen wurden entfernt. Weder Push noch manueller Start veröffentlichen oder aktualisieren die Website.
 - Pushes auf `main` starten Softwaretests, aber keine PWA-Buildvorschau. Die PWA-Buildvorschau wird nur über ein ausdrückliches `workflow_dispatch` im Workflow `.github/workflows/private-pwa.yml` erzeugt; sie veröffentlicht keine Website.
 - Der CC0-Rechercheworkflow lädt Bildbytes nur vorübergehend in den isolierten GitHub-Runner, um Dateiformat und technische Lesbarkeit zu prüfen. Die Originalbild-Arbeitsdateien werden vor Ende des Jobs entfernt.
 - Der CC0-Rechercheworkflow veröffentlicht weder Originalbild-Artefakte noch Kandidaten-Metadaten-Artefakte. Er schreibt nur aggregierte Prüfergebnisse in die Actions-Zusammenfassung und entfernt danach die erzeugten CSV-, JSON- und HTML-Prüflisten.
 - `.github/workflows/gallery-original-artifact-audit.yml` prüft nach einem erfolgreichen CC0-Lauf anhand genau dieser Run-ID, dass keine Kandidaten-Artefakte veröffentlicht wurden.
-- GitHub Pages übernimmt ausschließlich `review/index.html` als Statusseite. Kandidatengalerien, Originalbilder, Bildmanifeste und Review-Identitäten werden nicht in die öffentliche Website gestagt.
+- Der lokale Prüfjob staged ausschließlich die freigegebenen statischen App-Dateien und `review/index.html` in `_site`; er lädt dieses Verzeichnis nicht hoch. Kandidatengalerien, Originalbilder, Bildmanifeste und Review-Identitäten werden nicht gestagt.
 - Die lokalen Rechte-/SHA-256-Audits und ihre synthetischen Unit-Tests bleiben für eine spätere geschützte manuelle Prüfung verfügbar; sie sind keine öffentliche Veröffentlichung und keine Trainingsfreigabe.
 - `.github/workflows/browser.yml` prüft die Integration mit Chromium.
-- `.github/workflows/site-health.yml` prüft täglich die öffentliche Adresse und fünf Dateien.
+- `.github/workflows/site-health.yml` ist nur manuell auslösbar; ein täglicher Online-Check ist deaktiviert. Bei manuellem Start prüft es die öffentliche Adresse und statische Assets.
 - `.github/workflows/sources.yml` prüft wöchentlich den Katalog der Forschungsquellen.
 - `.github/workflows/training-data.yml` schlägt absichtlich fehl, solange echte beschriftete Trainingsbilder fehlen.
 
@@ -47,14 +49,19 @@ Die früheren öffentlichen Artefakte `original-velutina-images` und `ki-cc0-que
 
 Für eine spätere interne Prüfung müssen konkrete Originalmedien nach individueller Rechteprüfung in einem zugriffsgeschützten lokalen Verzeichnis bereitgestellt werden. Keine privaten Fotos, genauen Apiary-Koordinaten oder vertraulichen Rechtebelege in öffentliche Issues, Repositories oder Actions-Artefakte hochladen.
 
-## Einmalige GitHub-Einstellung
-Unter **Settings > Pages > Build and deployment > Source** muss **GitHub Actions** ausgewählt sein. Der Workflow kann diese Einstellung nicht garantieren. Veröffentlichungsfehler unter **Actions** prüfen.
+## Administrative Pages-Einstellung
+
+Die Repository-API meldet `has_pages=true`. Die Einstellung ist unabhängig vom Workflow. Wenn keine öffentliche Website beabsichtigt ist, muss ein Repository-Administrator unter **Settings → Pages** die Veröffentlichung deaktivieren/unpublishen und anschließend den Status erneut über die Repository-/Pages-Einstellungen prüfen. Die verbundene GitHub-Automation kann diese administrative Einstellung nicht ändern.
 
 ## Öffentliche Review-Daten
 
-Die früheren Originalbild- und Kandidatenlisten-Artefakte sind keine Trainingsfreigabe. Neue CC0-Läufe veröffentlichen keine solchen Artefakte. Die öffentliche Review-URL zeigt nur eine Statusseite; die Kandidatengalerien bleiben bis zur unabhängigen Rechte- und Fachprüfung privat. Die sechs früher eingecheckten Kandidatengalerien sind aus dem aktuellen Quellbaum entfernt; ältere öffentliche Commits enthalten sie weiterhin. Eine History-Umschreibung erfordert eine gesonderte Eigentümerentscheidung (Issue #310).
+Die früheren Originalbild- und Kandidatenlisten-Artefakte sind keine Trainingsfreigabe. Neue CC0-Läufe veröffentlichen keine solchen Artefakte. Das lokale Staging enthält nur eine Review-Statusseite; eine öffentliche Veröffentlichung dieser Seite ist in diesem Audit nicht bestätigt. Kandidatengalerien bleiben bis zur unabhängigen Rechte- und Fachprüfung unveröffentlicht. Die sechs früher eingecheckten Kandidatengalerien sind aus dem aktuellen Quellbaum entfernt; ältere öffentliche Commits enthalten sie weiterhin. Eine History-Umschreibung erfordert eine gesonderte Eigentümerentscheidung (Issue #310).
 
-## Öffentliche Adresse (derzeit NICHT als erreichbar bestätigt)\nhttps://simonthomas-ai.github.io/Beekeeper-Monitor/\n\nDie Unterseite `/varroa.html` ist im Repository und im privaten Build vorhanden, aber öffentlich erst nach einem erfolgreichen Pages-Deployment erreichbar. Ein HTTP-404 ist bis dahin erwartbar. Vor einem öffentlichen Testbetrieb müssen die tatsächlichen Betreiber-/Kontaktangaben und Datenschutzhinweise geprüft und ergänzt werden. Danach kann der Pages-Workflow kontrolliert wieder aktiviert werden.
+## Öffentliche Adresse und Alt-Veröffentlichung
+
+Vorgesehene URL: https://simonthomas-ai.github.io/Beekeeper-Monitor/
+
+Die Erreichbarkeit und der Inhalt einer bestehenden Pages-Veröffentlichung wurden nicht verifiziert. Ein deaktivierter Workflow oder ein fehlender neuer Deploy-Lauf beweist nicht, dass eine ältere Veröffentlichung offline ist. Vor einer späteren Freigabe müssen Pages-Status, tatsächliche Betreiberangaben, Impressum, Datenschutz, Artefakte und öffentliche Inhalte administrativ geprüft werden.
 
 ## Funktionsgrenzen
 Diese Veröffentlichung ist eine **PWA zur manuellen Beobachtung**, keine fertig trainierte oder feldvalidierte KI. Automatische Modellausführung ist in diesem Build deaktiviert: Es fehlen lokal verfügbare, freigegebene Gewichte und unabhängige Validierung. Die frühere experimentelle Hornet3000-Laufzeit wird nicht geladen oder veröffentlicht. Zeitgesteuerte GitHub Actions laufen nach bestem Bemühen und ersetzen keinen dauerhaft laufenden Rechner. Kamera, Standortzugriff, Offline-Neustart und Sicherungsimport müssen auf echten iPhones geprüft werden. Automatische SMS, Server-Push, Triangulation, Unterstützung aller 24 EU-Sprachen und eine validierte Erkennungsgenauigkeit von 99 % sind noch nicht implementiert.

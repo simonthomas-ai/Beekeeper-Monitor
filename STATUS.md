@@ -1,3 +1,59 @@
+# Aktueller Prüfstand – 27.11.2026, 07:40 CET (nach Monitor PR #346)
+
+## Tatsächlich geprüfte Hauptzweige
+- Beekeeper-Monitor `main`: `50347b96fa3ffed82fe16db2de37cfc06b4558b7` (PR #346; Cross-Repository-Pin aktualisiert).
+- BeeKeeper3000 `main`: `c064465ace278d307fd6e58761dd14c9a93b1be1` (PR #137; acht Modellfähigkeiten im deaktivierten Inventar).
+- Beide Repositories sind öffentlich. Monitor-Metadaten melden `has_pages=true`; BeeKeeper3000 meldet `has_pages=false`.
+
+## CI und tatsächliche Job-Logs
+**Beekeeper-Monitor, Commit `50347b96`:**
+- [Ein-Klick-Gesamttest #45948664807](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45948664807): completed / success; alle drei Jobs (Gesamttest, Field-Dataset-Export gegen BeeKeeper-Validator, Bridge-Integration) erfolgreich.
+- [Repository-Integration #45948664809](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45948664809): completed / success.
+- [CodeQL #45948664827](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45948664827): completed / success.
+- Der Gesamttest erzeugte 0 Actions-Artefakte. Der Browser-Artefakt-Schritt war `skipped`.
+- Die Logdatei zeigt weiterhin `TRAINING: failure`, `ANNOTATIONS: failure`, `KI-STATUS: BLOCKIERT`. `datasets/beekeeper` und `training/reviewed-annotations.json` fehlen. Diese Forschungsfreigaben sind absichtlich keine Software-CI-Erfolgskriterien.
+
+**BeeKeeper3000, Commit `c064465a`:**
+- [Quality Gates #45948000414](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45948000414): success; Linux- und Windows-Kameratests, lokale Medien-/NMEA-Adapter und Bridge-Tests erfolgreich.
+- [CodeQL #45948000431](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45948000431): success.
+- [Supply Chain / SBOM #45948000336](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45948000336): success; sechs öffentliche SBOM-/Vulnerability-Artefakte erzeugt.
+- [Network Reference Tests #45948000330](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45948000330): success.
+- Die Vulnerability-Logs melden für die geprüften optionalen Python-/Kamera-Abhängigkeitsgruppen „No known vulnerabilities found“. pip-audit weist zusätzlich auf nicht vollständig hash-gepinnte Requirements hin; dies ist eine Supply-Chain-Verbesserungsmöglichkeit, kein gemeldeter CVE.
+
+## Öffentlich verfügbare historische Actions-Artefakte
+Die folgenden neun Artefakte wurden einzeln über die jeweiligen Run-Artefaktlisten geprüft; alle meldeten `expired=false`. Inhalte wurden nicht heruntergeladen:
+- PWA-Vorschauen: `15124542124`, `15118529028`, `15115678841`, `15115577897`, `15108012720` (je 65.655 B; Ablauf 03.12.2026).
+- Reviewqueues: `15108851881` (89.737 B) und `15107897872` (163.198 B; Ablauf 10.12.2026).
+- CC0-Lauf: `15058597151` (161.230.685 B Originalbilder) und `15058522636` (169.351 B Prüfliste; Ablauf 09.12.2026).
+- BeeKeeper3000: `15151838571` (658 B Waspinator-SHA-256-Prüfbericht; Ablauf 26.12.2026).
+- Die Artefaktliste des aktuellen Monitor-Gesamttests ist leer. Die historischen Dateien müssen weiterhin manuell gelöscht und anschließend per API als abwesend bestätigt werden; keine Löschaktion ist im verbundenen Werkzeug verfügbar.
+
+## Deployment, Branch-Schutz und Datenschutz
+- Monitor-Repository-API: `has_pages=true`; BeeKeeper3000: `has_pages=false`.
+- Monitor `main` und BeeKeeper3000 `main` melden beide `protected=false`; beide Ruleset-Listen sind leer.
+- Die Pages-Repository-Einstellung ist unabhängig vom Workflow. Ob eine ältere Website derzeit erreichbar ist, wurde nicht verifiziert.
+- Dieser Prüfzweig ersetzt den Pages-Deploy-Workflow durch einen manuellen lokalen `verify-only`-Staging-Job ohne Pages-Konfigurations-, Upload- oder Deploy-Aktion. Der PR und seine CI stehen noch aus; die Änderung ist nicht gemergt und schaltet eine bereits veröffentlichte Website nicht ab.
+- Root-`LICENSE` fehlt in beiden Repositories. Das BeeKeeper3000-Lizenzinventar ist ausdrücklich vorläufig.
+- SQLite und IndexedDB besitzen keine zusätzliche anwendungsseitige Verschlüsselung. Backup-ACLs sind keine Verschlüsselung.
+
+## Modelle, Datensätze und Feldreife
+- BeeKeeper3000 `camera/model-capabilities.json`: acht Fähigkeiten mit `status=not_validated`, `enabled=false`, `model=null`. Die zwei Hornissenkandidaten sind `rights_and_runtime_pending`.
+- Die sechs Monitor-Kandidaten plus Waspinator sind rechtlich/technisch nicht freigegeben. Keine Modellgewichte in den geprüften Git-Bäumen.
+- Die Lizenzdatei `docs/MODEL-DATASET-LICENSE-AUDIT-2026-11-27.md` dokumentiert GPL-3.0, AGPL-3.0, CC BY-NC-SA 4.0 und die offenen per-Bild-/Gewichterechte. Quellcode-Lizenz ist keine automatische Gewichts-/Datensatzfreigabe.
+- Keine unabhängigen Holdout-Metriken, keine belegten 99 % Erkennung, keine echte Kamera-Inferenz und keine Hardware-/Feldabnahme.
+
+**Release-/Feldstatus: BLOCKIERT.** Keine privaten Bienenstanddaten, Fotos, GPS-Koordinaten oder Zugangsdaten übertragen. Keine unfreigegebenen Modellgewichte ausgeführt oder trainiert. Kein öffentliches Deployment ausgelöst.
+
+## Nächste Schritte
+1. PR zur Entfernung des Pages-Publish-Pfads vollständig testen und nur nach grüner PR-CI mergen.
+2. Historische öffentliche Artefakte manuell löschen und Abwesenheit verifizieren.
+3. Pages-Einstellung administrativ deaktivieren/unpublishen und beide Hauptzweige schützen.
+4. Root-Lizenzen, Bild-/Gewichtsrechte und vollständige Provenienz klären.
+5. Lokale Datenbank-/Backup-Verschlüsselung und Restore auf echter Hardware prüfen.
+6. Erst mit rechtlich freigegebenen Bildern und unabhängigen Annotationen Modelladapter und Feldvalidierung beginnen.
+
+---
+
 # Aktueller Prüfstand – 27.11.2026 (Audit nach BeeKeeper3000 PR #137)
 
 ## Geprüfte Hauptzweige und Integration

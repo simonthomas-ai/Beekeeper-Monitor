@@ -93,17 +93,19 @@ assert 'id="station-events-form"' in html
 assert 'src="./integrations-ui.js"' in html
 assert "./live-media.js" in sw
 assert "SHELL.has(url.href)" in sw
-assert "path: _site" in pages
 
-# Safety regression: public Pages deployment must remain explicitly disabled.
-# The repository-level has_pages setting is separate and must be checked manually.
+# Safety regression: the manual Pages workflow may stage files but must never publish.
 pages_triggers = pages.split("permissions:", 1)[0]
-assert re.search(
-    r"(?ms)^jobs:\s*\n\s+deploy:\s*\n\s+if:\s*\$\{\{\s*false\s*\}\}(?:\s*#.*)?$",
-    pages,
-), "Public Pages deploy job must remain explicitly disabled"
-assert re.search(r"(?m)^  workflow_dispatch:\s*$", pages_triggers), "Pages workflow must remain manual-only"
-assert not re.search(r"(?m)^  (?:push|pull_request|schedule):", pages_triggers), "Pages workflow must not gain automatic publish triggers"
+pages_events = re.findall(r"(?m)^  ([A-Za-z0-9_-]+):", pages_triggers)
+assert pages_events == ["workflow_dispatch"], f"Pages workflow must remain manual-only: {pages_events}"
+assert re.search(r"(?m)^jobs:\s*\n  verify-only:\s*$", pages), "Pages workflow must be validation-only"
+workflow_files = [*(root / ".github" / "workflows").glob("*.yml"), *(root / ".github" / "workflows").glob("*.yaml")]
+for workflow_path in workflow_files:
+    workflow_text = workflow_path.read_text(encoding="utf-8")
+    assert not re.search(
+        r"(?m)^\s*uses:\s*actions/(?:configure-pages|upload-pages-artifact|deploy-pages)@",
+        workflow_text,
+    ), f"Pages publishing action is forbidden: {workflow_path.name}"
 assert 'href="./review/index.html"' in html
 assert "Öffentliche Fotoprüfung derzeit nicht verfügbar" in review_status
 assert "<img" not in review_status.lower()
