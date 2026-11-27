@@ -25,7 +25,7 @@
 ## Deployment und öffentliche Artefakte
 - `.github/workflows/pages.yml` ist auf `workflow_dispatch` beschränkt und führt ausschließlich lokales `verify-only`-Staging aus. Es enthält keine Pages-Upload- oder Deploy-Aktion.
 - Monitor-Repository-Metadaten melden jedoch `has_pages=true`. Die Pages-Quelle bzw. eine mögliche branch-basierte Veröffentlichung konnte über die verfügbaren GitHub-Lese-Endpunkte nicht verifiziert werden. PR #369 bleibt deshalb trotz grüner CI bewusst offen; ein Merge könnte bei branch-basierter Pages-Konfiguration veröffentlichen. Kein Deployment wurde ausgelöst.
-- Die vier historischen Review-/CC0-Artefakte aus [Issue #312](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/312) sind bei der Nachprüfung 22:42 UTC weiterhin vorhanden (`expired=false`). Die fünf alten `vespaguard-private-pwa)-Artefakte und die korrekt als öffentlich bezeichnete statische PWA-Vorschau sind ebenfalls noch vorhanden; Details stehen in [Issue #318](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/318). Beide Issues wurden mit den erneuten Artefakt-IDs/Größen/Ablaufzeiten kommentiert. Inhalte wurden nicht heruntergeladen.
+- Die vier historischen Review-/CC0-Artefakte aus [Issue #312](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/312) sind bei der Nachprüfung 22:42 UTC weiterhin vorhanden (`expired=false`). Die fünf alten `vespaguard-private-pwa`-Artefakte und die korrekt als öffentlich bezeichnete statische PWA-Vorschau sind ebenfalls noch vorhanden; Details stehen in [Issue #318](https://github.com/simonthomas-ai/Beekeeper-Monitor/issues/318). Beide Issues wurden mit den erneuten Artefakt-IDs/Größen/Ablaufzeiten kommentiert. Inhalte wurden nicht heruntergeladen.
 - Der aktuelle Monitor-Hauptzweiglauf #46072797565 und der Status-PR-Lauf #46078157890 haben jeweils leere Artefaktlisten. Historische Artefakte können über die verbundene GitHub-Schnittstelle nicht gelöscht werden; die manuelle Bereinigung bleibt offen.
 
 ## Modelle, Datensätze und echte Einsatzbereitschaft
@@ -39,8 +39,6 @@
 - Monitor-PR #369 erst nach administrativer Bestätigung der Pages-Quelle mergen oder die Pages-Konfiguration deaktivieren; Branch-Schutz und historische Artefakte ebenfalls administrativ bereinigen.
 - Auf dem Stationsgerät den No-AI-Stationsdoctor und optional den dokumentierten Einzelbild-Kameraverbindungstest durchführen. Keine Bilder, GPS-Daten, Schlüssel oder privaten Logs öffentlich übertragen.
 - Modell-/Trainingsfreigabe erst nach vollständiger Rechtekette, fachlich geprüften Annotationen und unabhängiger Feldvalidierung.
-
----
 
 ---
 
