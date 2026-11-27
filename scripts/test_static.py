@@ -98,8 +98,9 @@ assert "SHELL.has(url.href)" in sw
 pages_triggers = pages.split("permissions:", 1)[0]
 pages_events = re.findall(r"(?m)^  ([A-Za-z0-9_-]+):", pages_triggers)
 assert pages_events == ["workflow_dispatch"], f"Pages workflow must remain manual-only: {pages_events}"
-assert re.search(r"(?ms)^jobs:\s*\n\s+verify-only:\s*$", pages), "Pages workflow must be validation-only"
-for workflow_path in (root / ".github" / "workflows").glob("*.yml"):
+assert re.search(r"(?m)^jobs:\s*\n  verify-only:\s*$", pages), "Pages workflow must be validation-only"
+workflow_files = [*(root / ".github" / "workflows").glob("*.yml"), *(root / ".github" / "workflows").glob("*.yaml")]
+for workflow_path in workflow_files:
     workflow_text = workflow_path.read_text(encoding="utf-8")
     assert not re.search(
         r"(?m)^\s*uses:\s*actions/(?:configure-pages|upload-pages-artifact|deploy-pages)@",
