@@ -15,6 +15,9 @@ review_status=(root/"review/index.html").read_text()
 private_build=(root/".github/workflows/private-pwa.yml").read_text()
 gesamttest=(root/".github/workflows/gesamttest.yml").read_text()
 deployment=(root/"docs/DEPLOYMENT.md").read_text()
+browser_workflow=(root/".github/workflows/browser.yml").read_text()
+webkit_workflow=(root/".github/workflows/webkit.yml").read_text()
+autonomous_workflow=(root/".github/workflows/autonomous-control.yml").read_text()
 assert "<html lang=\"de\">" in html
 for path in ("backup-contract.js","app.js","integrations-ui.js","alert-rules.js","alert-ui.js","live-media.js","field-image-privacy.js","field-dataset.js","style.css","manifest.webmanifest","icon.svg","sw.js"):
     assert (root/path).is_file(),path
@@ -184,3 +187,17 @@ assert "          retention-days: 1" in artifact_step, (
 assert "Pushes auf `main` starten Softwaretests, aber keine PWA-Buildvorschau." in deployment
 assert "workflow_dispatch" in deployment
 assert "Die Aufbewahrung ist auf 1 Tag begrenzt." in deployment
+
+# Manual browser diagnostics publish failure traces only, for one day.
+for workflow in (browser_workflow, webkit_workflow):
+    triggers = workflow.split("permissions:", 1)[0]
+    assert "  workflow_dispatch:" in triggers
+    assert not re.search(r"(?m)^  (?:push|pull_request|schedule):", triggers)
+    assert "        if: failure()" in workflow
+    assert "          retention-days: 1" in workflow
+
+# The scheduled autonomous run keeps its logs/summary, but only a manual
+# dispatch may publish its browser trace artifact.
+autonomous_artifact = autonomous_workflow.split("      - name: Preserve test reports only (manual, public, one day)", 1)[1]
+assert "        if: ${{ always() && github.event_name == 'workflow_dispatch' }}" in autonomous_artifact
+assert "          retention-days: 1" in autonomous_artifact
