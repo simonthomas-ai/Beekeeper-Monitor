@@ -1,4 +1,51 @@
-# Aktueller Prüfstand – 27.11.2026 (nach PR #132, #133 und #337)
+# Aktueller Prüfstand – 27.11.2026, 03:36 CET
+
+Dieser Abschnitt ersetzt den darunter archivierten Snapshot als maßgeblichen Stand. Commit- und CI-Angaben wurden unmittelbar über GitHub geprüft.
+
+## Hauptzweige
+- Beekeeper-Monitor `main`: `9e8d82073835df113f00aaada0c0e0092cfe26cf` (PR #338, Partner-Pin auf BeeKeeper3000 aktualisiert).
+- BeeKeeper3000 `main`: `c59e1a143f96ac81b91156fba5b645294c7129da` (PR #133, Monitor-Backup-ACL-Vertrag für Linux-Stationstests gepinnt).
+- Der Monitor-Partner-Pin stimmt mit dem aktuellen BeeKeeper3000-`main` überein.
+
+## Verifizierte aktuelle CI
+
+**Beekeeper-Monitor – Commit `9e8d8207`:**
+- [Ein-Klick-Gesamttest #45927539526](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45927539526): completed / success. Browser, WebKit und iPhone-WebKit-Emulation sowie Bridge-/Exportjobs erfolgreich.
+- [Repository-Integration #45927539506](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45927539506): success.
+- [CodeQL #45927539487](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/45927539487): success.
+- Der Gesamttest-Job ist grün, aber seine nicht-blockierenden Forschungs-/Freigabeschritte melden im Log weiterhin `TRAINING_STATUS: failure` und `ANNOTATIONS_STATUS: failure`. Der Ergebnisbericht schreibt ausdrücklich `KI-STATUS: BLOCKIERT`. Die Software-CI-Freigabe ist keine KI-Freigabe.
+
+**BeeKeeper3000 – Commit `c59e1a14`:**
+- [Quality Gates #45927046146](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45927046146): success.
+- [Linux station installer validation #45927046082](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45927046082): success; der Job prüft Installer-Syntax, Systemd-Härtung, Kamera-Fail-Closed-Gates und den gepinnten Monitor-Backup-ACL-Vertrag.
+- [CodeQL #45927046112](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45927046112): success.
+- Der letzte erfolgreiche Supply-Chain-/SBOM-Lauf ist [#45926170707](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/45926170707) auf dem Vorgängercommit `fbea17e4`, nicht auf `c59e1a14`. Auf dem aktuellen Partner-Commit wird daher kein neuer SBOM-Lauf behauptet.
+
+## Artefakte und öffentliche Sichtbarkeit
+- Die Artefakt-API lieferte für die aktuellen Monitor-Läufe #45927539526 und #45927539506 jeweils eine leere Liste.
+- Historische öffentliche Artefakte bleiben vorhanden. Erneut einzeln bestätigt: `15058597151` (`original-velutina-images`, 161.230.685 Bytes), `15058522636` (CC0-Prüflisten), `15108851881` und `15107897872` (Review-Queues) sowie `15108012720` (historische PWA-Vorschau); alle meldeten `expired=false`.
+- Historisch wurden mindestens 20 unterschiedliche PWA-Artefakte über Stichproben bestätigt; die exakte Gesamtzahl ist nicht vollständig enumeriert. Die vier Review-/CC0-Artefakte und das 161-MB-Bildartefakt sind in Issues #308/#312 dokumentiert; die PWA-Altartefakte in #318.
+- Die Inhalte wurden nicht heruntergeladen. Aus Namen, Größen oder Workflow-Beschreibungen wird keine Aussage über den vollständigen Inhalt oder die Bildrechte abgeleitet.
+- Aktuelle PWA-Vorschau ist manuell auslösbar, ausdrücklich öffentlich lesbar und auf einen Tag begrenzt. Sie ist kein Deployment.
+- `.github/workflows/pages.yml` ist `workflow_dispatch`-only; der Deploy-Job hat `if: false`. Kein Pages-Deployment wurde ausgelöst. Die repositoryweite Pages-Einstellung wurde in dieser Prüfung nicht verifiziert.
+
+## Sicherheit, Lizenzen und Datenschutz
+- Branch-API: beide `main`-Branches melden `protected=false`; beide Ruleset-Listen sind leer. Es wurde keine administrative Schutzregel geändert.
+- Root-`LICENSE` fehlt in beiden Repositories (Contents-API 404). BeeKeeper3000-`LICENSES.md` bezeichnet sich als vorläufiges Inventar und nicht als vollständige Release-Freigabe.
+- Rekursive Git-Baumprüfung beider aktuellen Commits: keine Modellgewichte mit den geprüften Endungen ONNX/PT/PTH/TFLite/Engine/Safetensors/NCNN gefunden.
+- Monitor-`models/candidates.json` enthält sechs Kandidaten; alle stehen auf `rights_and_runtime_pending`. Keine Gewichte, Daten oder externen Kandidaten wurden in dieser Prüfung geladen oder ausgeführt.
+- Trainingsdaten und fachlich geprüfte Annotationen fehlen weiterhin. Keine unabhängigen Holdout-Metriken, Precision-/Recall-/Fehlalarmraten oder 99-%-Erkennungsleistung nachgewiesen.
+- IndexedDB und lokale SQLite-Daten sind nicht zusätzlich anwendungsseitig verschlüsselt. ACL-Prüfungen sind Zugriffsschutz, keine Verschlüsselung.
+- BeeKeeper3000 PR #110 ist weiterhin Draft und beschreibt nur einen deaktivierten Fähigkeitskatalog. Im Monitor wurden keine offenen PRs gefunden.
+
+## Release- und Feldstatus
+**BLOCKIERT.** Software-Unit-/Browser-/Bridge-/Export-CI ist auf den genannten Commits erfolgreich. Modell-/Datensatzrechte, Datenbasis, unabhängige fachliche Validierung, Verschlüsselung/Wiederherstellung, rechtliche Betreiberangaben und administrative GitHub-Schutzregeln sind nicht freigegeben. Kein öffentlicher Pilot, keine produktive KI-Inferenz und kein Deployment.
+
+Keine privaten Bienenstanddaten, Fotos, GPS-Koordinaten oder Zugangsdaten übertragen. Keine unfreigegebenen Modellgewichte geladen, trainiert oder aktiviert.
+
+---
+
+# Historischer Snapshot – 27.11.2026 (vor PR #338; durch den aktuellen Prüfstand oben ersetzt)
 
 ## Hauptzweige und integrierte Änderungen
 - Beekeeper-Monitor: Basisstand `b8491b8ed25d5ab7c8028a5d52cc5e760c6fbac1`; PR #336 (öffentliche Testartefakte) und PR #337 (Windows-Backup-ACL-Prüfung) sind gemergt.
