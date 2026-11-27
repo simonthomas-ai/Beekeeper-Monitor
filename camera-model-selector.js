@@ -46,7 +46,7 @@
       if (typeof model.git_blob !== 'string' || !/^[0-9a-f]{40}$/.test(model.git_blob)) {
         return invalid('invalid_blob_fingerprint');
       }
-      if (model.review_status !== PENDING_STATUS || EXECUTION_FIELDS.some(key => Object.hasOwn(model, key))) {
+      if (model.review_status !== PENDING_STATUS || EXECUTION_FIELDS.some(key => Object.prototype.hasOwnProperty.call(model, key))) {
         return invalid('candidate_not_fail_closed');
       }
       options.push({
