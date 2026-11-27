@@ -2,8 +2,8 @@
 
 ## Hauptzweige und integrierte Änderungen
 - Beekeeper-Monitor: Basisstand `b8491b8ed25d5ab7c8028a5d52cc5e760c6fbac1`; PR #336 (öffentliche Testartefakte) und PR #337 (Windows-Backup-ACL-Prüfung) sind gemergt.
-- BeeKeeper3000: `fbea17e4a1a847731320d5548c82eafb492c054f`; PR #132 ist gemergt. Source-Journal-, Kamera-Outbox- und Monitor-Backups prüfen POSIX-Rechte bzw. Windows-NTFS-ACLs vor dem Schreiben. Der Windows-Runner prüft StateRoot, BackupRoot, Staging und den veröffentlichten Backup-Satz.
-- Die Monitor-Cross-Repository-Workflows und der Pin-Regressionstest werden in diesem Stand auf genau `fbea17e4a1a847731320d5548c82eafb492c054f` aktualisiert.
+- BeeKeeper3000: `c59e1a143f96ac81b91156fba5b645294c7129da`; PR #132 und #133 sind gemergt. PR #133 pinnt den Monitor-Backup-ACL-Vertrag für Linux-Stationstests. Source-Journal-, Kamera-Outbox- und Monitor-Backups prüfen POSIX-Rechte bzw. Windows-NTFS-ACLs vor dem Schreiben. Der Windows-Runner prüft StateRoot, BackupRoot, Staging und den veröffentlichten Backup-Satz.
+- Die Monitor-Cross-Repository-Workflows und der Pin-Regressionstest werden in diesem Stand auf genau `c59e1a143f96ac81b91156fba5b645294c7129da` aktualisiert.
 
 ## Verifizierte Post-Merge-CI
 **Beekeeper-Monitor**
