@@ -35,6 +35,7 @@ Neun historische Artefakte wurden erneut über ihre jeweiligen Run-Artefaktliste
 - Beide `main`-Branches melden `protected=false`; beide Ruleset-Listen sind leer. Der Branch-Protection-Endpunkt liefert für die verbundene Integration 403; keine administrative Regel wurde geändert.
 - Root-`LICENSE` fehlt in beiden Repositories. BeeKeeper3000-`LICENSES.md` ist ein vorläufiges Inventar, keine Gesamtfreigabe.
 - Sechs Monitor-Modellkandidaten bleiben `rights_and_runtime_pending`; keine Modellgewichte liegen in den geprüften Git-Bäumen.
+- Die detaillierte Prüfung der sechs Kandidaten plus Waspinator an gepinnten Upstream-Revisionen steht in [MODEL-DATASET-LICENSE-AUDIT-2026-11-27.md](docs/MODEL-DATASET-LICENSE-AUDIT-2026-11-27.md); Quellcode-Lizenzen sind keine automatische Gewichts-/Datensatzfreigabe.
 - `datasets/beekeeper/`, vollständige Bild-Provenienz und fachlich geprüfte Annotationen fehlen. Keine unabhängigen Holdout-Metriken, Precision-/Recall-/Fehlalarmraten oder 99-%-Erkennungsleistung nachgewiesen.
 - IndexedDB und lokale SQLite-Daten sind nicht zusätzlich anwendungsseitig verschlüsselt. Backup-ACL-Prüfungen ersetzen keine Verschlüsselung.
 - BeeKeeper3000 PR #110 bleibt Draft; alle acht Fähigkeiten sind deaktiviert.
