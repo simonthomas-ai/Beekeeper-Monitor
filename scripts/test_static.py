@@ -196,16 +196,15 @@ for asset in re.findall(r"'(\./[^']+)'", offline_assets):
 assert all("camera-onnx-runtime.js" not in line for line in private_copy_lines)
 assert all("hornet-onnx-decoder.js" not in line for line in private_copy_lines)
 
-# Browser reports can contain traces/screenshots. This repository is public, so
-# automated push/PR runs must not publish artifacts to all repository readers.
-artifact_marker = "      - name: Browser-Testartefakte (öffentlich, 1 Tag)"
-assert gesamttest.count(artifact_marker) == 1, "expected exactly one public browser-artifact step"
-artifact_step = gesamttest.split(artifact_marker, 1)[1].split("      - name: Gesamtergebnis", 1)[0]
-assert "        if: ${{ always() && github.event_name == 'workflow_dispatch' }}" in artifact_step, (
-    "public browser artifacts must require an explicit manual workflow_dispatch"
+# Browser reports can contain traces/screenshots. The overall test must not
+# publish any artifact from this public repository; retain only the step summary.
+assert "actions/upload-artifact@" not in gesamttest, (
+    "the one-click overall test must not publish public Actions artifacts"
 )
-assert "          retention-days: 1" in artifact_step, (
-    "public browser artifact retention must remain one day"
+assert "Browser-Testartefakte" not in gesamttest
+assert "gesamttest-berichte" not in gesamttest
+assert "GITHUB_STEP_SUMMARY" in gesamttest, (
+    "the sanitized diagnostic summary must remain available"
 )
 assert "Pushes auf `main` starten Softwaretests, aber keine PWA-Buildvorschau." in deployment
 assert "workflow_dispatch" in deployment
