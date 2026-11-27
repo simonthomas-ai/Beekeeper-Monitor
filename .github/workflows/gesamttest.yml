@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -153,13 +154,13 @@ jobs:
           echo "| Chromium (dynamische Testsuite) | $BROWSER |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Safari WebKit (dynamische Testsuite) | $WEBKIT |" >> "$GITHUB_STEP_SUMMARY"
           echo "| iPhone-WebKit-Emulation (dynamische Testsuite) | $IPHONE |" >> "$GITHUB_STEP_SUMMARY"
-          echo 'Hinweis: Ein gruener Gesamttest bestaetigt die verpflichtenden Software- und Bridge-Pruefungen, nicht die Einsatzreife eines KI-Modells.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Hinweis: Ein grüner Gesamttest bestätigt die verpflichtenden Software- und Bridge-Prüfungen, nicht die Einsatzreife eines KI-Modells.' >> "$GITHUB_STEP_SUMMARY"
           echo '## KI-Forschungsstand (nicht als einsatzbereit freigegeben)' >> "$GITHUB_STEP_SUMMARY"
           echo "| KI-Dateninventur | $MODEL |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Bildimport-Sicherheit und Herkunftsnachweise | $IMPORTTESTS |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Europaeische Taxonomie (Online-API) | $TAXONOMY |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Europäische Taxonomie (Online-API) | $TAXONOMY |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Echte KI-Trainingsdaten und Annotationen | $TRAINING |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Fachlich gepruefte Annotationseintraege | $ANNOTATIONS |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Fachlich geprüfte Annotationseinträge | $ANNOTATIONS |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Lokale PWA-Dateien und Deployment-Vertrag (kein Online-Test) | $SITE |" >> "$GITHUB_STEP_SUMMARY"
           if [ "$TRAINING" != success ] || [ "$ANNOTATIONS" != success ]; then
             echo '### KI-STATUS: BLOCKIERT – keine freigegebenen Trainingsdaten/Annotationen; keine einsatzfähige automatische Erkennung.' >> "$GITHUB_STEP_SUMMARY"
@@ -176,7 +177,9 @@ jobs:
           python3 -m unittest discover -s tests -p 'test_model_catalog.py' -v
           python3 scripts/check_model_catalog.py
       - name: Freigabesperre automatisch pruefen (verpflichtend)
-        run: python3 -m unittest discover -s tests -p 'test_release_gate_report.py' -v
+        run: |
+          python3 -m unittest discover -s tests -p 'test_release_gate_report.py' -v
+          python3 -m unittest discover -s tests -p 'test_check_field_release.py' -v
       - name: Freigabebericht (CI-Ergebnisse getrennt von rechtlicher Freigabe)
         if: always()
         env:
