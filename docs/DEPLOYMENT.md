@@ -31,6 +31,12 @@ Der verpflichtende Workflow-Audit `scripts/audit_workflow_action_pins.py` prüft
 
 Das Repository ist öffentlich. Das Actions-Artefakt `vespaguard-pwa-preview` ist deshalb für alle Personen mit Repository-Leserechten herunterladbar und **nicht privat**. Es enthält nur statische PWA-Dateien und einen Hinweistext; keine Benutzerfotos, Bienenstand-GPS-Daten, Secrets oder Modellgewichte. Die Aufbewahrung ist auf 1 Tag begrenzt. Das Artefakt ist kein Pages-Deployment und erzeugt keine gehostete Website.
 
+## Öffentliche CI-Testartefakte
+
+Das Repository ist öffentlich; Actions-Artefakte sind daher nicht privat. Die Browser-/WebKit-Fehlerdiagnosen werden nur bei fehlgeschlagenen, manuell gestarteten Läufen gespeichert und nach einem Tag entfernt. Der Gesamttest-Bericht und der Bericht der autonomen Projektsteuerung werden nur nach ausdrücklichem `workflow_dispatch` hochgeladen und ebenfalls einen Tag aufbewahrt. Der wöchentliche autonome Lauf veröffentlicht damit keine Browser-Traces als Artefakt.
+
+Andere Workflows erzeugen getrennte technische Artefakte wie Taxonomie-CSV, KiCad-Prüfberichte, Provenienzberichte und SBOMs. Diese sind ebenfalls öffentlich und haben eigene Aufbewahrungsfristen. Vor jeder Erweiterung ihrer Inhalte ist zu prüfen, dass keine Benutzerbilder, GPS-Daten, Tokens, privaten Notizen oder sonstigen personenbezogenen Daten enthalten sind.
+
 ## Originalbild-Prüfung und Datenzugriff
 
 Der CC0-Workflow darf Originalbilder nur transient auf dem GitHub-Runner prüfen. Er speichert keine Originalbytes in Actions-Artefakten, im Repository oder auf Pages. Die erzeugten Kandidatenlisten und Galerien enthalten öffentliche Quellenmetadaten und werden nach der aggregierten Zusammenfassung ebenfalls aus dem Runner-Arbeitsverzeichnis entfernt.
