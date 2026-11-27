@@ -55,7 +55,7 @@ Die Repository-API meldet `has_pages=true`. Die Einstellung ist unabhängig vom 
 
 ## Öffentliche Review-Daten
 
-Die früheren Originalbild- und Kandidatenlisten-Artefakte sind keine Trainingsfreigabe. Neue CC0-Läufe veröffentlichen keine solchen Artefakte. Die öffentliche Review-URL zeigt nur eine Statusseite; die Kandidatengalerien bleiben bis zur unabhängigen Rechte- und Fachprüfung privat. Die sechs früher eingecheckten Kandidatengalerien sind aus dem aktuellen Quellbaum entfernt; ältere öffentliche Commits enthalten sie weiterhin. Eine History-Umschreibung erfordert eine gesonderte Eigentümerentscheidung (Issue #310).
+Die früheren Originalbild- und Kandidatenlisten-Artefakte sind keine Trainingsfreigabe. Neue CC0-Läufe veröffentlichen keine solchen Artefakte. Das lokale Staging enthält nur eine Review-Statusseite; eine öffentliche Veröffentlichung dieser Seite ist in diesem Audit nicht bestätigt. Kandidatengalerien bleiben bis zur unabhängigen Rechte- und Fachprüfung unveröffentlicht. Die sechs früher eingecheckten Kandidatengalerien sind aus dem aktuellen Quellbaum entfernt; ältere öffentliche Commits enthalten sie weiterhin. Eine History-Umschreibung erfordert eine gesonderte Eigentümerentscheidung (Issue #310).
 
 ## Öffentliche Adresse und Alt-Veröffentlichung
 
