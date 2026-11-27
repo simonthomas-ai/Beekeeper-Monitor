@@ -3,7 +3,10 @@ import sqlite3
 import stat
 import tempfile
 import unittest
+import json
 from pathlib import Path
+from subprocess import CompletedProcess
+from unittest.mock import patch
 
 from integrations.event_contracts import HiveEvent
 from integrations.event_store import SQLiteEventStore
@@ -11,6 +14,7 @@ from integrations.store_backup import (
     backup_database,
     restore_database,
     verify_database,
+    _check_private_directory,
 )
 
 
@@ -92,6 +96,52 @@ class SQLiteBackupRestoreTests(unittest.TestCase):
         if os.name == "posix":
             self.assertEqual(stat.S_IMODE(self.backup_dir.stat().st_mode), 0o700)
             self.assertEqual(stat.S_IMODE(backup.stat().st_mode), 0o600)
+
+    def test_windows_acl_accepts_only_current_user_system_and_admin_full_control(self):
+        current = "S-1-5-21-111-222-333-1001"
+        full = 0x1F01FF
+        payload = {
+            "owner_sid": current,
+            "current_user_sid": current,
+            "rules": [
+                {"sid": current, "type": "Allow", "rights": full},
+                {"sid": "S-1-5-18", "type": "Allow", "rights": full},
+                {"sid": "S-1-5-32-544", "type": "Allow", "rights": full},
+            ],
+        }
+        completed = CompletedProcess([], 0, json.dumps(payload), "")
+        with patch("integrations.store_backup.os.name", "nt"):
+            with patch("integrations.store_backup.subprocess.run", return_value=completed) as run:
+                _check_private_directory(self.backup_dir)
+        self.assertEqual(run.call_args.kwargs["env"]["BEEKEEPER_BACKUP_ACL_PATH"], str(self.backup_dir))
+
+    def test_windows_acl_rejects_broad_group_and_deny_entries(self):
+        current = "S-1-5-21-111-222-333-1001"
+        full = 0x1F01FF
+        for unsafe in (
+            {"sid": "S-1-5-32-545", "type": "Allow", "rights": 1179817},
+            {"sid": "S-1-5-11", "type": "Deny", "rights": full},
+        ):
+            payload = {
+                "owner_sid": current,
+                "current_user_sid": current,
+                "rules": [
+                    {"sid": current, "type": "Allow", "rights": full},
+                    {"sid": "S-1-5-18", "type": "Allow", "rights": full},
+                    unsafe,
+                ],
+            }
+            completed = CompletedProcess([], 0, json.dumps(payload), "")
+            with patch("integrations.store_backup.os.name", "nt"):
+                with patch("integrations.store_backup.subprocess.run", return_value=completed):
+                    with self.assertRaises(PermissionError):
+                        _check_private_directory(self.backup_dir)
+
+    def test_windows_acl_fails_closed_when_powershell_is_unavailable(self):
+        with patch("integrations.store_backup.os.name", "nt"):
+            with patch("integrations.store_backup.subprocess.run", side_effect=FileNotFoundError):
+                with self.assertRaises(PermissionError):
+                    _check_private_directory(self.backup_dir)
 
     def test_refuses_shared_backup_directory_on_posix(self):
         if os.name != "posix":

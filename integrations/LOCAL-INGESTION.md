@@ -49,7 +49,7 @@ Events are validated against `integrations/event_contracts.py`. The contract acc
 
 ## Backup, verification and restore
 
-The project provides an explicit SQLite online-backup tool. It creates a transactionally consistent snapshot while the service is running, runs SQLite integrity/schema checks, and refuses to overwrite existing files. It does not encrypt backup contents or schedule automatic backups.
+The project provides an explicit SQLite online-backup tool. It creates a transactionally consistent snapshot while the service is running, runs SQLite integrity/schema checks, and refuses to overwrite existing files. It does not encrypt backup contents or schedule automatic backups. On Windows, it also verifies the destination directory's NTFS ACL with Windows PowerShell before writing: the owner must be the current user, current user and SYSTEM must have FullControl, and only those principals plus optional BUILTIN\\Administrators may have allow entries. Any deny entry, broad group or ACL-query failure aborts the backup. This is access-control validation, not encryption; use BitLocker or another encrypted volume.
 
 Run from the repository root:
 
