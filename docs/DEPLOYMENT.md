@@ -35,7 +35,7 @@ Das Repository ist öffentlich. Das Actions-Artefakt `vespaguard-pwa-preview` is
 
 ## Öffentliche CI-Testartefakte
 
-Das Repository ist öffentlich; Actions-Artefakte sind daher nicht privat. Die Browser-/WebKit-Fehlerdiagnosen werden nur bei fehlgeschlagenen, manuell gestarteten Läufen gespeichert und nach einem Tag entfernt. Der Gesamttest-Bericht und der Bericht der autonomen Projektsteuerung werden nur nach ausdrücklichem `workflow_dispatch` hochgeladen und ebenfalls einen Tag aufbewahrt. Der wöchentliche autonome Lauf veröffentlicht damit keine Browser-Traces als Artefakt.
+Das Repository ist öffentlich; Actions-Artefakte sind daher nicht privat. Die Browser-/WebKit-Fehlerdiagnosen werden nur bei fehlgeschlagenen, manuell gestarteten Läufen gespeichert und nach einem Tag entfernt. Der Ein-Klick-Gesamttest lädt keine Browser-Traces, Screenshots oder Taxonomie-Exporte als Artefakt hoch; sein bereinigter Ergebnisbericht bleibt in `GITHUB_STEP_SUMMARY` und den normalen Actions-Logs. Der Bericht der autonomen Projektsteuerung wird nur nach ausdrücklichem `workflow_dispatch` hochgeladen und ebenfalls einen Tag aufbewahrt. Der wöchentliche autonome Lauf veröffentlicht damit keine Browser-Traces als Artefakt.
 
 Andere Workflows erzeugen getrennte technische Artefakte wie Taxonomie-CSV, KiCad-Prüfberichte, Provenienzberichte und SBOMs. Diese sind ebenfalls öffentlich und haben eigene Aufbewahrungsfristen. Vor jeder Erweiterung ihrer Inhalte ist zu prüfen, dass keine Benutzerbilder, GPS-Daten, Tokens, privaten Notizen oder sonstigen personenbezogenen Daten enthalten sind.
 
