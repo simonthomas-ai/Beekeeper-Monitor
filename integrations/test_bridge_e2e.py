@@ -105,13 +105,15 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
 
         from network.source_api import BoundedSourceHTTPServer, make_handler as make_source_handler
         from network.source_event_store import SQLiteSourceEventStore
-        from camera.contracts import Detection
+        from camera.contracts import Detection, make_source_event
         from camera.outbox import SQLiteOutbox
-        from camera.runtime import LocalCameraRuntime
+        from camera.runtime import CameraRuntimeError, LocalCameraRuntime
         from camera.source_client import SourceApiClient
 
         cls.Detection = Detection
+        cls.make_source_event = staticmethod(make_source_event)
         cls.SQLiteOutbox = SQLiteOutbox
+        cls.CameraRuntimeError = CameraRuntimeError
         cls.LocalCameraRuntime = LocalCameraRuntime
         cls.BoundedSourceHTTPServer = BoundedSourceHTTPServer
         cls.SQLiteSourceEventStore = SQLiteSourceEventStore
@@ -141,22 +143,14 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
         )
         cls.camera_outbox = cls.SQLiteOutbox(cls.camera_outbox_db, max_rows=1000)
 
-        class SyntheticDetector:
-            """Deterministic test detector. This is not a species classifier."""
-            def detect(self, frame_index):
-                index = int(frame_index)
-                return [cls.Detection(
-                    "Vespa velutina", 0.87, prey_detected=(index % 2 == 0)
-                )]
-
+        # Production inference is deliberately disabled. This end-to-end test
+        # exercises only the durable outbox and drain-only transport path.
         cls.camera_runtime = cls.LocalCameraRuntime(
-            detector=SyntheticDetector(),
+            detector=None,
             outbox=cls.camera_outbox,
             client=camera_client,
             station_id="integration-station-north",
-            source="synthetic-frame-fixture",
-            max_fps=5,
-            cooldown_seconds=0,
+            source="drain-only-test-fixture",
         )
 
         monitor_handler = make_monitor_handler(
@@ -209,18 +203,27 @@ class FullSourceBridgeMonitorEndToEndTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + "\n" + result.stderr)
         return result.stdout
 
-    def _process_synthetic_camera_frame(self, index):
-        # Exercise the actual local camera runtime and persistent outbox. Only
-        # the detector is synthetic; no species performance is claimed.
-        queued = self.camera_runtime.process_frame(index, now_epoch=float(index))
-        self.assertEqual(queued, 1)
+    def _queue_synthetic_candidate_event(self, index):
+        # Synthetic metadata enters the outbox directly; no frame, detector or
+        # inference is exercised. The runtime is drain-only by design.
+        event = self.make_source_event(
+            station_id="integration-station-north",
+            detection=self.Detection(
+                "Vespa velutina", 0.87, prey_detected=(index % 2 == 0)
+            ),
+        )
+        self.assertTrue(self.camera_outbox.enqueue(event))
         self.assertEqual(self.camera_outbox.count(), 1)
         self.assertEqual(self.camera_runtime.drain_outbox(), 1)
         self.assertEqual(self.camera_outbox.count(), 0)
 
-    def test_205_camera_outbox_events_cross_source_api_bridge_and_monitor(self):
+    def test_drain_only_runtime_rejects_camera_frame_inference(self):
+        with self.assertRaisesRegex(self.CameraRuntimeError, "drain-only"):
+            self.camera_runtime.process_frame(1)
+
+    def test_205_synthetic_outbox_events_cross_source_api_bridge_and_monitor(self):
         for index in range(1, 206):
-            self._process_synthetic_camera_frame(index)
+            self._queue_synthetic_candidate_event(index)
         self.assertEqual(self.source_store.count(), 205)
 
         state_path = os.path.join(self.tmp.name, "full-bridge-state.json")
