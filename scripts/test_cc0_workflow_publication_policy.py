@@ -20,6 +20,7 @@ class CC0WorkflowPublicationPolicyTests(unittest.TestCase):
             "model-training-readiness.yml",
             "training-data.yml",
             "gesamttest.yml",
+            "pages.yml",
         ):
             with self.subTest(workflow=workflow_name):
                 content = (root / ".github" / "workflows" / workflow_name).read_text(encoding="utf-8")
@@ -67,17 +68,27 @@ class CC0WorkflowPublicationPolicyTests(unittest.TestCase):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, self.content)
 
-    def test_pages_workflow_stays_disabled_without_deploy_permissions(self):
+    def test_pages_workflow_is_validation_only_without_publish_permissions(self):
         pages_workflow = (
             Path(__file__).resolve().parents[1]
             / ".github"
             / "workflows"
             / "pages.yml"
         ).read_text(encoding="utf-8")
-        self.assertIn("if: " + "$" + "{{ false }}", pages_workflow)
+        self.assertIn("verify-only:", pages_workflow)
         self.assertNotIn("pages: write", pages_workflow)
         self.assertNotIn("id-token: write", pages_workflow)
         self.assertNotIn("actions/download-artifact", pages_workflow)
+        for action in (
+            "actions/configure-pages@",
+            "actions/upload-pages-artifact@",
+            "actions/deploy-pages@",
+        ):
+            self.assertNotIn(action, pages_workflow)
+        trigger_block = pages_workflow.split("permissions:", 1)[0]
+        self.assertIn("workflow_dispatch:", trigger_block)
+        self.assertNotIn("push:", trigger_block)
+        self.assertNotIn("pull_request:", trigger_block)
         self.assertNotIn("public-review-assets", pages_workflow)
         self.assertIn("cp review/index.html _site/review/index.html", pages_workflow)
 
