@@ -123,7 +123,7 @@ for gallery in ("all", "velutina", "crabro", "apis", "bombus", "vespula"):
     assert not (root/"review"/f"{gallery}.html").exists(), gallery
 assert r"grep -Eq '\[[^]]+\]'" in pages
 assert re.search(r"\[[^]]+\]", "[MISSING OPERATOR DETAILS]")
-assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js field-image-privacy.js field-dataset.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg _site/" in pages
+assert "cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js field-image-privacy.js field-dataset.js camera-model-selector.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg _site/" in pages
 assert "cp wissen/wissenschaft-hornissen-bienen.html _site/wissen/" in pages
 assert not re.search(r"99\s*%\s*(?:genau|erkennung)",html,re.I)
 # Local original-image byte verification runs only after Pages stages the
