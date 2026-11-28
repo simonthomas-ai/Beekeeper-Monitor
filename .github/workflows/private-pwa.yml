@@ -1,6 +1,6 @@
-name: PWA-Buildvorschau (manuell, öffentliches Actions-Artefakt, kein Deployment)
-# Public preview artifacts are created only after an explicit manual request.
-# This repository is public; every uploaded artifact is readable by repository readers.
+name: PWA-Buildvorschau (manuell, nur lokaler Runner, kein Upload oder Deployment)
+# The staging directory exists only on the ephemeral GitHub-hosted runner.
+# This public repository must not publish the preview as an Actions artifact.
 on:
   workflow_dispatch:
 permissions:
@@ -27,10 +27,10 @@ jobs:
           node --check camera-onnx-runtime.js
           node --test tests/hornet-onnx-decoder.test.cjs
           node --test tests/alert-rules.test.cjs tests/backup-contract.test.cjs
-      - name: Offline-PWA-Dateien bereitstellen (ohne Deployment)
+      - name: Offline-PWA-Dateien nur lokal im Runner bereitstellen
         run: |
           mkdir -p pwa-preview/wissen pwa-preview/models
-          # Experimental ONNX runtime and decoder stay out of the PWA-Buildvorschau until model rights and validation are approved.
+          # Experimental ONNX runtime and decoder stay out of the preview until model rights and validation are approved.
           cp index.html datenschutz.html impressum.html style.css backup-contract.js app.js integrations-ui.js alert-rules.js alert-ui.js live-media.js field-image-privacy.js field-dataset.js camera-model-selector.js varroa-ui.js varroa.html sw.js manifest.webmanifest icon.svg pwa-preview/
           cp wissen/wissenschaft-hornissen-bienen.html wissen/weltlage-vespa-velutina.html pwa-preview/wissen/
           cp models/candidates.json pwa-preview/models/
@@ -43,7 +43,7 @@ jobs:
           start = service_worker.find("const FILES=[")
           end = service_worker.find("];", start)
           if start < 0 or end < 0:
-              raise SystemExit("Service-worker FILES list not found in public build-preview artifact")
+              raise SystemExit("Service-worker FILES list not found in local PWA staging")
           entries = re.findall(r"'([^']+)'", service_worker[start:end])
           for entry in entries:
               relative = entry.removeprefix("./")
@@ -51,10 +51,12 @@ jobs:
               if not candidate.is_file():
                   raise SystemExit(f"Missing offline PWA shell asset: {entry}")
           PY
-          printf '%s\n' 'Öffentliches GitHub-Actions-Artefakt eines öffentlichen Repositories.' 'Jeder Repository-Leser kann dieses Artefakt herunterladen; es ist nicht privat. Es enthält nur statische App-Dateien, keine Benutzerfotos, GPS-Daten, Secrets oder Modellgewichte. Keine gehostete Website. Aufbewahrung: 1 Tag.' > pwa-preview/README-ARTEFAKT-HINWEIS.txt
-      - name: Buildvorschau als öffentliches GitHub-Actions-Artefakt speichern
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: vespaguard-pwa-preview
-          path: pwa-preview/
-          retention-days: 1
+      - name: Lokale Vorschau pruefen und danach verwerfen
+        run: |
+          test -s pwa-preview/index.html
+          test -s pwa-preview/datenschutz.html
+          test -s pwa-preview/impressum.html
+          test -s pwa-preview/models/candidates.json
+          test -s pwa-preview/wissen/wissenschaft-hornissen-bienen.html
+          test -s pwa-preview/wissen/weltlage-vespa-velutina.html
+          echo "PASS: PWA staging validated on the ephemeral runner; no artifact upload and no deployment."
