@@ -11,7 +11,7 @@ Der Workflow `.github/workflows/pages.yml` ist jetzt ausschließlich manuell aus
 ## Automatische Abläufe
 
 - **Aktueller Stand:** `.github/workflows/pages.yml` ist ausschließlich manuell auslösbar. Der Job `verify-only` prüft und staged lokal; sämtliche Pages-Upload-/Deploy-Aktionen wurden entfernt. Weder Push noch manueller Start veröffentlichen oder aktualisieren die Website.
-- Pushes auf `main` starten Softwaretests, aber keine PWA-Buildvorschau. Die PWA-Buildvorschau wird nur über ein ausdrückliches `workflow_dispatch` im Workflow `.github/workflows/private-pwa.yml` erzeugt; sie veröffentlicht keine Website.
+- Pushes auf `main` starten Softwaretests, aber keine PWA-Buildvorschau. Der manuelle Workflow `.github/workflows/private-pwa.yml` staged die statischen Dateien ausschließlich auf dem ephemeren GitHub-Runner; er lädt weder ein Actions-Artefakt hoch noch veröffentlicht er eine Website.
 - Der CC0-Rechercheworkflow lädt Bildbytes nur vorübergehend in den isolierten GitHub-Runner, um Dateiformat und technische Lesbarkeit zu prüfen. Die Originalbild-Arbeitsdateien werden vor Ende des Jobs entfernt.
 - Der CC0-Rechercheworkflow veröffentlicht weder Originalbild-Artefakte noch Kandidaten-Metadaten-Artefakte. Er schreibt nur aggregierte Prüfergebnisse in die Actions-Zusammenfassung und entfernt danach die erzeugten CSV-, JSON- und HTML-Prüflisten.
 - `.github/workflows/gallery-original-artifact-audit.yml` prüft nach einem erfolgreichen CC0-Lauf anhand genau dieser Run-ID, dass keine Kandidaten-Artefakte veröffentlicht wurden.
@@ -31,7 +31,9 @@ Der verpflichtende Workflow-Audit `scripts/audit_workflow_action_pins.py` prüft
 
 ## Sichtbarkeit der PWA-Buildvorschau
 
-Das Repository ist öffentlich. Das Actions-Artefakt `vespaguard-pwa-preview` ist deshalb für alle Personen mit Repository-Leserechten herunterladbar und **nicht privat**. Es enthält nur statische PWA-Dateien und einen Hinweistext; keine Benutzerfotos, Bienenstand-GPS-Daten, Secrets oder Modellgewichte. Die Aufbewahrung ist auf 1 Tag begrenzt. Das Artefakt ist kein Pages-Deployment und erzeugt keine gehostete Website.
+Der Workflow `.github/workflows/private-pwa.yml` erstellt die statische Vorschau ausschließlich in einem ephemeren GitHub-Runner-Verzeichnis. Er enthält keinen `actions/upload-artifact`-Schritt und keine Pages-Upload- oder Deploy-Aktion. Nach Ende des Jobs wird das Runner-Verzeichnis verworfen. Es entsteht dadurch weder ein herunterladbares PWA-Actions-Artefakt noch eine gehostete Website.
+
+Das öffentliche Repository macht normale Actions-Logs und Step Summaries für Repository-Leser sichtbar. Der Workflow darf deshalb weiterhin keine Benutzerfotos, GPS-Daten, Secrets, privaten Notizen oder nicht freigegebenen Modellgewichte in Logs schreiben. Bereits vorhandene historische Actions-Artefakte werden durch diese Änderung nicht gelöscht; ihre manuelle Bereinigung ist separat nachzuweisen.
 
 ## Öffentliche CI-Testartefakte
 
