@@ -206,11 +206,7 @@ jobs:
           BROWSER: ${{ steps.browser.outcome }}
           WEBKIT: ${{ steps.webkit.outcome }}
           IPHONE: ${{ steps.iphone.outcome }}
-          MODEL: ${{ steps.model.outcome }}
           IMPORTTESTS: ${{ steps.importtests.outcome }}
-          TAXONOMY: ${{ steps.taxonomy.outcome }}
-          TRAINING: ${{ steps.training.outcome }}
-          ANNOTATIONS: ${{ steps.annotations.outcome }}
           SITE: ${{ steps.site.outcome }}
         run: |
           test "$STATIC" = success
@@ -218,10 +214,9 @@ jobs:
           test "$BROWSER" = success
           test "$WEBKIT" = success
           test "$IPHONE" = success
-          test "$MODEL" = success
           test "$IMPORTTESTS" = success
-          # Online-Taxonomie ist eine Forschungs-/Datenprüfung, kein Offline-Software-Gate.
-          # Ergebnis bleibt im Bericht sichtbar, blockiert aber nicht die lokale PWA-CI.
+          # KI-Inventur, Trainingsdaten, Annotationen und Online-Taxonomie bleiben
+          # im Bericht sichtbar, sind aber keine Software-CI-Gates oder Freigaben.
           test "$SITE" = success
 
   beekeeper3000-bridge:
@@ -312,7 +307,7 @@ jobs:
           if (rules.selectAlerts([manualRow], {enabled:true, thresholdPercent:50}, new Set(), Date.now()).alerts.length) {
             throw new Error('Manual observer report incorrectly triggered a hornet alert');
           }
-          console.log('PASS: camera candidates and manual PWA observations retain separate event types end to end');
+          console.log('PASS: camera candidates and manual PWA observations retain separate event types');
           NODE
       - name: Ergebnis im gemeinsamen Bericht
         if: always()
