@@ -1,5 +1,10 @@
 # VespaGuard: zwei Repositories, ein System
 
+## Monitor-Sicherheitsupdate – 28.11.2026
+
+PR [#372](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/372) wurde als `832b52235009e15e708eb5f38fcd5442de17afe9` gemergt. Der manuelle PWA-Vorschauworkflow erstellt die Dateien nur im ephemeren Runner-Verzeichnis und lädt kein Actions-Artefakt hoch. Er enthält weder Pages-Upload noch Deploy-Aktion. Das verhindert neue öffentliche Vorschauartefakte aus diesem Workflow, löscht aber keine historischen Artefakte und ändert nicht die GitHub-Pages-Einstellungen. Es wurde kein Deployment ausgelöst.
+
+
 ## Aktueller Partnerstand – 28.11.2026 (nach Merge BeeKeeper3000 PR #159)
 
 BeeKeeper3000 `main` steht auf `f6c1af1768cf9d69338b233ce1f864cc3da82798`. PR #159 ergänzt den PNG-Preflight um die fail-closed Ablehnung doppelter `IHDR`-Chunks, bevor Browser-Decoder oder Canvas aufgerufen werden. PR-Quality-Gates [#46105777705](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46105777705) mit vier erfolgreichen Jobs und CodeQL [#46105777713](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46105777713) waren erfolgreich. Nach Merge bestanden Quality Gates [#46108043041](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46108043041) mit allen vier Jobs und CodeQL [#46108043029](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46108043029) mit beiden Analysen; keine Post-Merge-Artefakte.
