@@ -1,6 +1,8 @@
 """Download a pinned upstream model only after explicit rights authorization.
 
 Never import torch, ultralytics or pickle here. Never deserialize or run the weights.
+External model-weight downloads remain disabled in code by default; manifest fields
+alone cannot enable network access.
 """
 from __future__ import annotations
 import argparse
@@ -16,8 +18,18 @@ SOURCE_URL = (
     + UPSTREAM_COMMIT + "/model/weights/best.pt"
 )
 
+# Deliberately fail closed. Changing this requires a separate reviewed code change
+# after the exact weight license, dataset rights and download purpose are approved.
+# A mutable JSON manifest is not an independent authorization mechanism.
+MODEL_WEIGHT_DOWNLOADS_ENABLED = False
+
 
 def _require_download_authorization(manifest: dict) -> None:
+    if MODEL_WEIGHT_DOWNLOADS_ENABLED is not True:
+        raise ValueError(
+            "Blocked: external model-weight downloads are disabled in code pending "
+            "a separate reviewed enablement change"
+        )
     if not isinstance(manifest, dict):
         raise ValueError("Invalid Varroa source manifest")
     if manifest.get("weights_license_independently_confirmed") is not True:
