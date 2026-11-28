@@ -22,7 +22,11 @@ class VarroaDownloadWorkflowPolicyTests(unittest.TestCase):
 
         # Only one pinned checkout action and the two exact local test commands
         # are permitted. This rejects added download/upload actions and shell steps.
-        uses = re.findall(r"^\s*-\s+uses:\s*(\S+)\s*$", workflow, flags=re.MULTILINE)
+        uses = re.findall(
+            r"^\s*-\s+uses:\s*(\S+)(?:\s+#.*)?\s*$",
+            workflow,
+            flags=re.MULTILINE,
+        )
         runs = re.findall(r"^\s+run:\s*(.+?)\s*$", workflow, flags=re.MULTILINE)
         self.assertEqual(uses, [PINNED_CHECKOUT])
         self.assertEqual(runs, EXPECTED_RUNS)
