@@ -33,7 +33,7 @@ class CrossRepositorySmoke(unittest.TestCase):
                 node = r"""
 const { forwardBatch } = await import(process.argv[1]);
 const endpoint = process.argv[2], token = process.argv[3];
-const event = {id:'contract-test-001',observed_at:new Date().toISOString(),station_id:'station_test',species:'Vespa velutina',confidence:0.82,prey_detected:false};
+const event = {id:'contract-test-001',observed_at:new Date().toISOString(),station_id:'station_test',species:'Vespa velutina',confidence:0.82,prey_detected:false,origin:'camera'};
 const state = new Set();
 const options = {endpoint,token,saveState:async()=>{},maxAttempts:1};
 const first = await forwardBatch([event],state,options);

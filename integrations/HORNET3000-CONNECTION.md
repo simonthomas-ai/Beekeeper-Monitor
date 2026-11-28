@@ -87,7 +87,7 @@ python -m network.source_api
 
 The source service binds only to `127.0.0.1:8787`. It uses the Python standard library and a local SQLite database. Configure private filesystem permissions and full-disk encryption. Do not expose the plain-HTTP service publicly.
 
-A producer must POST strict JSON metadata containing exactly `id`, `observed_at` (timezone-aware ISO-8601), `station_id`, `species`, `confidence` (0..1) and `prey_detected` to `/api/events` with `X-API-Key`. The API rejects media, GPS, paths, secrets and human-verification claims. An exact duplicate is acknowledged idempotently; reusing an ID with changed content is rejected.
+A producer must POST strict JSON metadata containing `id`, `observed_at` (timezone-aware ISO-8601), `station_id`, `species`, `confidence` (0..1), `prey_detected` and an explicit `origin` (`camera` or `manual_observation`) to `/api/events` with `X-API-Key`. The pinned BeeKeeper3000 main commit `f6c1af1` still accepts an omitted `origin` for legacy compatibility and interprets it as `camera`; all new producers and fixtures should send it explicitly. BeeKeeper3000 PR [#158](https://github.com/simonthomas-ai/BeeKeeper3000/pull/158) tightens the contract so new POSTs without `origin` are rejected. The field is client-declared routing metadata, not cryptographic producer attestation. Existing legacy records cannot be verified from this field alone. The API rejects media, GPS, paths, secrets and human-verification claims. An exact duplicate is acknowledged idempotently; reusing an ID with changed content is rejected.
 
 ## 3. Configure and start the bridge
 
