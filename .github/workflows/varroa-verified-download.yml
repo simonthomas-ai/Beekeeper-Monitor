@@ -1,34 +1,31 @@
-name: Varroa pinned model download and integrity
+name: Varroa download authorization guard (synthetic tests only)
 on:
   push:
     paths:
       - '.github/workflows/varroa-verified-download.yml'
       - 'scripts/download_verified_varroa.py'
-      - 'scripts/verify_varroa_source_blob.py'
       - 'data/model-sources/varrodetector-best.json'
       - 'tests/test_download_verified_varroa.py'
+      - 'tests/test_varroa_download_workflow_policy.py'
+  pull_request:
+    paths:
+      - '.github/workflows/varroa-verified-download.yml'
+      - 'scripts/download_verified_varroa.py'
+      - 'data/model-sources/varrodetector-best.json'
+      - 'tests/test_download_verified_varroa.py'
+      - 'tests/test_varroa_download_workflow_policy.py'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  source-integrity:
+  guard:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Test downloader with synthetic bytes (no network)
+      - name: Test downloader authorization using synthetic bytes only
         run: python3 -m unittest discover -s tests -p test_download_verified_varroa.py -v
-      - name: Download pinned upstream weights as inert bytes and verify exact Git blob
-        run: |
-          python3 -m scripts.download_verified_varroa \
-            --output "${RUNNER_TEMP}/varroa-source.pt" \
-            --record "${RUNNER_TEMP}/varroa-provenance.json"
-      - name: Publish provenance only, never PyTorch weights
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: varroa-source-provenance
-          path: ${{ runner.temp }}/varroa-provenance.json
-          retention-days: 7
-          if-no-files-found: error
+      - name: Enforce no-download workflow policy
+        run: python3 -m unittest discover -s tests -p test_varroa_download_workflow_policy.py -v
