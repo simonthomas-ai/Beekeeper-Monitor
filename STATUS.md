@@ -1,6 +1,19 @@
-# Aktueller Audit-Snapshot – 27.11.2026, 16:42 UTC
+# VespaGuard – Audit-Snapshots
 
-## Aktueller Audit-Snapshot – 28.11.2026, 02:38 CET
+## Aktueller Audit-Snapshot – 28.11.2026 (nach BeeKeeper3000 PR #155)
+
+- Beekeeper-Monitor `main`: `30d7d98bd0c855737534ef2e35bd17f9afb9f642`. PR #371 aktualisiert beide Cross-Repository-Pins und den Regressionstest auf BeeKeeper3000 `bf251e1ce5a7ccf227c2dc1bd8a7031ec90464af`; die neue PR-Prüfung läuft separat und ist noch nicht als abgeschlossen zu werten.
+- BeeKeeper3000 PR #155 ist als `bf251e1ce5a7ccf227c2dc1bd8a7031ec90464af` integriert. Die PWA prüft JPEG/PNG/WebP-Header vor `createImageBitmap` (max. 8 MiB/16 MP), lehnt bekannte Animationsflags und Mehrbild-JPEGs ab und prüft die dekodierte Bitmap erneut vor Canvas-Allokation. HEIC/HEIF muss lokal in JPEG umgewandelt werden.
+- BeeKeeper3000 Post-Merge-Quality-Gates [#46099848877](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46099848877) und CodeQL [#46099848916](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46099848916): `completed/success`. Vier Quality-Gate-Jobs sowie beide CodeQL-Analysen erfolgreich. Im PR-Head-Lauf #46099702376 bestanden 17 Mobile-PWA-Tests und 35 Bridge-Tests. Die beiden Post-Merge-Artefaktlisten sind leer.
+- Monitor-PR #369 und #370 bleiben offen. #370 hat eine zusätzliche Bestätigung und Platzhalterprüfung vor dem öffentlichen PWA-Artefakt-Upload; Merge bleibt wegen `has_pages=true` und nicht verifizierter Pages-Quelle zurückgestellt. Kein Pages- oder Preview-Workflow wurde gestartet.
+- Zehn historische öffentliche Actions-Artefakte sind weiterhin vorhanden; IDs: `15108851881`, `15107897872`, `15058597151`, `15058522636`, `15108012720`, `15124542124`, `15118529028`, `15115678841`, `15115577897`, `15137419854`. Inhalte wurden nicht heruntergeladen. Die verbundene GitHub-Schnittstelle bietet keine Löschaktion; manuelle Bereinigung bleibt erforderlich.
+- Monitor Pages: `has_pages=true`; BeeKeeper3000 Pages: `has_pages=false`. Beide `main`-Branches melden `protected=false`; Ruleset-Abfragen sind leer. Beide Repository-Metadaten melden `license=null`; Root-`LICENSE` fehlt.
+- KI bleibt `BLOCKIERT`: keine Gewichte, kein `datasets/beekeeper/`, keine `training/reviewed-annotations.json`, kein unabhängiger Feld-Holdout und keine gemessene Erkennungsqualität. Acht BeeKeeper-Fähigkeiten bleiben deaktiviert; sechs Monitor-Kandidaten bleiben `rights_and_runtime_pending`.
+- Freigegeben bleibt nur der beaufsichtigte lokale No-AI-Pilot. Eine physische Stations-/Kameraabnahme wurde in dieser Runde nicht ausgeführt. Keine sensiblen Daten übertragen, kein Modell aktiviert, kein öffentliches Deployment ausgelöst.
+
+---
+
+## Vorheriger Audit-Snapshot – 28.11.2026, 02:38 CET
 
 - Beekeeper-Monitor `main`: `30d7d98bd0c855737534ef2e35bd17f9afb9f642`; Post-Merge-Gesamttest #46072797565, Repository-Integration #46072797587 und CodeQL #46072797613: alle `completed/success`.
 - BeeKeeper3000 `main`: `c38d28c35707e99bec1c0d6298b0ada6bd268063`; PR #154 enthält eine Grenze von 16 Megapixeln für dekodierte PWA-Bilder vor Canvas-Allokation. Post-Merge-Quality-Gates #46089987214 und CodeQL #46089987156: `completed/success`.
