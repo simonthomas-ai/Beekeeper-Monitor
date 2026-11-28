@@ -1,3 +1,17 @@
+## Aktueller Audit-Snapshot – 28.11.2026, 07:10 CET (nach Merge Monitor PR #372)
+
+- Beekeeper-Monitor `main`: Merge-Commit `832b52235009e15e708eb5f38fcd5442de17afe9` aus PR [#372](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/372). Der manuelle Workflow `.github/workflows/private-pwa.yml` staged die Vorschau nur auf dem ephemeren Runner; `actions/upload-artifact`, Pages-Upload und Deploy-Aktionen sind entfernt. Es wurde kein Deployment ausgelöst.
+- Post-Merge-Ein-Klick-Gesamttest [#46115595254](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46115595254): alle drei Jobs erfolgreich. CodeQL [#46115595265](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46115595265): JavaScript/TypeScript und Python erfolgreich. Der separate CC0-Quellenlauf [#46115595268](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46115595268) lief bei Snapshot-Erstellung noch; seine bisher abgefragte Artefaktliste war leer.
+- Monitor-`main` verwendet noch den älteren BeeKeeper3000-Pin `6adf0235c0f321eb42f57bd5966b46e1e400bcec`. PR [#371](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/371), Head `4e81e1e252c90745dd7df505d3806ef4f78cab52`, aktualisiert beide Cross-Repository-Workflows und den Pin-Regressionstest auf BeeKeeper3000 `f6c1af1768cf9d69338b233ce1f864cc3da82798`. Seine vier PR-Workflows waren vor Merge #372 erfolgreich; erneute Prüfung gegen den aktualisierten Main-Stand ist nach dem folgenden Dokumentationscommit erforderlich.
+- BeeKeeper3000 `main`: `f6c1af1768cf9d69338b233ce1f864cc3da82798`; Post-Merge-Quality-Gates [#46108043041](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46108043041) mit vier erfolgreichen Jobs und CodeQL [#46108043029](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46108043029) mit beiden erfolgreichen Analysen.
+- PR #372 verhindert neue öffentliche PWA-Vorschauartefakte aus diesem Workflow, löscht aber keine früheren Artefakte. Zehn historische Monitor-Artefakte waren in früheren Audits identifiziert; ihre aktuelle Existenz/Löschung ist über die hier verfügbare Verbindung nicht vollständig verifizierbar. Manuelle Kontrolle unter Actions → Artifacts bleibt erforderlich.
+- `.github/workflows/pages.yml` ist weiterhin eine manuelle Verify-only-Prüfung ohne Deploy-Schritt. Die tatsächliche GitHub-Pages-Quelle ist über die verfügbare Verbindung nicht lesbar; PR #371 ändert keine Pages-Einstellungen und keine Deployment-Workflows.
+- Beide `main`-Branches melden `protected=false`; die Branch-Protection-Abfrage ist für die verbundene Integration nicht zugänglich. Beide Repository-Metadaten melden `license=null`; Root-`LICENSE` fehlt.
+- Keine freigegebenen Modellgewichte, kein vollständiger Realbild-Datensatz, kein unabhängiger Feld-Holdout und keine gemessene Erkennungsqualität. `datasets/beekeeper/` und `training/reviewed-annotations.json` fehlen weiterhin. Keine Modellaktivierung und keine Feld-/Produktfreigabe.
+- Keine privaten Feldaufnahmen, GPS-Daten, Secrets oder Produktionsdaten übertragen. Keine öffentliche Website veröffentlicht.
+
+---
+
 # VespaGuard – Audit-Snapshots
 
 ## Aktueller Audit-Snapshot – 28.11.2026 (nach Merge BeeKeeper3000 PR #159 und finaler Monitor-PR-CI)
