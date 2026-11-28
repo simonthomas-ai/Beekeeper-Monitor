@@ -43,12 +43,12 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: simonthomas-ai/BeeKeeper3000
-          # Draft-only contract test against the immutable partner PR head; do not merge this pin to main.
-          ref: d4e272a94fc66717dd43c1d392285d15dbf278a4
+          # Draft-only contract test against the immutable, CI-verified partner PR head; do not merge this pin to main.
+          ref: ebbc9237414916b78f478c89848f45b5cd00ad63
           path: beekeeper3000
           persist-credentials: false
       - name: Verify immutable partner revision
-        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "d4e272a94fc66717dd43c1d392285d15dbf278a4"
+        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "ebbc9237414916b78f478c89848f45b5cd00ad63"
       - name: Python vorbereiten
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
