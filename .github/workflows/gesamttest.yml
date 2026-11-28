@@ -229,11 +229,11 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           # Pin the integration partner to a reviewed commit; avoid moving-main CI drift.
-          ref: c84a8fa029ca4c19521307cdcf8887df6d2468ae
+          ref: da642367fbfdd4a2ad96f252491451936e2b916e
           path: beekeeper3000
           persist-credentials: false
       - name: Verify pinned BeeKeeper3000 revision
-        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "c84a8fa029ca4c19521307cdcf8887df6d2468ae"
+        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "da642367fbfdd4a2ad96f252491451936e2b916e"
       - name: Beekeeper-Monitor fuer repo-uebergreifenden Vertrag auschecken
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -259,7 +259,7 @@ jobs:
         shell: bash
         run: |
           node --input-type=module <<'NODE'
-          import { toMonitorEvent } from './beekeeper3000/monitor-bridge/bridge.mjs';
+          import { toMonitorEvent, isQuarantinedLegacyEvent } from './beekeeper3000/monitor-bridge/bridge.mjs';
           import { createRequire } from 'node:module';
           import { spawnSync } from 'node:child_process';
           import { createHash } from 'node:crypto';
@@ -269,7 +269,7 @@ jobs:
           const event = toMonitorEvent({
             id: 'cross-repo-velutina-1', observed_at: timestamp,
             station_id: 'Yard Cam / North', species: 'Vespa velutina',
-            confidence: 1, status: 'expert_confirmed',
+            confidence: 1, origin: 'camera', status: 'expert_confirmed',
             image_path: '/private/secret.jpg', lat: 51.2, lon: 6.8
           });
           if (!event) throw new Error('Bridge rejected source event');
@@ -284,7 +284,7 @@ jobs:
             throw new Error('Bridge event did not reach unverified alert rule');
           if (JSON.stringify(event).includes('secret.jpg') || 'lat' in event.payload || 'lon' in event.payload)
             throw new Error('Bridge leaked media or GPS metadata');
-          const other = toMonitorEvent({id:'cross-repo-crabro-1',observed_at:timestamp,station_id:'Yard Cam / North',species:'Vespa crabro',confidence:1});
+          const other = toMonitorEvent({id:'cross-repo-crabro-1',observed_at:timestamp,station_id:'Yard Cam / North',species:'Vespa crabro',confidence:1,origin:'camera'});
           const otherRow = {event_id:'a'.repeat(64),received_at:timestamp,event:other};
           if (rules.selectAlerts([otherRow],{enabled:true},new Set(),Date.now()).alerts.length)
             throw new Error('Native hornet must not trigger velutina warning');
@@ -307,7 +307,26 @@ jobs:
           if (rules.selectAlerts([manualRow], {enabled:true, thresholdPercent:50}, new Set(), Date.now()).alerts.length) {
             throw new Error('Manual observer report incorrectly triggered a hornet alert');
           }
-          console.log('PASS: camera candidates and manual PWA observations retain separate event types');
+          const localMedia = toMonitorEvent({
+            id: 'local-media-review-1', origin: 'local_media_unverified',
+            observed_at: timestamp, station_id: 'review-station-01',
+            species: 'Vespa velutina', confidence: 0.55, prey_detected: false
+          });
+          if (localMedia !== null) {
+            throw new Error('Local-media review candidate was accepted as a source event');
+          }
+          const legacy = {
+            id: 'legacy-unverified-1', origin: 'legacy_unverified',
+            observed_at: timestamp, station_id: 'legacy-station-01',
+            species: 'Vespa velutina', confidence: 0.55, prey_detected: false
+          };
+          if (toMonitorEvent(legacy) !== null || !isQuarantinedLegacyEvent(legacy)) {
+            throw new Error('Legacy event was not isolated as a valid non-forwardable quarantine record');
+          }
+          if (isQuarantinedLegacyEvent({ ...legacy, confidence: 1.5 })) {
+            throw new Error('Malformed legacy event was incorrectly accepted by quarantine validation');
+          }
+          console.log('PASS: camera, manual, local-media and legacy-quarantine origins remain separate');
           NODE
       - name: Ergebnis im gemeinsamen Bericht
         if: always()
@@ -330,11 +349,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: simonthomas-ai/BeeKeeper3000
-          ref: c84a8fa029ca4c19521307cdcf8887df6d2468ae
+          ref: da642367fbfdd4a2ad96f252491451936e2b916e
           path: beekeeper3000
           persist-credentials: false
       - name: Verify pinned BeeKeeper3000 revision
-        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "c84a8fa029ca4c19521307cdcf8887df6d2468ae"
+        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "da642367fbfdd4a2ad96f252491451936e2b916e"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
