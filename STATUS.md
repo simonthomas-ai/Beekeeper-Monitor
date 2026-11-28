@@ -1040,3 +1040,10 @@ Diese CI-Ergebnisse sind keine Installation auf dem Nutzer-PC, keinem echten Ras
 - Monitor PR [#377](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/377), aktualisierter Dokumentations-Head `2513865dc88876aa166ed6dac8f9d6eea7d0bd02`: Ein-Klick-Gesamttest [#46167402276](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46167402276) – 3/3 Jobs erfolgreich; CodeQL [#46167402275](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46167402275) – beide Analysen erfolgreich; Gesamttest-Artefaktliste leer. Der Log bestätigt weiterhin `MODEL_STATUS: failure`, `TRAINING_STATUS: failure`, `ANNOTATIONS_STATUS: failure` und `Freigabestatus: GESPERRT`; es fehlen `datasets/beekeeper/` und `training/reviewed-annotations.json`.
 - BeeKeeper PR [#158](https://github.com/simonthomas-ai/BeeKeeper3000/pull/158) bleibt Draft und basiert weiterhin auf `928e326`. Gegen den neuen Main `c84a8fa` ist er 57 Commits ahead und 5 behind, Status `diverged`. Vor Integration ist ein kontrollierter Branch-Update mit Dokumentabgleich und erneuter CI erforderlich; keine Altstations-Kompatibilitätsabnahme vorhanden.
 - Kein Modell aktiviert, keine privaten Daten übertragen und kein öffentliches Deployment ausgelöst.
+
+
+### Administrativer Metadaten-Nachtrag – 28.11.2026
+
+- Die aktuelle Repository-API bestätigt für beide öffentlichen Repositories `permissions.admin=true`, aber auch `license=null`. Die Root-Datei `LICENSE` liefert weiterhin HTTP 404.
+- Die aktuelle Repository-API bestätigt Monitor `has_pages=true` und BeeKeeper3000 `has_pages=false`. Damit ist die Monitor-Pages-Funktion weiterhin auf Repository-Ebene aktiviert; die tatsächliche Veröffentlichungsquelle und der Live-Inhalt sind nicht abrufbar. Die gelesene `pages.yml` enthält keine Upload-/Deploy-Aktion, aber das deaktiviert keine branchbasierte Pages-Quelle. Kein Deployment ausgelöst.
+- Die Branch-Protection-Leseabfrage für `main` liefert über die verbundene GitHub-Schnittstelle HTTP 403. Trotz der im Repository-Metadatenobjekt ausgewiesenen Admin-Rolle steht hier keine sichere Branch-Protection-Schreibaktion zur Verfügung. Keine Umgehung oder Änderung versucht.
