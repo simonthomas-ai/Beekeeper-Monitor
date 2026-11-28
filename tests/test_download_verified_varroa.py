@@ -3,6 +3,8 @@ import io
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+
 from scripts.download_verified_varroa import SOURCE_URL, download_verified
 
 
@@ -25,15 +27,34 @@ def authorized_synthetic_manifest(data: bytes) -> dict:
 
 
 class DownloadTests(unittest.TestCase):
-    def test_exact_verified_bytes(self):
+    def test_external_download_disabled_even_with_authorized_manifest(self):
+        data = b"synthetic test bytes, not a model"
+        manifest = authorized_synthetic_manifest(data)
+        called = False
+
+        def forbidden_opener(request, timeout):
+            nonlocal called
+            called = True
+            raise AssertionError("network must remain disabled")
+
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "best.pt"
+            with self.assertRaisesRegex(ValueError, "downloads are disabled in code"):
+                download_verified(path, manifest, opener=forbidden_opener)
+            self.assertFalse(called)
+            self.assertFalse(path.exists())
+
+    def test_exact_verified_bytes_with_synthetic_transport_override(self):
         data = b"synthetic test bytes, not a model"
         manifest = authorized_synthetic_manifest(data)
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "best.pt"
-            result = download_verified(
-                path, manifest,
-                opener=lambda request, timeout: FakeResponse(data),
-            )
+            # Test-only override: fake in-memory response, never a network request.
+            with patch("scripts.download_verified_varroa.MODEL_WEIGHT_DOWNLOADS_ENABLED", True):
+                result = download_verified(
+                    path, manifest,
+                    opener=lambda request, timeout: FakeResponse(data),
+                )
             self.assertEqual(path.read_bytes(), data)
             self.assertEqual(result["local_sha256"], hashlib.sha256(data).hexdigest())
             self.assertFalse(result["converted_to_onnx"])
@@ -42,7 +63,6 @@ class DownloadTests(unittest.TestCase):
         data = b"synthetic test bytes, not a model"
         manifest = authorized_synthetic_manifest(data)
         manifest["weights_license_independently_confirmed"] = False
-        manifest["download_authorized"] = False
         called = False
 
         def forbidden_opener(request, timeout):
@@ -52,8 +72,9 @@ class DownloadTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "best.pt"
-            with self.assertRaisesRegex(ValueError, "license review is not confirmed"):
-                download_verified(path, manifest, opener=forbidden_opener)
+            with patch("scripts.download_verified_varroa.MODEL_WEIGHT_DOWNLOADS_ENABLED", True):
+                with self.assertRaisesRegex(ValueError, "license review is not confirmed"):
+                    download_verified(path, manifest, opener=forbidden_opener)
             self.assertFalse(called)
             self.assertFalse(path.exists())
 
@@ -70,8 +91,9 @@ class DownloadTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "best.pt"
-            with self.assertRaisesRegex(ValueError, "review reference is required"):
-                download_verified(path, manifest, opener=forbidden_opener)
+            with patch("scripts.download_verified_varroa.MODEL_WEIGHT_DOWNLOADS_ENABLED", True):
+                with self.assertRaisesRegex(ValueError, "review reference is required"):
+                    download_verified(path, manifest, opener=forbidden_opener)
             self.assertFalse(called)
             self.assertFalse(path.exists())
 
@@ -81,11 +103,12 @@ class DownloadTests(unittest.TestCase):
         manifest["git_blob_sha1"] = "0" * 40
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "best.pt"
-            with self.assertRaises(ValueError):
-                download_verified(
-                    path, manifest,
-                    opener=lambda request, timeout: FakeResponse(data),
-                )
+            with patch("scripts.download_verified_varroa.MODEL_WEIGHT_DOWNLOADS_ENABLED", True):
+                with self.assertRaises(ValueError):
+                    download_verified(
+                        path, manifest,
+                        opener=lambda request, timeout: FakeResponse(data),
+                    )
             self.assertFalse(path.exists())
             self.assertFalse(path.with_name("best.pt.partial").exists())
 
@@ -95,11 +118,12 @@ class DownloadTests(unittest.TestCase):
         manifest["bytes"] += 8
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "best.pt"
-            with self.assertRaises(ValueError):
-                download_verified(
-                    path, manifest,
-                    opener=lambda request, timeout: FakeResponse(data),
-                )
+            with patch("scripts.download_verified_varroa.MODEL_WEIGHT_DOWNLOADS_ENABLED", True):
+                with self.assertRaises(ValueError):
+                    download_verified(
+                        path, manifest,
+                        opener=lambda request, timeout: FakeResponse(data),
+                    )
             self.assertFalse(path.exists())
             self.assertFalse(path.with_name("best.pt.partial").exists())
 
@@ -109,8 +133,9 @@ class DownloadTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             path = Path(d) / "best.pt"
             path.write_bytes(b"existing")
-            with self.assertRaises(ValueError):
-                download_verified(path, manifest)
+            with patch("scripts.download_verified_varroa.MODEL_WEIGHT_DOWNLOADS_ENABLED", True):
+                with self.assertRaises(ValueError):
+                    download_verified(path, manifest)
             self.assertEqual(path.read_bytes(), b"existing")
 
 
