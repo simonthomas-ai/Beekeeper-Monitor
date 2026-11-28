@@ -1,6 +1,8 @@
-"""Download a pinned upstream model as inert bytes; verify before producing a provenance record.
+"""Download a pinned upstream model only after explicit rights authorization.
 
 Never import torch, ultralytics or pickle here. Never deserialize or run the weights.
+External model-weight downloads remain disabled in code by default; manifest fields
+alone cannot enable network access.
 """
 from __future__ import annotations
 import argparse
@@ -16,8 +18,31 @@ SOURCE_URL = (
     + UPSTREAM_COMMIT + "/model/weights/best.pt"
 )
 
+# Deliberately fail closed. Changing this requires a separate reviewed code change
+# after the exact weight license, dataset rights and download purpose are approved.
+# A mutable JSON manifest is not an independent authorization mechanism.
+MODEL_WEIGHT_DOWNLOADS_ENABLED = False
+
+
+def _require_download_authorization(manifest: dict) -> None:
+    if MODEL_WEIGHT_DOWNLOADS_ENABLED is not True:
+        raise ValueError(
+            "Blocked: external model-weight downloads are disabled in code pending "
+            "a separate reviewed enablement change"
+        )
+    if not isinstance(manifest, dict):
+        raise ValueError("Invalid Varroa source manifest")
+    if manifest.get("weights_license_independently_confirmed") is not True:
+        raise ValueError("Blocked: independent model-weight license review is not confirmed")
+    if manifest.get("download_authorized") is not True:
+        raise ValueError("Blocked: explicit model-weight download authorization is missing")
+    reference = manifest.get("download_authorization_ref")
+    if not isinstance(reference, str) or not reference.strip():
+        raise ValueError("Blocked: download authorization review reference is required")
+
 
 def download_verified(destination: Path, manifest: dict, opener=urlopen) -> dict:
+    _require_download_authorization(manifest)
     if destination.exists() or destination.is_symlink():
         raise ValueError("Refusing to overwrite an existing path")
     if not isinstance(manifest.get("bytes"), int) or not 0 < manifest["bytes"] <= 25_000_000:

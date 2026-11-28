@@ -14,6 +14,14 @@ Repository API tree inspection confirmed **real weight files**, not merely descr
 - VarroDetector analyzes **sticky-board mite fall**, not mites directly on bees. Gratheon analyzes **mites on bees** and reports varroa recall 0.651 on its own evaluation, not on VespaGuard images.
 - No weights were copied into VespaGuard. No runtime integration or detection accuracy is claimed.
 
+## Download safety gate – 28 November 2026
+
+The upstream VarroDetector weight is not approved for use. Its manifest records `weights_license_independently_confirmed=false`, `download_authorized=false`, and no authorization reference.
+
+The downloader now has a separate code-level default-off switch (`MODEL_WEIGHT_DOWNLOADS_ENABLED = False`). Manifest booleans and a text reference alone cannot enable external network access. The switch must not be changed until an independent review has documented the exact weight license, training-data rights, attribution, intended use and a separately reviewed authorization. The GitHub Actions workflow for this candidate runs only local synthetic-byte tests with read-only repository permission; it does not fetch external model bytes or publish an artifact. Its policy test restricts the workflow to one pinned checkout action and two exact local test commands.
+
+A later download approval would still not authorize deserialization, conversion, inference, training, redistribution or deployment. Each requires its own security, rights and validation review.
+
 ## Practical next actions
 1. Record exact upstream commit, Git blob ID, download SHA-256, model card, license evidence and attribution for each candidate.
 2. Review conversion risks and third-party license requirements before isolated export to ONNX.
