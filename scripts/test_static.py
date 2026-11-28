@@ -170,18 +170,21 @@ assert 'src="./camera-onnx-runtime.js"' not in html
 assert './camera-onnx-runtime.js' not in sw
 assert 'camera-onnx-runtime.js' not in pages
 # Public Actions artifacts are visible to readers of this public repository.
-# Do not create a fresh public preview on every push; retain a manual, short-lived path.
+# The manual preview must stay on the ephemeral runner and must not be uploaded.
 preview_triggers = private_build.split("permissions:", 1)[0]
 preview_events = re.findall(r"(?m)^  ([A-Za-z0-9_-]+):", preview_triggers)
 assert preview_events == ["workflow_dispatch"], (
-    f"public PWA preview must be manual-only, got triggers: {preview_events}"
+    f"PWA staging must be manual-only, got triggers: {preview_events}"
 )
-assert re.search(r"(?m)^          retention-days:\s*1\s*$", private_build), (
-    "public PWA preview artifact retention must be limited to one day"
+assert "actions/upload-artifact@" not in private_build, (
+    "PWA staging must not publish a public Actions artifact"
 )
-assert "Aufbewahrung: 1 Tag." in private_build, (
-    "public PWA artifact notice must disclose the one-day retention"
-)
+assert "vespaguard-pwa-preview" not in private_build
+assert "retention-days:" not in private_build
+assert "ephemeral GitHub-hosted runner" in private_build
+assert "no artifact upload and no deployment" in private_build
+for action in ("actions/configure-pages@", "actions/upload-pages-artifact@", "actions/deploy-pages@"):
+    assert action not in private_build, f"PWA staging must not publish through {action}"
 private_copy_lines = [line for line in private_build.splitlines() if line.lstrip().startswith("cp ")]
 assert private_copy_lines, "private PWA asset copy commands must remain explicit"
 assert any("field-image-privacy.js" in line for line in private_copy_lines), "private PWA must include the image privacy module"
