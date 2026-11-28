@@ -1,4 +1,4 @@
-"""Download a pinned upstream model as inert bytes; verify before producing a provenance record.
+"""Download a pinned upstream model only after explicit rights authorization.
 
 Never import torch, ultralytics or pickle here. Never deserialize or run the weights.
 """
@@ -17,7 +17,20 @@ SOURCE_URL = (
 )
 
 
+def _require_download_authorization(manifest: dict) -> None:
+    if not isinstance(manifest, dict):
+        raise ValueError("Invalid Varroa source manifest")
+    if manifest.get("weights_license_independently_confirmed") is not True:
+        raise ValueError("Blocked: independent model-weight license review is not confirmed")
+    if manifest.get("download_authorized") is not True:
+        raise ValueError("Blocked: explicit model-weight download authorization is missing")
+    reference = manifest.get("download_authorization_ref")
+    if not isinstance(reference, str) or not reference.strip():
+        raise ValueError("Blocked: download authorization review reference is required")
+
+
 def download_verified(destination: Path, manifest: dict, opener=urlopen) -> dict:
+    _require_download_authorization(manifest)
     if destination.exists() or destination.is_symlink():
         raise ValueError("Refusing to overwrite an existing path")
     if not isinstance(manifest.get("bytes"), int) or not 0 < manifest["bytes"] <= 25_000_000:
