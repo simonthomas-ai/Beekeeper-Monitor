@@ -27,3 +27,12 @@ Re-enabling downloads requires a separate reviewed code change after:
 
 A matching Git blob or SHA-256 proves byte identity only. It does not prove
 ownership, license permission, model accuracy, or field readiness.
+
+## Zenodo Varroa dataset files
+
+The metadata inventory in `scripts/zenodo_inventory.py` may list public record
+metadata. Actual file downloads are separately blocked by
+`DOWNLOADS_ENABLED = False`; `--download` exits before even fetching record
+metadata. A Zenodo checksum proves byte integrity, not the rights to images,
+labels, annotations or downstream model use. Re-enabling requires a per-file
+license/provenance/attribution review and a separate reviewed code change.
