@@ -993,7 +993,7 @@ Diese CI-Ergebnisse sind keine Installation auf dem Nutzer-PC, keinem echten Ras
 ### Herkunfts- und Bridge-Integration
 
 - BeeKeeper PR [#158](https://github.com/simonthomas-ai/BeeKeeper3000/pull/158) bleibt Draft auf `22a3bf464f1c566acfae78899afcab2272323f5c`. Er erzwingt explizites `origin=camera`, quarantänisiert `legacy_unverified` und verhindert die automatische Hochstufung lokaler Medien.
-- PR #158 basiert noch auf `928e3262a15d3d70a69cc893dbc04280455fa16b`; BeeKeeper-main ist inzwischen bei `7008025e96d65a4330ad699e96a0327ceee6ab48`. Der Commitvergleich meldet den PR als 1 Commit hinter Main und 57 Commits vor dem Merge-Base. Vor einer Integration ist ein aktualisierter Vergleich sowie eine Kompatibilitätsprüfung mit echten Altstationen nötig.
+- PR #158 basiert noch auf `928e3262a15d3d70a69cc893dbc04280455fa16b`; BeeKeeper-main ist inzwischen bei `7008025e96d65a4330ad699e96a0327ceee6ab48`. Der Commitvergleich meldet den PR als 57 Commits ahead und 1 Commit behind Main; der gemeinsame Merge-Base ist weiterhin `928e3262a15d3d70a69cc893dbc04280455fa16b`. Vor einer Integration ist ein aktualisierter Vergleich sowie eine Kompatibilitätsprüfung mit echten Altstationen nötig.
 - Monitor PR [#378](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/378) prüft den gepinnten PR-#158-Head repositoryübergreifend; Gesamttest, CodeQL und beide Bridge-/Integration-Workflows waren erfolgreich. Der PR bleibt Draft und darf nicht als Main-Integration interpretiert werden.
 
 ### Deployment, Administration und Artefakte
