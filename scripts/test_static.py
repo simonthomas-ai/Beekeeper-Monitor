@@ -211,7 +211,7 @@ assert "GITHUB_STEP_SUMMARY" in gesamttest, (
 )
 assert "Pushes auf `main` starten Softwaretests, aber keine PWA-Buildvorschau." in deployment
 assert "workflow_dispatch" in deployment
-assert "kein herunterladbares PWA-Actions-Artefakt" in deployment
+assert "weder ein herunterladbares PWA-Actions-Artefakt" in deployment
 
 # Manual browser diagnostics publish failure traces only, for one day.
 for workflow in (browser_workflow, webkit_workflow):
