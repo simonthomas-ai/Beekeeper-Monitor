@@ -12,7 +12,8 @@ WORKFLOW = ROOT / ".github" / "workflows" / "hornet3000-integrity.yml"
 PINNED_CHECKOUT = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
 EXPECTED_RUNS = [
     "python3 -m unittest discover -s tests -p test_hornet3000_download_policy.py -v",
-    "python3 -m py_compile scripts/verify_hornet3000_onnx.py",
+    "python3 -m unittest discover -s tests -p test_zenodo_inventory_download_policy.py -v",
+    "python3 -m py_compile scripts/verify_hornet3000_onnx.py scripts/zenodo_inventory.py",
 ]
 
 
@@ -47,6 +48,7 @@ class Hornet3000DownloadPolicyTests(unittest.TestCase):
             "--multispecies",
             "raw.githubusercontent.com",
             "api.inaturalist.org",
+            "zenodo.org/api/records",
             "pip install onnx",
             "onnxruntime",
             "actions/upload-artifact@",
