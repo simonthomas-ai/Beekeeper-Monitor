@@ -48,14 +48,20 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
         self.assertIn("Einheitlicher Ergebnisbericht", GESAMTTEST)
         self.assertIn("GITHUB_STEP_SUMMARY", GESAMTTEST)
 
-    def test_pwa_build_artifact_is_explicitly_public_and_short_lived(self):
-        self.assertIn("öffentliches Actions-Artefakt, kein Deployment", PWA_BUILD)
-        self.assertIn("name: vespaguard-pwa-preview", PWA_BUILD)
-        self.assertIn("retention-days: 1", PWA_BUILD)
-        self.assertIn("Aufbewahrung: 1 Tag.", PWA_BUILD)
-        self.assertIn("Jeder Repository-Leser kann dieses Artefakt herunterladen; es ist nicht privat.", PWA_BUILD)
-        self.assertIn("Keine gehostete Website.", PWA_BUILD)
-        self.assertNotIn("vespaguard-private-pwa", PWA_BUILD)
+    def test_pwa_build_preview_is_ephemeral_and_uploads_no_artifact(self):
+        self.assertIn("nur lokaler Runner, kein Upload oder Deployment", PWA_BUILD)
+        self.assertIn("workflow_dispatch:", PWA_BUILD)
+        self.assertIn("pwa-preview/", PWA_BUILD)
+        self.assertIn("ephemeral runner", PWA_BUILD)
+        self.assertNotIn("actions/upload-artifact@", PWA_BUILD)
+        self.assertNotIn("vespaguard-pwa-preview", PWA_BUILD)
+        self.assertNotIn("retention-days:", PWA_BUILD)
+        for action in (
+            "actions/configure-pages@",
+            "actions/upload-pages-artifact@",
+            "actions/deploy-pages@",
+        ):
+            self.assertNotIn(action, PWA_BUILD)
         trigger_block = PWA_BUILD.split("permissions:", 1)[0]
         events = re.findall(r"(?m)^  ([A-Za-z0-9_-]+):", trigger_block)
         self.assertEqual(events, ["workflow_dispatch"])
@@ -122,8 +128,6 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
         # Only the name assigned to an actions/upload-artifact step makes it a
         # public Actions artifact. Inspect those step inputs, not every workflow
         # reference to a local CSV/HTML filename.
-        import re
-
         uploaded_names = set()
         for path in sorted(WORKFLOWS.glob("*.yml")):
             lines = path.read_text(encoding="utf-8").splitlines()
@@ -217,7 +221,3 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
     def test_retired_public_gallery_license_audit_is_removed(self):
         self.assertFalse((WORKFLOWS / "photo-license-audit.yml").exists())
         self.assertFalse((ROOT / "scripts" / "check_live_photo_licenses.py").exists())
-
-
-if __name__ == "__main__":
-    unittest.main()
