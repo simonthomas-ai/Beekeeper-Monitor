@@ -1,5 +1,17 @@
 # Aktueller Audit-Snapshot – 27.11.2026, 16:42 UTC
 
+## Aktueller Audit-Snapshot – 28.11.2026, 02:38 CET
+
+- Beekeeper-Monitor `main`: `30d7d98bd0c855737534ef2e35bd17f9afb9f642`; Post-Merge-Gesamttest #46072797565, Repository-Integration #46072797587 und CodeQL #46072797613: alle `completed/success`.
+- BeeKeeper3000 `main`: `c38d28c35707e99bec1c0d6298b0ada6bd268063`; PR #154 enthält eine Grenze von 16 Megapixeln für dekodierte PWA-Bilder vor Canvas-Allokation. Post-Merge-Quality-Gates #46089987214 und CodeQL #46089987156: `completed/success`.
+- Integrationslücke: Monitor-`main` pinnt noch den älteren BeeKeeper3000-Commit `6adf0235c0f321eb42f57bd5966b46e1e400bcec`. Der separate Branch `fix/update-beekeeper-partner-pin-20261128` aktualisiert beide Workflows, den Pin-Regressionstest und die Integrationsdokumentation auf `c38d28c35707e99bec1c0d6298b0ada6bd268063`; erst nach dessen CI und Merge wird der Pin auf `main` wirksam.
+- Monitor-PR #369 und #370 sind offen. PR #370 hat vollständige erfolgreiche PR-CI; er bleibt wegen `has_pages=true` und nicht verifizierter Pages-Quelle ungemergt. Kein Pages- oder PWA-Preview-Workflow wurde gestartet.
+- Beide `main`-Branches melden `protected=false`; die Ruleset-Abfragen liefern leere Listen. Administrative Branch-Schutz- und Pages-Einstellungen sind über die verfügbare Schnittstelle nicht änderbar.
+- Trainingsstatus bleibt `BLOCKIERT`: `datasets/beekeeper/` und `training/reviewed-annotations.json` fehlen; keine freigegebenen Gewichte, kein unabhängiger Feld-Holdout und keine gemessene Erkennungsqualität. Software-CI ist keine KI-Freigabe.
+- Keine Trainingsdaten, Fotos, GPS-Daten, Zugangsdaten oder privaten Feldinformationen wurden übertragen. Keine öffentlichen Deployments oder Modellaktivierungen wurden ausgelöst.
+
+---
+
 ## Geprüfte Hauptzweige
 - Beekeeper-Monitor-Ausgangsstand für dieses Pin-Update: `43faa3722c86475d3db22086e58edeaff7f5c82e`.
 - BeeKeeper3000 `main`: `6adf0235c0f321eb42f57bd5966b46e1e400bcec`.
