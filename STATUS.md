@@ -1079,3 +1079,42 @@ Diese CI-Ergebnisse sind keine Installation auf dem Nutzer-PC, keinem echten Ras
 - **Wichtige Grenze:** BeeKeeper-main akzeptiert bis zu einem späteren Merge von #165 weiterhin fehlendes `origin` mit der Legacy-Defaultannahme `camera`. Daher noch keine Alarm-/Produktivfreigabe. #165 bleibt Draft bis eine gestoppte, gesicherte Stationskopie und installierte Altclients geprüft wurden. `origin` bleibt clientgeliefertes Routing-Metadatum, keine kryptografische Producer-Attestierung.
 - Repository-API bestätigt weiterhin: beide Repositories öffentlich, `license=null`, Root-`LICENSE` jeweils 404; Monitor `has_pages=true`, BeeKeeper `has_pages=false`. `pages.yml` ist Verify-only ohne Deploy-Aktion; die tatsächliche Pages-Quelle bleibt unbestätigt. Kein Deployment ausgelöst.
 - Keine Modellgewichte, Trainingsbilder, privaten Feldaufnahmen, GPS-Daten oder Secrets heruntergeladen/übertragen. Keine KI aktiviert. Keine physische Kamera-/Raspberry-Pi-/Dauerbetriebsabnahme oder 99-%-Erkennungsleistung nachgewiesen.
+
+
+### Korrektur – verifizierter Stand 28.11.2026, 19:38 UTC
+
+Dieser Abschnitt ersetzt frühere Statusangaben zu den aktuellen PR-Heads und Main-Revisionen.
+
+#### Tatsächliche Hauptzweige
+- Beekeeper-Monitor main: `5948c8845a1ab4b270663ed94241852307e3f6d3`.
+- BeeKeeper3000 main: `c84a8fa029ca4c19521307cdcf8887df6d2468ae`.
+- BeeKeeper3000 PR #163 (Symlink-/Junction-Prüfung) und PR #164 (exakte SQLite-Schemavalidierung) sind gemergt. PR #164-Main-Commit: `c84a8fa029ca4c19521307cdcf8887df6d2468ae`.
+
+#### Herkunftsbehandlung: PR #158 ersetzt durch PR #165
+- BeeKeeper3000 PR #158 wurde geschlossen, nicht gemergt.
+- Aktueller Ersatz: [PR #165](https://github.com/simonthomas-ai/BeeKeeper3000/pull/165), Draft, Head `da642367fbfdd4a2ad96f252491451936e2b916e`, Basis Main `c84a8fa`, 1 Commit ahead / 0 behind.
+- Auf diesem aktuellen Head erfolgreich: Quality Gates [#46175290267](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46175290267) (4/4 Jobs), Network Tests [#46175290278](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46175290278) (3/3), Bridge Security [#46175290315](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46175290315) (Linux/Windows), Windows Launcher [#46175290276](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46175290276), Supply Chain [#46175290296](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46175290296) und CodeQL [#46175290300](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46175290300).
+- Die Änderungen verlangen explizite Kamera-/Manual-Herkunft, normalisieren alte POSTs ohne origin zu `legacy_unverified`, quarantänisieren diese in der Bridge, trennen lokale Medien als `local_media_unverified` und brechen mehrdeutige Outbox-Migrationen ohne Umklassifizierung atomar ab.
+- Die Quell- und Bridge-Tests beweisen keine physische Kamera-Herkunft: `origin` bleibt clientgeliefertes Routing-Metadatum, keine kryptografische Producer-Attestierung. Der PR bleibt Draft bis eine gestoppte, gesicherte Stationskopie und installierte Altclients kontrolliert geprüft sind.
+
+#### Monitor-Cross-Repository-Prüfung: PR #379 ersetzt PR #378
+- Monitor PR #378 wurde geschlossen, nicht gemergt.
+- Aktueller Ersatz: [PR #379](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/379), Draft, Head `e5ca40a75ae0f6475cbf0c7df946a0268af31cba`, Basis Main `5948c88`, 5 Commits ahead / 0 behind.
+- Die Workflow-Pins und Assertionen verwenden den unveränderlichen BeeKeeper-PR-#165-Head `da642367fbfdd4a2ad96f252491451936e2b916e`. Der Branch wurde nach Prüfung des einzigen fehlenden Main-Commits (nur Pins auf BeeKeeper-main) mit Monitor-main zusammengeführt; der PR-Branch behält absichtlich den Draft-Partner-Pin.
+- CI auf dem neuen Head: Gesamttest [#46177628638](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46177628638) – 3/3 Jobs erfolgreich; Repository-Integration [#46177628451](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46177628451), Integration Contracts [#46177628430](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46177628430) und CodeQL [#46177628441](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46177628441) erfolgreich. Der Gesamttest erzeugte keine Artefakte.
+- Logs bestätigen 14 Outbox-Tests, 37 Bridge-Subtests sowie die Trennung von Kamera, manueller Beobachtung, lokalen Medien und Legacy-Quarantäne. Der Field-Dataset-Export gegen den BeeKeeper-Validator und der synthetische Roundtrip liefen erfolgreich. Keine physische Kamera, Funkhardware oder KI-Inferenz wurde geprüft.
+
+#### Aktuelle Main-CI
+- Monitor main `5948c88`: Gesamttest [#46176101024](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46176101024), Repository-Integration [#46176101021](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46176101021) und CodeQL [#46176101145](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46176101145) erfolgreich.
+- BeeKeeper3000 main `c84a8fa`: Quality Gates [#46167572785](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46167572785) (4/4), Network [#46167572792](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46167572792) (3/3), CodeQL [#46167572805](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46167572805) und Supply Chain [#46167572788](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46167572788) erfolgreich.
+
+#### Weiterhin offene Freigaben
+- Monitor Pages-Metadaten zeigen `has_pages=true`; die Pages-Quelle konnte über die verbundene GitHub-Schnittstelle nicht gelesen werden. `.github/workflows/pages.yml` ist Verify-only ohne Upload-/Deploy-Aktion. Kein Deployment ausgelöst.
+- Branch-Protection-Leseabfrage liefert HTTP 403; Rulesets-Abfrage liefert `[]`. Keine Schutzregeländerung versucht.
+- Beide Root-`LICENSE`-Dateien fehlen (404), Repository-Metadaten melden `license=null`; BeeKeeper `LICENSES.md` bezeichnet sich selbst als vorläufiges Inventar.
+- Die sechs Monitor-Modellkandidaten bleiben `rights_and_runtime_pending`; im BeeKeeper-Fähigkeitskatalog sind acht Funktionen `enabled=false` und `not_validated`. Keine Gewichte oder freigegebenen Realbild-Trainingsdaten im Main. Varroa auf Bienen und Varroa auf Klebebrettern bleiben getrennte Aufgaben.
+- Impressum und Datenschutzhinweise enthalten Betreiber-/Kontaktplatzhalter. IndexedDB-/SQLite-Daten und JSON-Exporte können Fotos und GPS enthalten; die Anwendung dokumentiert keine zusätzliche anwendungsseitige Verschlüsselung.
+- Es fehlen unabhängiger Feld-Holdout, fachlich geprüfte Annotationen, reale Kamera-/Raspberry-Pi-Abnahme, Dauerbetriebsprüfung und Nachweis einer 99-%-Erkennungsleistung. Software-CI-Grün ist keine KI- oder Feldfreigabe.
+
+#### Nächster sicherer Schritt
+Eine gestoppte, lokal geschützte und konsistente Stationskopie mit `camera/audit_outbox_origins.py` read-only prüfen. Bei `BLOCKED_REQUIRES_MANUAL_REVIEW` oder Fehler keine Migration starten. Danach alte Stationsclients kontrolliert testen. Erst nach dieser Hardware-/Altstationsprüfung PR #165 menschlich freigeben; anschließend Monitor-Integration auf den endgültigen BeeKeeper-main-Commit umstellen. Keine automatischen Deployments, Modell-/Datensatzdownloads oder Übermittlung privater Stationsdaten.
