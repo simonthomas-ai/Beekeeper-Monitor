@@ -259,7 +259,7 @@ jobs:
         shell: bash
         run: |
           node --input-type=module <<'NODE'
-          import { toMonitorEvent } from './beekeeper3000/monitor-bridge/bridge.mjs';
+          import { toMonitorEvent, isQuarantinedLegacyEvent } from './beekeeper3000/monitor-bridge/bridge.mjs';
           import { createRequire } from 'node:module';
           import { spawnSync } from 'node:child_process';
           import { createHash } from 'node:crypto';
@@ -315,7 +315,18 @@ jobs:
           if (localMedia !== null) {
             throw new Error('Local-media review candidate was accepted as a source event');
           }
-          console.log('PASS: camera, manual and local-media candidate origins remain separate');
+          const legacy = {
+            id: 'legacy-unverified-1', origin: 'legacy_unverified',
+            observed_at: timestamp, station_id: 'legacy-station-01',
+            species: 'Vespa velutina', confidence: 0.55, prey_detected: false
+          };
+          if (toMonitorEvent(legacy) !== null || !isQuarantinedLegacyEvent(legacy)) {
+            throw new Error('Legacy event was not isolated as a valid non-forwardable quarantine record');
+          }
+          if (isQuarantinedLegacyEvent({ ...legacy, confidence: 1.5 })) {
+            throw new Error('Malformed legacy event was incorrectly accepted by quarantine validation');
+          }
+          console.log('PASS: camera, manual, local-media and legacy-quarantine origins remain separate');
           NODE
       - name: Ergebnis im gemeinsamen Bericht
         if: always()
