@@ -1,15 +1,23 @@
-name: Hornet3000 candidate authorization guard (synthetic tests only)
+name: External model and dataset download authorization guard (synthetic tests only)
 on:
   push:
     paths:
       - '.github/workflows/hornet3000-integrity.yml'
       - 'scripts/verify_hornet3000_onnx.py'
+      - 'scripts/zenodo_inventory.py'
       - 'tests/test_hornet3000_download_policy.py'
+      - 'tests/test_zenodo_inventory_download_policy.py'
+      - 'docs/HORNET3000-DOWNLOAD-SAFETY.md'
+      - 'docs/DATA-ACQUISITION.md'
   pull_request:
     paths:
       - '.github/workflows/hornet3000-integrity.yml'
       - 'scripts/verify_hornet3000_onnx.py'
+      - 'scripts/zenodo_inventory.py'
       - 'tests/test_hornet3000_download_policy.py'
+      - 'tests/test_zenodo_inventory_download_policy.py'
+      - 'docs/HORNET3000-DOWNLOAD-SAFETY.md'
+      - 'docs/DATA-ACQUISITION.md'
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,7 +29,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Prove external candidate download is blocked before network access
+      - name: Prove unapproved model downloads are blocked before network access
         run: python3 -m unittest discover -s tests -p test_hornet3000_download_policy.py -v
-      - name: Syntax-check the guarded candidate verifier
-        run: python3 -m py_compile scripts/verify_hornet3000_onnx.py
+      - name: Prove unapproved Zenodo dataset downloads are blocked before network access
+        run: python3 -m unittest discover -s tests -p test_zenodo_inventory_download_policy.py -v
+      - name: Syntax-check guarded download utilities
+        run: python3 -m py_compile scripts/verify_hornet3000_onnx.py scripts/zenodo_inventory.py
