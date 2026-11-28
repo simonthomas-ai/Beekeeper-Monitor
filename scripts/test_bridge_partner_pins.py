@@ -11,7 +11,7 @@ WORKFLOWS = (
 )
 PIN = re.compile(r"^\s*ref:\s*([0-9a-f]{40})\s*(?:#.*)?$", re.MULTILINE)
 
-EXPECTED_PARTNER_SHA = "411cc643488803557ef7e710e68e66b2d0519788"
+EXPECTED_PARTNER_SHA = "26a404aac3ec53f28f8bbb337e71f9ebfb39a442"
 
 def partner_pins(text):
     # Require the immutable SHA directly after the named partner checkout.
