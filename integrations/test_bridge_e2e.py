@@ -70,6 +70,7 @@ const event = {
   station_id: 'integration-test-station',
   species: 'vespa_velutina',
   confidence: 0.91,
+  origin: 'camera',
   status: 'unverified',
   image_path: '/must/not/be/transmitted.jpg',
   latitude: 51.2,
