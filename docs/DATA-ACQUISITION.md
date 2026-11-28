@@ -21,12 +21,14 @@ python scripts/zenodo_inventory.py varroa-v2
 python scripts/zenodo_inventory.py varroa-original
 python scripts/zenodo_inventory.py varroa-ev2
 ```
-Only after reviewing rights and file sizes, download a named file:
-```sh
-python scripts/zenodo_inventory.py varroa-v2 --download README.md
-```
+**Dataset-byte downloads are currently blocked in code** by `DOWNLOADS_ENABLED = False`.
+The metadata inventory may be used for research, but a named-file download exits before
+network access until a separate reviewed change documents per-file license, provenance,
+attribution, intended-use and redistribution rights. A published MD5 is only an integrity
+check; it is not a license or permission. Do not bypass this gate.
 
-The script checks published MD5 where present. Large downloads are **not** scheduled in free GitHub Actions; downloading all training images and model weights could consume gigabytes and exhaust quotas. Roboflow exports may require user credentials, and no secrets should be committed.
+Large downloads are **not** scheduled in free GitHub Actions; downloading all training
+images and model weights could consume gigabytes and exhaust quotas. Roboflow exports may require user credentials, and no secrets should be committed.
 
 ## Training acceptance
 Document authorship, license, checksums, source identifiers, class mapping, duplicate screening, train/validation/test isolation, independent evaluation and iPhone performance before any model is enabled in the PWA.

@@ -9,15 +9,20 @@ from pathlib import Path
 import urllib.request
 
 RECORDS={"varroa-v2":"23276947","varroa-original":"4085044","varroa-ev2":"13771384"}
+
+# Dataset files remain blocked until a separate per-file rights review is approved.
+DOWNLOADS_ENABLED = False
 def get_json(url):
     with urllib.request.urlopen(urllib.request.Request(url,headers={"User-Agent":"BeekeeperMonitorResearch/1.0"}),timeout=40) as resp:
         return json.load(resp)
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("record",choices=RECORDS)
-    p.add_argument("--download",help="Exact file key from the record; requires explicit selection")
+    p.add_argument("--download",help="Blocked until a separately reviewed per-file rights authorization enables downloads")
     p.add_argument("--output-dir",default="downloads")
     args=p.parse_args()
+    if args.download and DOWNLOADS_ENABLED is not True:
+        p.error("External dataset downloads are disabled in code pending per-file license, provenance and use-rights review")
     record=get_json("https://zenodo.org/api/records/"+RECORDS[args.record])
     files=record.get("files",[])
     for f in files:

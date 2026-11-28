@@ -1,41 +1,37 @@
-name: Hornet3000 ONNX Integritaet und isolierte Inferenz
+name: External model and dataset download authorization guard (synthetic tests only)
 on:
+  push:
+    paths:
+      - '.github/workflows/hornet3000-integrity.yml'
+      - 'scripts/verify_hornet3000_onnx.py'
+      - 'scripts/zenodo_inventory.py'
+      - 'tests/test_hornet3000_download_policy.py'
+      - 'tests/test_zenodo_inventory_download_policy.py'
+      - 'docs/HORNET3000-DOWNLOAD-SAFETY.md'
+      - 'docs/DATA-ACQUISITION.md'
+  pull_request:
+    paths:
+      - '.github/workflows/hornet3000-integrity.yml'
+      - 'scripts/verify_hornet3000_onnx.py'
+      - 'scripts/zenodo_inventory.py'
+      - 'tests/test_hornet3000_download_policy.py'
+      - 'tests/test_zenodo_inventory_download_policy.py'
+      - 'docs/HORNET3000-DOWNLOAD-SAFETY.md'
+      - 'docs/DATA-ACQUISITION.md'
   workflow_dispatch:
-    inputs:
-      multispecies_cc0:
-        description: 'Vier Insektenarten mit echten CC0-Fotos vergleichen (Forschung)'
-        type: boolean
-        default: true
-      real_cc0_photo:
-        description: 'Echtes CC0-Hornissenfoto isoliert testen (kein Training)'
-        type: boolean
-        default: true
 permissions:
   contents: read
 jobs:
-  pruefen:
+  guard:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: ONNX-Parser fuer statische Graphpruefung
-        run: python3 -m pip install --disable-pip-version-check 'onnx==1.19.1' 'onnxruntime==1.23.2'
-      - name: YOLOv8 Decoder und NMS mit synthetischen Tensoren pruefen
-        run: python3 -m unittest tests.test_hornet3000_decode -v
-      - name: Gepinnte ONNX-Datei herunterladen und Byte-Identitaet pruefen
-        run: python3 -m scripts.verify_hornet3000_onnx --download --inspect-graph --synthetic-inference
-      - name: Echtes CC0-Foto mit frischer Lizenzkontrolle isoliert pruefen
-        if: inputs.real_cc0_photo == true
-        run: |
-          python3 -m pip install --only-binary=:all: 'Pillow>=10,<13'
-          python3 -m scripts.verify_hornet3000_onnx --download --real-cc0
-      - name: Mehrere echte CC0-Insektenbilder isoliert vergleichen
-        if: inputs.multispecies_cc0 == true
-        run: |
-          python3 -m pip install --only-binary=:all: 'Pillow>=10,<13'
-          python3 -m scripts.verify_hornet3000_onnx --download --multispecies
-      - name: Freigabe bleibt gesperrt
-        run: |
-          echo 'Nur isolierte CPU-Inferenz auf synthetischem Nullbild. Keine Lizenz-, Genauigkeits-, Kamera- oder Feldfreigabe.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Prove unapproved model downloads are blocked before network access
+        run: python3 -m unittest discover -s tests -p test_hornet3000_download_policy.py -v
+      - name: Prove unapproved Zenodo dataset downloads are blocked before network access
+        run: python3 -m unittest discover -s tests -p test_zenodo_inventory_download_policy.py -v
+      - name: Syntax-check guarded download utilities
+        run: python3 -m py_compile scripts/verify_hornet3000_onnx.py scripts/zenodo_inventory.py

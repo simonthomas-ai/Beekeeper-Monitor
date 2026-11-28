@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Download and verify pinned ONNX bytes without executing the model."""
+"""Inspect a pinned ONNX candidate only after separate rights authorization.
+
+External candidate downloads are disabled in code until the exact weights and
+training-data rights have been independently reviewed.
+"""
 import argparse
 import hashlib
 import json
@@ -14,9 +18,18 @@ BLOB = "97fb748affc642238c1135768a53098f594de0d1"
 SIZE = 44737849
 URL = "https://raw.githubusercontent.com/vespCV/hornet3000/" + COMMIT + "/" + PATH
 
+# Fail closed: the candidate has no independently confirmed weight/data rights.
+# A separate reviewed code change is required before any external download.
+MODEL_DOWNLOADS_ENABLED = False
+
 def inspect(download=False, inspect_graph=False, run_inference=False, real_cc0=False, multispecies=False):
     if not download:
         return {"status": "not_downloaded", "source": URL, "expected_bytes": SIZE}
+    if MODEL_DOWNLOADS_ENABLED is not True:
+        raise PermissionError(
+            "Blocked: external Hornet3000 model downloads are disabled in code "
+            "pending independent weight and dataset rights review"
+        )
     req = urllib.request.Request(URL, headers={"User-Agent": "VespaGuard-research-integrity/1"})
     with tempfile.TemporaryDirectory() as tmp:
         target = Path(tmp) / "candidate.onnx"
@@ -88,7 +101,7 @@ def inspect(download=False, inspect_graph=False, run_inference=False, real_cc0=F
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--download", action="store_true")
+    parser.add_argument("--download", action="store_true", help="Blocked until a separately reviewed rights authorization enables downloads")
     parser.add_argument("--inspect-graph", action="store_true", help="Read ONNX graph metadata, never run inference")
     parser.add_argument("--synthetic-inference", action="store_true", help="CPU inference on a zero-valued synthetic frame")
     parser.add_argument("--real-cc0", action="store_true", help="Research-only inference on fresh verified CC0 iNaturalist image")
