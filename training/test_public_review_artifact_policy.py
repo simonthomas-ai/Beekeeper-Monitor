@@ -221,3 +221,7 @@ class PublicReviewArtifactPolicyTests(unittest.TestCase):
     def test_retired_public_gallery_license_audit_is_removed(self):
         self.assertFalse((WORKFLOWS / "photo-license-audit.yml").exists())
         self.assertFalse((ROOT / "scripts" / "check_live_photo_licenses.py").exists())
+
+
+if __name__ == "__main__":
+    unittest.main()
