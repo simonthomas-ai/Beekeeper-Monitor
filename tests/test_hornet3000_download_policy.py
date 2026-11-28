@@ -33,14 +33,14 @@ class Hornet3000DownloadPolicyTests(unittest.TestCase):
     def test_candidate_workflow_runs_only_local_policy_checks(self):
         workflow = WORKFLOW.read_text(encoding="utf-8")
         uses = re.findall(
-            r"^\\s*-\\s+uses:\\s*(\\S+)(?:\\s+#.*)?\\s*$",
+            r"^\s*-\s+uses:\s*(\S+)(?:\s+#.*)?\s*$",
             workflow,
             flags=re.MULTILINE,
         )
-        runs = re.findall(r"^\\s+run:\\s*(.+?)\\s*$", workflow, flags=re.MULTILINE)
+        runs = re.findall(r"^\s+run:\s*(.+?)\s*$", workflow, flags=re.MULTILINE)
         self.assertEqual(uses, [PINNED_CHECKOUT])
         self.assertEqual(runs, EXPECTED_RUNS)
-        self.assertIn("permissions:\\n  contents: read", workflow)
+        self.assertIn("permissions:\n  contents: read", workflow)
         for forbidden in (
             "--download",
             "--real-cc0",
