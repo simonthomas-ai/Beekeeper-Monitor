@@ -4,6 +4,7 @@ on:
     paths:
       - '.github/workflows/varroa-verified-download.yml'
       - 'scripts/download_verified_varroa.py'
+      - 'scripts/verify_varroa_source_blob.py'
       - 'data/model-sources/varrodetector-best.json'
       - 'tests/test_download_verified_varroa.py'
       - 'tests/test_varroa_download_workflow_policy.py'
@@ -11,6 +12,7 @@ on:
     paths:
       - '.github/workflows/varroa-verified-download.yml'
       - 'scripts/download_verified_varroa.py'
+      - 'scripts/verify_varroa_source_blob.py'
       - 'data/model-sources/varrodetector-best.json'
       - 'tests/test_download_verified_varroa.py'
       - 'tests/test_varroa_download_workflow_policy.py'
