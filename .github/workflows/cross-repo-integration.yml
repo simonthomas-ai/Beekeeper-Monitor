@@ -44,11 +44,11 @@ jobs:
         with:
           repository: simonthomas-ai/BeeKeeper3000
           # Immutable partner revision; updated only after partner-main CI passed.
-          ref: c38d28c35707e99bec1c0d6298b0ada6bd268063
+          ref: bf251e1ce5a7ccf227c2dc1bd8a7031ec90464af
           path: beekeeper3000
           persist-credentials: false
       - name: Verify immutable partner revision
-        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "c38d28c35707e99bec1c0d6298b0ada6bd268063"
+        run: test "$(git -C beekeeper3000 rev-parse HEAD)" = "bf251e1ce5a7ccf227c2dc1bd8a7031ec90464af"
       - name: Python vorbereiten
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
