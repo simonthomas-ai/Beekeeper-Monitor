@@ -973,3 +973,43 @@ BeeKeeper3000 enthält einen Windows-Launcher und einen Linux/systemd-Basisinsta
 Diese CI-Ergebnisse sind keine Installation auf dem Nutzer-PC, keinem echten Raspberry Pi und kein physischer Restore-Drill. Kamera und MeshCore werden durch den Linux-Basisinstaller absichtlich nicht automatisch aktiviert.
 
 **Gesamtstatus:** Die lokale Software- und Monitor-Übertragung ist automatisiert geprüft. Kamera-/KI-Qualität, reale Stationen, MeshCore, Triangulation, Datenschutz-Feldfreigabe und Pilotbetrieb bleiben offen. Die Anwendung darf bis zur Abnahme nur als Beobachtungs- und Suchhinweissystem, nicht als bestätigende Artbestimmung oder Grundlage für Nestzerstörung verwendet werden.
+
+
+## Verifizierte Aktualisierung – 28.11.2026, 16:00 UTC
+
+### Aktuelle Hauptzweige und CI
+
+- Beekeeper-Monitor `main`: `48926a32198133f85b84810930625a8148f9cab2`. Post-Merge-Gesamttest [#46136496997](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46136496997), CodeQL [#46136497039](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46136497039) und Download-Policy-Test [#46136497052](https://github.com/simonthomas-ai/Beekeeper-Monitor/actions/runs/46136497052): erfolgreich.
+- BeeKeeper3000 `main`: `7008025e96d65a4330ad699e96a0327ceee6ab48`. Quality Gates [#46157417753](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46157417753), Network Tests [#46157417775](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46157417775), CodeQL [#46157417742](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46157417742) und Supply Chain [#46157417741](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46157417741): erfolgreich.
+- BeeKeeper PR [#162](https://github.com/simonthomas-ai/BeeKeeper3000/pull/162) ist in Main integriert. Der neue read-only Outbox-Preflight zählt nur aggregierte Herkunftsstatus und verändert keine Datenbank.
+
+### Neue Pfad-Härtung in Prüfung
+
+- BeeKeeper PR [#163](https://github.com/simonthomas-ai/BeeKeeper3000/pull/163), Head `320787bb12d5eb00d66359e751df498361a8ec0d`, bleibt Draft.
+- Bisherige Prüfung des Preflight-Tools hat nur den finalen Datenbankpfad auf Symlinks geprüft. PR #163 prüft nun auch übergeordnete Pfadkomponenten sowie WAL-/Rollback-Journal-Sidecars auf Symlinks und – sofern von Python unterstützt – Windows-Junctions.
+- Regressionstests für finalen Pfad, symlinked Parent-Verzeichnis und symlinked WAL-Sidecar bestehen in den Linux- und Windows-CI-Logs.
+- Quality Gates [#46161717873](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46161717873), Network Tests [#46161717775](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46161717775), CodeQL [#46161717817](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46161717817) und Supply Chain [#46161717763](https://github.com/simonthomas-ai/BeeKeeper3000/actions/runs/46161717763): erfolgreich. Der PR ist nicht gemergt.
+
+### Herkunfts- und Bridge-Integration
+
+- BeeKeeper PR [#158](https://github.com/simonthomas-ai/BeeKeeper3000/pull/158) bleibt Draft auf `22a3bf464f1c566acfae78899afcab2272323f5c`. Er erzwingt explizites `origin=camera`, quarantänisiert `legacy_unverified` und verhindert die automatische Hochstufung lokaler Medien.
+- PR #158 basiert noch auf `928e3262a15d3d70a69cc893dbc04280455fa16b`; BeeKeeper-main ist inzwischen bei `7008025e96d65a4330ad699e96a0327ceee6ab48`. Der Commitvergleich meldet den PR als 1 Commit hinter Main und 57 Commits vor dem Merge-Base. Vor einer Integration ist ein aktualisierter Vergleich sowie eine Kompatibilitätsprüfung mit echten Altstationen nötig.
+- Monitor PR [#378](https://github.com/simonthomas-ai/Beekeeper-Monitor/pull/378) prüft den gepinnten PR-#158-Head repositoryübergreifend; Gesamttest, CodeQL und beide Bridge-/Integration-Workflows waren erfolgreich. Der PR bleibt Draft und darf nicht als Main-Integration interpretiert werden.
+
+### Deployment, Administration und Artefakte
+
+- Repository-Metadaten: Monitor `has_pages=true`, BeeKeeper3000 `has_pages=false`; beide Repositories sind öffentlich.
+- Monitor `.github/workflows/pages.yml` ist ein manueller Verify-only-Workflow ohne Pages-Konfiguration, Upload- oder Deploy-Aktion. `private-pwa.yml` staged nur auf einem ephemeren Runner und lädt kein Vorschauartefakt hoch.
+- Die Pages-Quellkonfiguration und der aktuell ausgelieferte Live-Inhalt konnten über die verfügbare Schnittstelle nicht gelesen bzw. bestätigt werden. `has_pages=true` bedeutet, dass die Repository-Pages-Einstellung aktiviert ist; die Workflow-Sperre schaltet diese Einstellung nicht ab. Kein Deployment wurde in dieser Runde ausgelöst.
+- Beide `main`-Branches melden `protected=false`; erforderliche Statuschecks sind aus. Die verfügbare GitHub-Schnittstelle bietet keine Branch-Protection-Schreibaktion. Keine Umgehung versucht.
+- BeeKeeper-Main-Supply-Chain-Lauf #46157417741 erzeugte sechs SBOM-/Vulnerability-Report-Artefakte, Ablauf 05.12.2026. Diese enthalten Dependency-/SBOM-Berichte, keine Trainingsbilder, Modellgewichte oder privaten Stationsdaten.
+- Historische Monitor-Actions-Artefakte wurden in dieser Runde nicht vollständig enumeriert oder gelöscht. Die Altbereinigung bleibt offen.
+
+### Modell-, Lizenz-, Datenschutz- und Feldstatus
+
+- Beide Repository-Metadaten melden `license=null`; beide Root-`LICENSE`-Dateien fehlen. BeeKeeper `LICENSES.md` ist ausdrücklich ein vorläufiges Engineering-Inventar, keine Gesamtfreigabe.
+- Monitor `models/candidates.json` enthält sechs externe Modellkandidaten; alle stehen auf `rights_and_runtime_pending`. Keine Gewichte und kein vollständiger freigegebener Realbild-Datensatz sind vorhanden.
+- `datasets/beekeeper/` und `training/reviewed-annotations.json` fehlen weiterhin. Modelltraining, Annotationen und KI-Freigabe bleiben blockiert. Die unterschiedlichen Modellverträge `[1,7]` und `[1,9,8400]` sind nicht durch einen validierten produktiven Adapter verbunden.
+- IndexedDB und lokale SQLite-Daten sind nicht zusätzlich anwendungsseitig verschlüsselt. JSON-Exporte können Fotos und GPS enthalten. Impressum und Datenschutzhinweise enthalten noch nicht bestätigte Betreiber-/Kontakt-/Rechtsgrundlagen-Platzhalter.
+- Keine physische Raspberry-Pi-/Kamera-/Dauerbetriebsabnahme, kein unabhängiger Feld-Holdout und keine 99-%-Erkennungsleistung nachgewiesen. Software-CI ist kein KI- oder Feldfreigabenachweis.
+- Keine privaten Kamera-/Audiodaten, GPS-Koordinaten oder Secrets übertragen; keine ungeprüften Gewichte oder Trainingsdaten geladen; kein öffentliches Deployment ausgelöst.
