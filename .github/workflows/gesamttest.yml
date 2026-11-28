@@ -42,6 +42,7 @@ jobs:
           python3 -m unittest scripts.test_cc0_workflow_publication_policy -v
           python3 -m unittest training.test_public_review_artifact_policy -v
           python3 -m unittest scripts.test_bridge_partner_pins -v
+          python3 -m unittest tests.test_model_readiness -v
           python3 scripts/audit_workflow_action_pins.py
           python3 scripts/check_sources.py
           python3 scripts/test_static.py
@@ -156,7 +157,7 @@ jobs:
           echo "| iPhone-WebKit-Emulation (dynamische Testsuite) | $IPHONE |" >> "$GITHUB_STEP_SUMMARY"
           echo 'Hinweis: Ein grüner Gesamttest bestätigt die verpflichtenden Software- und Bridge-Prüfungen, nicht die Einsatzreife eines KI-Modells.' >> "$GITHUB_STEP_SUMMARY"
           echo '## KI-Forschungsstand (nicht als einsatzbereit freigegeben)' >> "$GITHUB_STEP_SUMMARY"
-          echo "| KI-Dateninventur | $MODEL |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| KI-Dateninventur (nur Zählung, nicht validiert) | $MODEL |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Bildimport-Sicherheit und Herkunftsnachweise | $IMPORTTESTS |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Europäische Taxonomie (Online-API) | $TAXONOMY |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Echte KI-Trainingsdaten und Annotationen | $TRAINING |" >> "$GITHUB_STEP_SUMMARY"
